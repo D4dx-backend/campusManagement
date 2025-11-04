@@ -141,7 +141,6 @@ const Divisions = () => {
       name: formData.name,
       capacity: parseInt(formData.capacity),
       classTeacherId: formData.classTeacherId === 'no-teacher' ? undefined : formData.classTeacherId || undefined,
-      classTeacherName: formData.classTeacherId === 'no-teacher' ? undefined : selectedTeacher?.name || undefined,
       status: formData.status,
     };
     

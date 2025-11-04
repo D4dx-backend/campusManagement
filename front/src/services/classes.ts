@@ -15,6 +15,7 @@ export interface CreateClassData {
   name: string;
   academicYear: string;
   status: 'active' | 'inactive';
+  branchId?: string;
 }
 
 export interface UpdateClassData extends Partial<CreateClassData> {}
@@ -38,10 +39,11 @@ export interface ClassResponse {
 export interface ClassStatsResponse {
   success: boolean;
   data: {
-    totalClasses: number;
-    activeClasses: number;
-    inactiveClasses: number;
-    currentAcademicYear: string;
+    total: number;
+    active: number;
+    inactive: number;
+    academicYearStats?: Array<{ _id: string; count: number }>;
+    classWithDivisions?: Array<{ name: string; academicYear: string; divisionCount: number }>;
   };
 }
 
@@ -106,7 +108,10 @@ export const classesApi = {
   },
 
   getClassStats: async (): Promise<ClassStatsResponse> => {
-    const response = await apiClient.get('/classes/stats');
-    return response.data;
+    const response = await apiClient.get<ClassStatsResponse['data']>('/classes/stats/overview');
+    return {
+      success: response.data.success,
+      data: response.data.data
+    };
   },
 };

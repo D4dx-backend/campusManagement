@@ -63,7 +63,6 @@ const TextBookSchema = new Schema<ITextBook>({
 });
 
 // Indexes
-TextBookSchema.index({ bookCode: 1 });
 TextBookSchema.index({ branchId: 1 });
 TextBookSchema.index({ classId: 1 });
 TextBookSchema.index({ class: 1 });

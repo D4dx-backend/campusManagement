@@ -18,7 +18,8 @@ const createDepartmentSchema = Joi.object({
   description: Joi.string().optional().allow('').trim(),
   code: Joi.string().min(2).max(10).required().trim().uppercase(),
   headOfDepartment: Joi.string().optional().allow('').trim(),
-  status: Joi.string().valid('active', 'inactive').default('active')
+  status: Joi.string().valid('active', 'inactive').default('active'),
+  branchId: Joi.string().optional().allow('').trim()
 });
 
 const updateDepartmentSchema = Joi.object({
@@ -184,12 +185,27 @@ router.get('/:id', checkPermission('departments', 'read'), async (req: Authentic
 // @access  Private
 router.post('/', checkPermission('departments', 'create'), validate(createDepartmentSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const { name, description, code, headOfDepartment } = req.body;
+    console.log('Create department request body:', req.body);
+    console.log('User info:', { id: req.user!._id, role: req.user!.role, branchId: req.user!.branchId });
+    
+    const { name, description, code, headOfDepartment, branchId } = req.body;
+
+    // Determine the branchId to use
+    const targetBranchId = req.user!.branchId || branchId;
+    console.log('Target branchId:', targetBranchId);
+    
+    if (!targetBranchId) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'Branch ID is required to create a department'
+      };
+      return res.status(400).json(response);
+    }
 
     // Check if department code already exists for the same branch
     const existingDepartment = await Department.findOne({
       code,
-      branchId: req.user!.branchId || req.body.branchId
+      branchId: targetBranchId
     });
 
     if (existingDepartment) {
@@ -203,7 +219,7 @@ router.post('/', checkPermission('departments', 'create'), validate(createDepart
     // Check if department name already exists for the same branch
     const existingName = await Department.findOne({
       name,
-      branchId: req.user!.branchId || req.body.branchId
+      branchId: targetBranchId
     });
 
     if (existingName) {
@@ -220,7 +236,7 @@ router.post('/', checkPermission('departments', 'create'), validate(createDepart
       description,
       code: code.toUpperCase(),
       headOfDepartment,
-      branchId: req.user!.branchId || req.body.branchId
+      branchId: targetBranchId
     };
 
     const department = new Department(departmentData);
@@ -235,7 +251,7 @@ router.post('/', checkPermission('departments', 'create'), validate(createDepart
       module: 'Departments',
       details: `Created department: ${department.name} (${department.code})`,
       ipAddress: req.ip,
-      branchId: department.branchId
+      branchId: targetBranchId
     });
 
     const response: ApiResponse = {

@@ -193,10 +193,24 @@ router.post('/', checkPermission('staff', 'create'), validate(createStaffSchema)
       return res.status(400).json(response);
     }
 
+    // Get the appropriate branchId
+    const { getRequiredBranchId } = require('../utils/branchHelper');
+    let branchId;
+    
+    try {
+      branchId = await getRequiredBranchId(req, req.body.branchId);
+    } catch (error) {
+      const response: ApiResponse = {
+        success: false,
+        message: error.message || 'Branch information is required for staff creation'
+      };
+      return res.status(400).json(response);
+    }
+
     // Create staff member with branch ID
     const staffData = {
       ...req.body,
-      branchId: req.user!.branchId || req.body.branchId
+      branchId: branchId
     };
 
     const staff = new Staff(staffData);

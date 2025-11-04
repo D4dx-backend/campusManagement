@@ -241,11 +241,12 @@ router.post('/', checkPermission('divisions', 'create'), validate(createDivision
   try {
     const { classId, name, capacity, classTeacherId } = req.body;
 
-    // Verify class exists and belongs to the same branch
-    const classExists = await Class.findOne({
-      _id: classId,
-      branchId: req.user!.branchId || req.body.branchId
-    });
+    // Verify class exists and belongs to the same branch (super admin can access any branch)
+    const classFilter: any = { _id: classId };
+    if (req.user!.role !== 'super_admin') {
+      classFilter.branchId = req.user!.branchId;
+    }
+    const classExists = await Class.findOne(classFilter);
 
     if (!classExists) {
       const response: ApiResponse = {
@@ -256,11 +257,14 @@ router.post('/', checkPermission('divisions', 'create'), validate(createDivision
     }
 
     // Check if division name already exists for the same class
-    const existingDivision = await Division.findOne({
-      classId,
-      name,
-      branchId: req.user!.branchId || req.body.branchId
-    });
+    const divisionFilter: any = { classId, name };
+    if (req.user!.role !== 'super_admin') {
+      divisionFilter.branchId = req.user!.branchId;
+    } else {
+      // For super admin, use the class's branchId
+      divisionFilter.branchId = classExists.branchId;
+    }
+    const existingDivision = await Division.findOne(divisionFilter);
 
     if (existingDivision) {
       const response: ApiResponse = {
@@ -273,10 +277,14 @@ router.post('/', checkPermission('divisions', 'create'), validate(createDivision
     // Verify class teacher exists if provided
     let classTeacherName = '';
     if (classTeacherId) {
-      const teacher = await Staff.findOne({
-        _id: classTeacherId,
-        branchId: req.user!.branchId || req.body.branchId
-      });
+      const teacherFilter: any = { _id: classTeacherId };
+      if (req.user!.role !== 'super_admin') {
+        teacherFilter.branchId = req.user!.branchId;
+      } else {
+        // For super admin, use the class's branchId
+        teacherFilter.branchId = classExists.branchId;
+      }
+      const teacher = await Staff.findOne(teacherFilter);
 
       if (!teacher) {
         const response: ApiResponse = {
@@ -296,7 +304,7 @@ router.post('/', checkPermission('divisions', 'create'), validate(createDivision
       capacity,
       classTeacherId: classTeacherId || undefined,
       classTeacherName: classTeacherName || undefined,
-      branchId: req.user!.branchId || req.body.branchId
+      branchId: req.user!.role !== 'super_admin' ? req.user!.branchId : classExists.branchId
     };
 
     const division = new Division(divisionData);

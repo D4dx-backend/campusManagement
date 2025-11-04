@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DataTable } from '@/components/ui/data-table';
@@ -12,6 +12,7 @@ import { Plus, Search, Edit, Trash2, GraduationCap, Loader2, AlertCircle } from 
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClasses, useCreateClass, useUpdateClass, useDeleteClass } from '@/hooks/useClasses';
+import { useBranches } from '@/hooks/useBranches';
 import { formatters } from '@/utils/exportUtils';
 import { pageConfigurations } from '@/utils/pageTemplates';
 
@@ -25,6 +26,17 @@ const Classes = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { confirm, ConfirmationComponent } = useConfirmation();
+
+  // Get branches for super admins
+  const { data: branchesResponse, isLoading: branchesLoading } = useBranches(user?.role === 'super_admin');
+  const branches = branchesResponse?.data || [];
+  
+  // Debug log
+  useEffect(() => {
+    if (user?.role === 'super_admin') {
+      console.log('Branches loaded:', branches.length, branches);
+    }
+  }, [branches, user?.role]);
 
   // Check if user has classes read permission
   const hasClassesReadPermission = user?.permissions?.some(
@@ -54,6 +66,7 @@ const Classes = () => {
     name: '',
     academicYear: new Date().getFullYear().toString(),
     status: 'active' as 'active' | 'inactive',
+    branchId: '' as string,
   });
 
   const resetForm = () => {
@@ -61,6 +74,7 @@ const Classes = () => {
       name: '',
       academicYear: new Date().getFullYear().toString(),
       status: 'active',
+      branchId: '',
     });
     setEditingClass(null);
   };
@@ -89,6 +103,16 @@ const Classes = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate branchId for super admin when creating
+    if (user?.role === 'super_admin' && !editingClass && !formData.branchId) {
+      toast({
+        title: 'Error',
+        description: 'Please select a branch',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     try {
       if (editingClass) {
         await updateClassMutation.mutateAsync({
@@ -96,7 +120,13 @@ const Classes = () => {
           ...formData,
         });
       } else {
-        await createClassMutation.mutateAsync(formData);
+        // Only send branchId if it's provided (for super admins)
+        const createData = { ...formData };
+        if (!createData.branchId || createData.branchId === '') {
+          delete createData.branchId;
+        }
+        console.log('Creating class with data:', createData);
+        await createClassMutation.mutateAsync(createData);
       }
       
       setIsDialogOpen(false);
@@ -112,6 +142,7 @@ const Classes = () => {
       name: classItem.name,
       academicYear: classItem.academicYear,
       status: classItem.status,
+      branchId: '',
     });
     setIsDialogOpen(true);
   };
@@ -178,6 +209,9 @@ const Classes = () => {
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>{editingClass ? 'Edit Class' : 'Add New Class'}</DialogTitle>
+                <DialogDescription>
+                  {editingClass ? 'Update class information' : 'Create a new class for your branch'}
+                </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
@@ -200,6 +234,33 @@ const Classes = () => {
                     required
                   />
                 </div>
+                {user?.role === 'super_admin' && !editingClass && (
+                  <div className="space-y-2">
+                    <Label htmlFor="branchId">Branch *</Label>
+                    <Select
+                      value={formData.branchId}
+                      onValueChange={(value) => setFormData({ ...formData, branchId: value })}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a branch" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {branches.filter(b => b.status === 'active').length === 0 ? (
+                          <SelectItem value="no-branches" disabled>
+                            No active branches available
+                          </SelectItem>
+                        ) : (
+                          branches.filter(b => b.status === 'active').map(branch => (
+                            <SelectItem key={branch.id || branch._id} value={branch.id || branch._id}>
+                              {branch.name} ({branch.code})
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
                   <Select

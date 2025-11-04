@@ -158,7 +158,6 @@ const TextbookIndentSchema = new Schema<ITextbookIndent>({
 });
 
 // Indexes
-TextbookIndentSchema.index({ indentNo: 1 });
 TextbookIndentSchema.index({ studentId: 1 });
 TextbookIndentSchema.index({ branchId: 1 });
 TextbookIndentSchema.index({ status: 1 });

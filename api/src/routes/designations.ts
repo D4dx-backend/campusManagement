@@ -15,13 +15,15 @@ router.use(authenticate);
 const createDesignationSchema = Joi.object({
   name: Joi.string().required().trim(),
   description: Joi.string().optional().allow('').trim(),
-  status: Joi.string().valid('active', 'inactive').default('active')
+  status: Joi.string().valid('active', 'inactive').default('active'),
+  branchId: Joi.string().required() // branchId is required
 });
 
 const updateDesignationSchema = Joi.object({
   name: Joi.string().optional().trim(),
   description: Joi.string().optional().allow('').trim(),
-  status: Joi.string().valid('active', 'inactive').optional()
+  status: Joi.string().valid('active', 'inactive').optional(),
+  branchId: Joi.string().optional() // Allow branchId for super admins
 });
 
 const queryDesignationsSchema = Joi.object({
@@ -106,6 +108,10 @@ router.get('/', checkPermission('staff', 'read'), validateQuery(queryDesignation
 // @access  Private
 router.post('/', checkPermission('staff', 'create'), validate(createDesignationSchema), async (req: AuthenticatedRequest, res) => {
   try {
+    // Debug logging
+    console.log('Create designation request body:', req.body);
+    console.log('User info:', { id: req.user!._id, role: req.user!.role, branchId: req.user!.branchId });
+    
     // Check if designation name already exists for the same branch
     const existingDesignation = await Designation.findOne({
       name: req.body.name,
@@ -113,6 +119,7 @@ router.post('/', checkPermission('staff', 'create'), validate(createDesignationS
     });
 
     if (existingDesignation) {
+      console.log('❌ Designation already exists:', existingDesignation.name);
       const response: ApiResponse = {
         success: false,
         message: 'Designation with this name already exists'
@@ -121,9 +128,19 @@ router.post('/', checkPermission('staff', 'create'), validate(createDesignationS
     }
 
     // Create designation with branch ID
+    const branchId = req.user!.branchId || req.body.branchId;
+    
+    if (!branchId) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'Branch ID is required to create designation'
+      };
+      return res.status(400).json(response);
+    }
+    
     const designationData = {
       ...req.body,
-      branchId: req.user!.branchId || req.body.branchId
+      branchId: branchId
     };
 
     const newDesignation = new Designation(designationData);

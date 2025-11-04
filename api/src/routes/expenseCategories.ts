@@ -106,10 +106,24 @@ router.get('/', checkPermission('expenses', 'read'), validateQuery(queryExpenseC
 // @access  Private
 router.post('/', checkPermission('expenses', 'create'), validate(createExpenseCategorySchema), async (req: AuthenticatedRequest, res) => {
   try {
+    // Get the appropriate branchId
+    const { getRequiredBranchId } = require('../utils/branchHelper');
+    let branchId;
+    
+    try {
+      branchId = await getRequiredBranchId(req, req.body.branchId);
+    } catch (error) {
+      const response: ApiResponse = {
+        success: false,
+        message: error.message || 'Branch information is required for expense category creation'
+      };
+      return res.status(400).json(response);
+    }
+
     // Check if category name already exists for the same branch
     const existingCategory = await ExpenseCategory.findOne({
       name: req.body.name,
-      branchId: req.user!.branchId || req.body.branchId
+      branchId: branchId
     });
 
     if (existingCategory) {
@@ -123,7 +137,7 @@ router.post('/', checkPermission('expenses', 'create'), validate(createExpenseCa
     // Create category with branch ID
     const categoryData = {
       ...req.body,
-      branchId: req.user!.branchId || req.body.branchId
+      branchId: branchId
     };
 
     const newCategory = new ExpenseCategory(categoryData);
@@ -150,9 +164,15 @@ router.post('/', checkPermission('expenses', 'create'), validate(createExpenseCa
     res.status(201).json(response);
   } catch (error) {
     console.error('Create expense category error:', error);
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
+    
     const response: ApiResponse = {
       success: false,
-      message: 'Server error creating expense category'
+      message: error.message || 'Server error creating expense category'
     };
     res.status(500).json(response);
   }

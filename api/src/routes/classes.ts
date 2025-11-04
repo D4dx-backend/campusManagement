@@ -18,7 +18,8 @@ const createClassSchema = Joi.object({
   name: Joi.string().required().trim(),
   description: Joi.string().optional().allow('').trim(),
   academicYear: Joi.string().required().trim(),
-  status: Joi.string().valid('active', 'inactive').default('active')
+  status: Joi.string().valid('active', 'inactive').default('active'),
+  branchId: Joi.string().optional()
 });
 
 const updateClassSchema = Joi.object({
@@ -205,6 +206,9 @@ router.get('/:id', checkPermission('classes', 'read'), async (req: Authenticated
 // @access  Private
 router.post('/', checkPermission('classes', 'create'), validate(createClassSchema), async (req: AuthenticatedRequest, res) => {
   try {
+    console.log('Creating class - User:', req.user!.name, 'Role:', req.user!.role, 'User branchId:', req.user!.branchId);
+    console.log('Request body:', req.body);
+    
     // Check if class name already exists for the same academic year and branch
     const existingClass = await Class.findOne({
       name: req.body.name,
@@ -220,20 +224,30 @@ router.post('/', checkPermission('classes', 'create'), validate(createClassSchem
       return res.status(400).json(response);
     }
 
-    // Create class with branch ID - ensure branchId is always set
-    const classData = {
-      ...req.body,
-      branchId: req.user!.branchId || req.body.branchId
-    };
-
-    // Validate that branchId exists
-    if (!classData.branchId) {
+    // Get the appropriate branchId
+    const { getRequiredBranchId } = require('../utils/branchHelper');
+    let branchId;
+    
+    try {
+      branchId = await getRequiredBranchId(req, req.body.branchId);
+    } catch (error) {
+      console.log('❌ No branchId found! User branchId:', req.user!.branchId, 'Body branchId:', req.body.branchId);
       const response: ApiResponse = {
         success: false,
-        message: 'Branch ID is required. User must be assigned to a branch.'
+        message: error.message || 'Branch information is required for class creation'
       };
       return res.status(400).json(response);
     }
+
+    const classData = {
+      name: req.body.name,
+      ...(req.body.description && { description: req.body.description }),
+      academicYear: req.body.academicYear,
+      status: req.body.status,
+      branchId: branchId
+    };
+    
+    console.log('✅ Class data prepared:', classData);
 
     const newClass = new Class(classData);
     await newClass.save();

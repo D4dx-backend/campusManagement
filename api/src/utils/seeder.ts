@@ -1,3 +1,4 @@
+import dotenv from 'dotenv';
 import { User } from '../models/User';
 import { Branch } from '../models/Branch';
 import { Class } from '../models/Class';
@@ -5,6 +6,9 @@ import { Division } from '../models/Division';
 import { Department } from '../models/Department';
 
 import { connectDB } from '../config/database';
+
+// Load environment variables
+dotenv.config();
 
 export const seedDatabase = async () => {
   try {

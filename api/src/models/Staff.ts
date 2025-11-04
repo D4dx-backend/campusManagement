@@ -63,7 +63,6 @@ const StaffSchema = new Schema<IStaff>({
 });
 
 // Indexes
-StaffSchema.index({ employeeId: 1 });
 StaffSchema.index({ branchId: 1 });
 StaffSchema.index({ department: 1 });
 StaffSchema.index({ status: 1 });

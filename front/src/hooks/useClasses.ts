@@ -37,9 +37,16 @@ export const useCreateClass = () => {
       });
     },
     onError: (error: any) => {
+      console.error('❌ Create class error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      console.error('Full error response data:', JSON.stringify(error.response?.data, null, 2));
+      console.error('Full error:', error);
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to create class',
+        description: error.response?.data?.message || error.response?.data?.error || 'Failed to create class',
         variant: 'destructive',
       });
     },

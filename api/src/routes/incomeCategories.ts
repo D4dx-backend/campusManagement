@@ -106,10 +106,24 @@ router.get('/', checkPermission('fees', 'read'), validateQuery(queryIncomeCatego
 // @access  Private
 router.post('/', checkPermission('fees', 'create'), validate(createIncomeCategorySchema), async (req: AuthenticatedRequest, res) => {
   try {
+    // Get the appropriate branchId
+    const { getRequiredBranchId } = require('../utils/branchHelper');
+    let branchId;
+    
+    try {
+      branchId = await getRequiredBranchId(req, req.body.branchId);
+    } catch (error) {
+      const response: ApiResponse = {
+        success: false,
+        message: error.message || 'Branch information is required for income category creation'
+      };
+      return res.status(400).json(response);
+    }
+
     // Check if category name already exists for the same branch
     const existingCategory = await IncomeCategory.findOne({
       name: req.body.name,
-      branchId: req.user!.branchId || req.body.branchId
+      branchId: branchId
     });
 
     if (existingCategory) {
@@ -123,7 +137,7 @@ router.post('/', checkPermission('fees', 'create'), validate(createIncomeCategor
     // Create category with branch ID
     const categoryData = {
       ...req.body,
-      branchId: req.user!.branchId || req.body.branchId
+      branchId: branchId
     };
 
     const newCategory = new IncomeCategory(categoryData);
@@ -150,9 +164,15 @@ router.post('/', checkPermission('fees', 'create'), validate(createIncomeCategor
     res.status(201).json(response);
   } catch (error) {
     console.error('Create income category error:', error);
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
+    
     const response: ApiResponse = {
       success: false,
-      message: 'Server error creating income category'
+      message: error.message || 'Server error creating income category'
     };
     res.status(500).json(response);
   }

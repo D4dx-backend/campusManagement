@@ -203,6 +203,15 @@ router.get('/:id', checkPermission('textbooks', 'read'), async (req: Authenticat
 // @access  Private
 router.post('/', checkPermission('textbooks', 'create'), validate(createTextBookSchema), async (req: AuthenticatedRequest, res) => {
   try {
+    console.log('Create textbook request:', {
+      body: req.body,
+      user: {
+        id: req.user!._id,
+        role: req.user!.role,
+        branchId: req.user!.branchId
+      }
+    });
+
     // Check if book code already exists
     const existingBook = await TextBook.findOne({ 
       bookCode: req.body.bookCode,
@@ -210,6 +219,7 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextBook
     });
 
     if (existingBook) {
+      console.log('Book code already exists:', req.body.bookCode);
       const response: ApiResponse = {
         success: false,
         message: 'Textbook with this book code already exists'
@@ -219,9 +229,13 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextBook
 
     // Handle class lookup
     const classIdFromPayload = req.body.class || req.body.classId;
+    console.log('Looking up class with ID:', classIdFromPayload);
+    
     const classInfo = await Class.findById(classIdFromPayload);
+    console.log('Class found:', classInfo);
     
     if (!classInfo) {
+      console.log('Class not found for ID:', classIdFromPayload);
       const response: ApiResponse = {
         success: false,
         message: 'Invalid class selected'
@@ -229,14 +243,32 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextBook
       return res.status(400).json(response);
     }
 
-    // Create textbook data
+    // Get the appropriate branchId
+    const { getRequiredBranchId } = require('../utils/branchHelper');
+    let branchId;
+    
+    try {
+      // For textbooks, prefer the class's branchId if available
+      const preferredBranchId = classInfo.branchId || req.body.branchId;
+      branchId = await getRequiredBranchId(req, preferredBranchId);
+    } catch (error) {
+      console.log('No branchId available for textbook creation');
+      const response: ApiResponse = {
+        success: false,
+        message: error.message || 'Branch information is required for textbook creation'
+      };
+      return res.status(400).json(response);
+    }
+
     const textbookData = {
       ...req.body,
       classId: classIdFromPayload,
       class: classInfo.name,
       available: req.body.quantity, // Initially all books are available
-      branchId: req.user!.branchId || req.body.branchId
+      branchId: branchId
     };
+
+    console.log('Creating textbook with data:', textbookData);
 
     const textbook = new TextBook(textbookData);
     await textbook.save();
@@ -262,9 +294,15 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextBook
     res.status(201).json(response);
   } catch (error) {
     console.error('Create textbook error:', error);
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
+    
     const response: ApiResponse = {
       success: false,
-      message: 'Server error creating textbook'
+      message: error.message || 'Server error creating textbook'
     };
     res.status(500).json(response);
   }

@@ -51,7 +51,6 @@ const ExpenseSchema = new Schema<IExpense>({
 });
 
 // Indexes
-ExpenseSchema.index({ voucherNo: 1 });
 ExpenseSchema.index({ branchId: 1 });
 ExpenseSchema.index({ date: 1 });
 ExpenseSchema.index({ category: 1 });

@@ -3,7 +3,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,6 +14,8 @@ import { Plus, Search, Edit, Trash2, Briefcase, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatters } from '@/utils/exportUtils';
 import { pageConfigurations } from '@/utils/pageTemplates';
+import { useAuth } from '@/contexts/AuthContext';
+import { useBranches } from '@/hooks/useBranches';
 
 const Designations = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,6 +26,8 @@ const Designations = () => {
   const [filterValues, setFilterValues] = useState({});
   const { toast } = useToast();
   const { confirm, ConfirmationComponent } = useConfirmation();
+  const { user } = useAuth();
+  const { data: branchesResponse } = useBranches();
 
   // API hooks - only pass basic parameters
   const { data: designationsResponse, isLoading, error } = useDesignations({
@@ -77,6 +81,7 @@ const Designations = () => {
     name: '',
     description: '',
     status: 'active' as 'active' | 'inactive',
+    branchId: '',
   });
 
   const resetForm = () => {
@@ -84,6 +89,7 @@ const Designations = () => {
       name: '',
       description: '',
       status: 'active',
+      branchId: '',
     });
     setEditingDesignation(null);
   };
@@ -92,13 +98,37 @@ const Designations = () => {
     e.preventDefault();
     
     try {
+      // Validate branch selection for super admin
+      if (user?.role === 'super_admin' && !formData.branchId) {
+        toast({
+          title: 'Validation Error',
+          description: 'Please select a branch for this designation.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Prepare submit data with proper branchId handling
+      const targetBranchId = user?.role === 'super_admin' ? formData.branchId : user?.branchId;
+      
+      const submitData = {
+        name: formData.name,
+        description: formData.description,
+        status: formData.status,
+        branchId: targetBranchId
+      };
+
+      // Debug logging
+      console.log('Submitting designation data:', submitData);
+      console.log('User info:', { role: user?.role, branchId: user?.branchId });
+
       if (editingDesignation) {
         await updateDesignationMutation.mutateAsync({
           id: editingDesignation._id,
-          ...formData
+          ...submitData
         });
       } else {
-        await createDesignationMutation.mutateAsync(formData);
+        await createDesignationMutation.mutateAsync(submitData);
       }
       
       setIsDialogOpen(false);
@@ -114,6 +144,7 @@ const Designations = () => {
       name: designation.name,
       description: designation.description || '',
       status: designation.status,
+      branchId: designation.branchId || '',
     });
     setIsDialogOpen(true);
   };
@@ -183,8 +214,34 @@ const Designations = () => {
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>{editingDesignation ? 'Edit Designation' : 'Add New Designation'}</DialogTitle>
+                <DialogDescription>
+                  {editingDesignation 
+                    ? 'Update the designation details below.' 
+                    : 'Create a new designation by filling out the form below.'}
+                </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
+                {user?.role === 'super_admin' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="branchId">Branch *</Label>
+                    <Select
+                      value={formData.branchId}
+                      onValueChange={(value) => setFormData({ ...formData, branchId: value })}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a branch" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {branchesResponse?.data?.map((branch: any) => (
+                          <SelectItem key={branch._id} value={branch._id}>
+                            {branch.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="name">Designation Name *</Label>
                   <Input

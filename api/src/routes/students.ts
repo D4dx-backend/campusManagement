@@ -152,12 +152,28 @@ router.post('/', checkPermission('students', 'create'), validate(createStudentSc
       return res.status(400).json(response);
     }
 
+    // Get the appropriate branchId
+    const { getRequiredBranchId } = require('../utils/branchHelper');
+    let branchId;
+    
+    try {
+      // For students, prefer the class's branchId if available
+      const preferredBranchId = classInfo.branchId || req.body.branchId;
+      branchId = await getRequiredBranchId(req, preferredBranchId);
+    } catch (error) {
+      const response: ApiResponse = {
+        success: false,
+        message: error.message || 'Branch information is required for student creation'
+      };
+      return res.status(400).json(response);
+    }
+
     // Create student with branch ID and class information
     const studentData = {
       ...req.body,
       classId: req.body.class,
       class: classInfo.name,
-      branchId: req.user!.branchId || req.body.branchId
+      branchId: branchId
     };
 
     const student = new Student(studentData);

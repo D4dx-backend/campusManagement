@@ -41,23 +41,43 @@ router.get('/current', async (req: AuthenticatedRequest, res) => {
   try {
     const user = req.user!;
 
-    if (!user.branchId) {
-      const response: ApiResponse = {
-        success: false,
-        message: 'User is not assigned to any branch'
-      };
-      return res.status(400).json(response);
-    }
+    let config;
 
-    const config = await ReceiptConfig.findOne({ 
-      branchId: user.branchId, 
-      isActive: true 
-    }).populate('branchId', 'name code');
+    if (user.role === 'super_admin') {
+      // For super admin, get the first active config or allow branch selection via query param
+      const branchId = req.query.branchId as string;
+      
+      if (branchId) {
+        config = await ReceiptConfig.findOne({ 
+          branchId, 
+          isActive: true 
+        }).populate('branchId', 'name code');
+      } else {
+        // Get the first active config available
+        config = await ReceiptConfig.findOne({ 
+          isActive: true 
+        }).populate('branchId', 'name code');
+      }
+    } else {
+      // For other users, check if they have a branchId
+      if (!user.branchId) {
+        const response: ApiResponse = {
+          success: false,
+          message: 'User is not assigned to any branch'
+        };
+        return res.status(400).json(response);
+      }
+
+      config = await ReceiptConfig.findOne({ 
+        branchId: user.branchId, 
+        isActive: true 
+      }).populate('branchId', 'name code');
+    }
 
     if (!config) {
       const response: ApiResponse = {
         success: false,
-        message: 'Receipt configuration not found for your branch'
+        message: 'Receipt configuration not found'
       };
       return res.status(404).json(response);
     }

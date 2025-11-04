@@ -3,7 +3,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,6 +13,8 @@ import { useDepartments, useCreateDepartment, useUpdateDepartment, useDeleteDepa
 import { Department } from '@/services/departments';
 import { Plus, Search, Edit, Trash2, Building2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { useBranches } from '@/hooks/useBranches';
 import { formatters } from '@/utils/exportUtils';
 import { pageConfigurations } from '@/utils/pageTemplates';
 
@@ -24,7 +26,14 @@ const Departments = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [filterValues, setFilterValues] = useState({});
   const { toast } = useToast();
+  const { user } = useAuth();
   const { confirm, ConfirmationComponent } = useConfirmation();
+
+  // Get branches for super admin users
+  const { data: branchesResponse, isLoading: branchesLoading, error: branchesError } = useBranches(user?.role === 'super_admin');
+  const branches = branchesResponse?.data || [];
+  
+  console.log('Branches data:', { branches, branchesLoading, branchesError, userRole: user?.role });
 
   // API hooks - only pass basic parameters
   const { data: departmentsResponse, isLoading, error } = useDepartments({ 
@@ -88,6 +97,7 @@ const Departments = () => {
     description: '',
     headOfDepartment: '',
     status: 'active' as 'active' | 'inactive',
+    branchId: '',
   });
 
   const resetForm = () => {
@@ -97,6 +107,7 @@ const Departments = () => {
       description: '',
       headOfDepartment: '',
       status: 'active',
+      branchId: '',
     });
     setEditingDepartment(null);
   };
@@ -120,20 +131,50 @@ const Departments = () => {
     e.preventDefault();
     
     try {
+      // Validate branch selection for super admin
+      console.log('Validation check:', { userRole: user?.role, formDataBranchId: formData.branchId });
+      if (user?.role === 'super_admin' && !formData.branchId) {
+        console.log('Validation failed: super_admin without branchId');
+        toast({
+          title: 'Validation Error',
+          description: 'Please select a branch for this department.',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      const targetBranchId = user?.role === 'super_admin' ? formData.branchId : user?.branchId;
+      
+      const submitData = {
+        name: formData.name,
+        code: formData.code,
+        description: formData.description,
+        headOfDepartment: formData.headOfDepartment,
+        status: formData.status,
+        // Only include branchId if it has a value
+        ...(targetBranchId && { branchId: targetBranchId })
+      };
+
+      console.log('Submitting department data:', submitData);
+      console.log('Current user:', { role: user?.role, branchId: user?.branchId });
+
       if (editingDepartment) {
         await updateDepartmentMutation.mutateAsync({
           id: editingDepartment._id,
-          ...formData
+          ...submitData
         });
       } else {
-        await createDepartmentMutation.mutateAsync(formData);
+        await createDepartmentMutation.mutateAsync(submitData);
       }
       
       setIsDialogOpen(false);
       resetForm();
-    } catch (error) {
+    } catch (error: any) {
       // Error handling is done in the mutation hooks
       console.error('Error submitting department:', error);
+      if (error.response?.data) {
+        console.error('Server error response:', error.response.data);
+      }
     }
   };
 
@@ -145,6 +186,7 @@ const Departments = () => {
       description: department.description || '',
       headOfDepartment: department.headOfDepartment || '',
       status: department.status,
+      branchId: department.branchId,
     });
     setIsDialogOpen(true);
   };
@@ -215,6 +257,11 @@ const Departments = () => {
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>{editingDepartment ? 'Edit Department' : 'Add New Department'}</DialogTitle>
+                <DialogDescription>
+                  {editingDepartment 
+                    ? 'Update the department details below.' 
+                    : 'Create a new department by filling out the form below.'}
+                </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
@@ -262,6 +309,28 @@ const Departments = () => {
                     onChange={e => setFormData({ ...formData, headOfDepartment: e.target.value })}
                   />
                 </div>
+
+                {user?.role === 'super_admin' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="branchId">Branch *</Label>
+                    <Select
+                      value={formData.branchId}
+                      onValueChange={(value) => setFormData({ ...formData, branchId: value })}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a branch" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {branches.map((branch: any) => (
+                          <SelectItem key={branch._id} value={branch._id}>
+                            {branch.name} ({branch.code})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>

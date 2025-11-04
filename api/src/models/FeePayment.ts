@@ -66,7 +66,6 @@ const FeePaymentSchema = new Schema<IFeePayment>({
 });
 
 // Indexes
-FeePaymentSchema.index({ receiptNo: 1 });
 FeePaymentSchema.index({ studentId: 1 });
 FeePaymentSchema.index({ branchId: 1 });
 FeePaymentSchema.index({ paymentDate: 1 });

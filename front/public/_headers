@@ -1,0 +1,12 @@
+# Force correct MIME types for JavaScript modules
+/assets/*.js
+  Content-Type: application/javascript
+
+/*.js
+  Content-Type: application/javascript
+
+# Security headers
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin

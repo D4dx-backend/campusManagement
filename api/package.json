@@ -12,7 +12,8 @@
     "lint:fix": "eslint src/**/*.ts --fix",
     "seed": "ts-node src/utils/seeder.ts",
     "seed:prod": "node dist/utils/seeder.js",
-    "remove-receipt-permission": "ts-node src/utils/removeReceiptPermission.ts"
+    "remove-receipt-permission": "ts-node src/utils/removeReceiptPermission.ts",
+    "add-accounting-permissions": "ts-node src/scripts/addAccountingPermissions.ts"
   },
   "keywords": ["school", "management", "api", "nodejs", "mongodb"],
   "author": "d4media",

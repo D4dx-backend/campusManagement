@@ -27,6 +27,9 @@ import {
   School,
   Wallet,
   BarChart3,
+  Book,
+  BarChart,
+  MapPin,
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 
@@ -47,8 +50,18 @@ const academicManagementItems = [
 // Financial Management Section
 const financialManagementItems = [
   { icon: DollarSign, label: 'Fee Management', path: '/fees' },
+  { icon: Settings, label: 'Fee Structures', path: '/fee-structures' },
   { icon: Receipt, label: 'Payroll', path: '/payroll' },
   { icon: FileText, label: 'Expenses', path: '/expenses' },
+];
+
+// Accounting Section
+const accountingItems = [
+  { icon: Book, label: 'Day Book', path: '/accounting/daybook' },
+  { icon: FileText, label: 'Ledger', path: '/accounting/ledger' },
+  { icon: Receipt, label: 'Fee Details', path: '/accounting/fee-details' },
+  { icon: BarChart, label: 'Balance Sheet', path: '/accounting/balance-sheet' },
+  { icon: TrendingUp, label: 'Annual Report', path: '/accounting/annual-report' },
 ];
 
 // Reports & Analytics Section
@@ -69,6 +82,7 @@ const masterDataItems = [
   { icon: Building2, label: 'Departments', path: '/departments' },
   { icon: Briefcase, label: 'Designations', path: '/designations' },
   { icon: BookOpen, label: 'Text Books', path: '/textbooks' },
+  { icon: MapPin, label: 'Transport Routes', path: '/transport-routes' },
   { icon: Receipt, label: 'Expense Categories', path: '/expense-categories' },
   { icon: TrendingUp, label: 'Income Categories', path: '/income-categories' },
   { icon: FileText, label: 'Receipt Config', path: '/receipt-config' },
@@ -82,6 +96,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAcademicOpen, setIsAcademicOpen] = useState(false);
   const [isFinancialOpen, setIsFinancialOpen] = useState(false);
+  const [isAccountingOpen, setIsAccountingOpen] = useState(false);
   const [isReportsOpen, setIsReportsOpen] = useState(false);
   const [isMasterDataOpen, setIsMasterDataOpen] = useState(false);
   const [menuSearchTerm, setMenuSearchTerm] = useState('');
@@ -102,6 +117,13 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   const filteredFinancialItems = useMemo(() => {
     if (!menuSearchTerm) return financialManagementItems;
     return financialManagementItems.filter(item => 
+      item.label.toLowerCase().includes(menuSearchTerm.toLowerCase())
+    );
+  }, [menuSearchTerm]);
+
+  const filteredAccountingItems = useMemo(() => {
+    if (!menuSearchTerm) return accountingItems;
+    return accountingItems.filter(item => 
       item.label.toLowerCase().includes(menuSearchTerm.toLowerCase())
     );
   }, [menuSearchTerm]);
@@ -137,6 +159,11 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
     if (!menuSearchTerm) return isFinancialOpen;
     return filteredFinancialItems.length > 0;
   }, [menuSearchTerm, filteredFinancialItems.length, isFinancialOpen]);
+
+  const shouldExpandAccounting = useMemo(() => {
+    if (!menuSearchTerm) return isAccountingOpen;
+    return filteredAccountingItems.length > 0;
+  }, [menuSearchTerm, filteredAccountingItems.length, isAccountingOpen]);
 
   const shouldExpandReports = useMemo(() => {
     if (!menuSearchTerm) return isReportsOpen;
@@ -268,6 +295,51 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                   {shouldExpandFinancial && (
                     <div className="ml-6 mt-1 space-y-1">
                       {filteredFinancialItems.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = location.pathname === item.path;
+                        return (
+                          <button
+                            key={item.path}
+                            onClick={() => {
+                              navigate(item.path);
+                              setIsSidebarOpen(false);
+                              setMenuSearchTerm('');
+                            }}
+                            className={`w-full flex items-center justify-start gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left ${
+                              isActive
+                                ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                                : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
+                            }`}
+                          >
+                            <Icon className="w-4 h-4 flex-shrink-0" />
+                            <span className="flex-1 text-left">{item.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Accounting Section */}
+              {filteredAccountingItems.length > 0 && (
+                <div className="pt-4">
+                  <button
+                    onClick={() => setIsAccountingOpen(!isAccountingOpen)}
+                    className="w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors text-left"
+                  >
+                    <BarChart3 className="w-5 h-5 flex-shrink-0" />
+                    <span className="flex-1 text-left">Accounting</span>
+                    {shouldExpandAccounting ? (
+                      <ChevronDown className="w-4 h-4 flex-shrink-0" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 flex-shrink-0" />
+                    )}
+                  </button>
+                  
+                  {shouldExpandAccounting && (
+                    <div className="ml-6 mt-1 space-y-1">
+                      {filteredAccountingItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = location.pathname === item.path;
                         return (

@@ -32,6 +32,9 @@ router.get('/', checkPermission('fees', 'read'), async (req: AuthenticatedReques
     // Branch filter for non-super admins
     if (req.user!.role !== 'super_admin') {
       filter.branchId = req.user!.branchId;
+    } else if (req.query.branchId) {
+      // Super admin can filter by specific branch
+      filter.branchId = req.query.branchId;
     }
 
     if (search) {
@@ -93,7 +96,7 @@ router.get('/', checkPermission('fees', 'read'), async (req: AuthenticatedReques
 // @access  Private
 router.post('/', checkPermission('fees', 'create'), async (req: AuthenticatedRequest, res) => {
   try {
-    const { studentId, feeType, amount, paymentMethod, remarks } = req.body;
+    const { studentId, feeItems, paymentMethod, remarks } = req.body;
 
     // Validate student exists
     const student = await Student.findById(studentId);
@@ -105,17 +108,32 @@ router.post('/', checkPermission('fees', 'create'), async (req: AuthenticatedReq
       return res.status(404).json(response);
     }
 
-    // Generate receipt number
+    // Validate fee items
+    if (!feeItems || !Array.isArray(feeItems) || feeItems.length === 0) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'At least one fee item is required'
+      };
+      return res.status(400).json(response);
+    }
+
+    // Calculate total amount
+    const totalAmount = feeItems.reduce((sum: number, item: any) => sum + (item.amount || 0), 0);
+
+    // Generate receipt number and transaction ID
     const receiptNo = `REC${Date.now()}`;
+    const transactionId = `TXN${Date.now()}`;
 
     // Create fee payment
     const feePayment = new FeePayment({
       receiptNo,
+      transactionId,
       studentId,
       studentName: student.name,
-      class: student.class,
-      feeType,
-      amount,
+      classId: student.classId,
+      className: student.class,
+      feeItems,
+      totalAmount,
       paymentDate: new Date(),
       paymentMethod,
       status: 'paid',
@@ -126,6 +144,9 @@ router.post('/', checkPermission('fees', 'create'), async (req: AuthenticatedReq
 
     await feePayment.save();
 
+    // Create detailed log message
+    const feeDetails = feeItems.map((item: any) => `${item.title}: ₹${item.amount}`).join(', ');
+    
     // Log activity
     await ActivityLog.create({
       userId: req.user!._id,
@@ -133,7 +154,7 @@ router.post('/', checkPermission('fees', 'create'), async (req: AuthenticatedReq
       userRole: req.user!.role,
       action: 'CREATE',
       module: 'Fees',
-      details: `Recorded fee payment: ${receiptNo} - ${student.name} - ₹${amount}`,
+      details: `Recorded fee payment: ${receiptNo} - ${student.name} - Total: ₹${totalAmount} (${feeDetails})`,
       ipAddress: req.ip,
       branchId: feePayment.branchId
     });
@@ -165,6 +186,9 @@ router.get('/stats/overview', checkPermission('fees', 'read'), async (req: Authe
     // Branch filter for non-super admins
     if (req.user!.role !== 'super_admin') {
       filter.branchId = req.user!.branchId;
+    } else if (req.query.branchId) {
+      // Super admin can filter by specific branch
+      filter.branchId = req.query.branchId;
     }
 
     const today = new Date();
@@ -180,23 +204,24 @@ router.get('/stats/overview', checkPermission('fees', 'read'), async (req: Authe
     ] = await Promise.all([
       FeePayment.aggregate([
         { $match: filter },
-        { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } }
+        { $group: { _id: null, total: { $sum: '$totalAmount' }, count: { $sum: 1 } } }
       ]),
       FeePayment.aggregate([
         { $match: { ...filter, paymentDate: { $gte: startOfMonth } } },
-        { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } }
+        { $group: { _id: null, total: { $sum: '$totalAmount' }, count: { $sum: 1 } } }
       ]),
       FeePayment.aggregate([
         { $match: { ...filter, paymentDate: { $gte: startOfDay } } },
-        { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } }
+        { $group: { _id: null, total: { $sum: '$totalAmount' }, count: { $sum: 1 } } }
       ]),
       FeePayment.aggregate([
         { $match: filter },
-        { $group: { _id: '$feeType', total: { $sum: '$amount' }, count: { $sum: 1 } } }
+        { $unwind: '$feeItems' },
+        { $group: { _id: '$feeItems.feeType', total: { $sum: '$feeItems.amount' }, count: { $sum: 1 } } }
       ]),
       FeePayment.aggregate([
         { $match: filter },
-        { $group: { _id: '$paymentMethod', total: { $sum: '$amount' }, count: { $sum: 1 } } }
+        { $group: { _id: '$paymentMethod', total: { $sum: '$totalAmount' }, count: { $sum: 1 } } }
       ])
     ]);
 
@@ -265,11 +290,12 @@ router.get('/:id/receipt-data', checkPermission('fees', 'read'), async (req: Aut
     const student = payment.studentId as any;
     const receiptData = {
       receiptNo: payment.receiptNo,
+      transactionId: payment.transactionId,
       studentName: payment.studentName,
-      class: payment.class,
+      class: payment.className || payment.class,
       admissionNo: student?.admissionNo || 'N/A',
-      feeType: payment.feeType,
-      amount: payment.amount,
+      feeItems: payment.feeItems,
+      totalAmount: payment.totalAmount,
       paymentMethod: payment.paymentMethod,
       paymentDate: payment.paymentDate,
       remarks: payment.remarks,

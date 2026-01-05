@@ -1,6 +1,33 @@
 import mongoose, { Schema } from 'mongoose';
 import { IFeePayment, FeeType } from '../types';
 
+// Sub-schema for individual fee items
+const FeeItemSchema = new Schema({
+  feeStructureId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'FeeStructure'
+  },
+  title: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  feeType: {
+    type: String,
+    enum: ['tuition', 'transport', 'cocurricular', 'maintenance', 'exam', 'textbook', 'other'],
+    required: true
+  },
+  amount: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  transportDistanceGroup: {
+    type: String,
+    enum: ['group1', 'group2', 'group3', 'group4']
+  }
+}, { _id: false });
+
 const FeePaymentSchema = new Schema<IFeePayment>({
   receiptNo: {
     type: String,
@@ -18,29 +45,45 @@ const FeePaymentSchema = new Schema<IFeePayment>({
     required: true,
     trim: true
   },
-  class: {
+  classId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'Class',
+    required: true
+  },
+  className: {
     type: String,
     required: true,
     trim: true
   },
-  feeType: {
-    type: String,
-    enum: ['tuition', 'transport', 'cocurricular', 'maintenance', 'exam', 'textbook'],
-    required: true
+  // Multiple fee items in one payment
+  feeItems: {
+    type: [FeeItemSchema],
+    required: true,
+    validate: {
+      validator: function(items: any[]) {
+        return items && items.length > 0;
+      },
+      message: 'At least one fee item is required'
+    }
   },
-  amount: {
+  totalAmount: {
     type: Number,
     required: true,
     min: 0
   },
   paymentDate: {
     type: Date,
-    required: true
+    required: true,
+    default: Date.now
   },
   paymentMethod: {
     type: String,
     enum: ['cash', 'bank', 'online'],
     required: true
+  },
+  transactionId: {
+    type: String,
+    trim: true
   },
   status: {
     type: String,

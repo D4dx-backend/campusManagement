@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -270,55 +269,62 @@ const ExpenseCategories = () => {
             message: "No expense categories found"
           }}
         >
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {categories.map(category => (
-              <Card key={category._id}>
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h3 className="font-semibold text-lg">{category.name}</h3>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => handleEdit(category)}
-                        disabled={updateCategoryMutation.isPending}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => handleDelete(category._id, category.name)}
-                        disabled={deleteCategoryMutation.isPending}
-                      >
-                        {deleteCategoryMutation.isPending ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                  {category.description && (
-                    <p className="text-sm text-muted-foreground mb-3">{category.description}</p>
-                  )}
-                  <div className="flex justify-between items-center">
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      category.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {category.status}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="text-left p-4 font-semibold">Name</th>
+                  <th className="text-left p-4 font-semibold">Description</th>
+                  <th className="text-left p-4 font-semibold">Status</th>
+                  <th className="text-left p-4 font-semibold">Created Date</th>
+                  <th className="text-right p-4 font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categories.map(category => (
+                  <tr key={category._id} className="border-b hover:bg-muted/50 transition-colors">
+                    <td className="p-4 font-medium">{category.name}</td>
+                    <td className="p-4 text-sm text-muted-foreground">{category.description || 'N/A'}</td>
+                    <td className="p-4">
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        category.status === 'active' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {category.status}
+                      </span>
+                    </td>
+                    <td className="p-4 text-sm text-muted-foreground">
                       {new Date(category.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    </td>
+                    <td className="p-4">
+                      <div className="flex gap-1 justify-end">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleEdit(category)}
+                          disabled={updateCategoryMutation.isPending}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleDelete(category._id, category.name)}
+                          disabled={deleteCategoryMutation.isPending}
+                        >
+                          {deleteCategoryMutation.isPending ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </DataTable>
       </div>

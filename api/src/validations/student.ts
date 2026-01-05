@@ -33,6 +33,11 @@ export const createStudentSchema = Joi.object({
     .messages({
       'any.required': 'Date of birth is required'
     }),
+  dateOfAdmission: Joi.date()
+    .required()
+    .messages({
+      'any.required': 'Date of admission is required'
+    }),
   guardianName: Joi.string()
     .min(2)
     .max(100)
@@ -58,10 +63,10 @@ export const createStudentSchema = Joi.object({
       'string.email': 'Please provide a valid guardian email address'
     }),
   gender: Joi.string()
-    .valid('male', 'female', 'other')
+    .valid('male', 'female')
     .required()
     .messages({
-      'any.only': 'Gender must be one of: male, female, other',
+      'any.only': 'Gender must be either male or female',
       'any.required': 'Gender is required'
     }),
   address: Joi.string()
@@ -115,6 +120,8 @@ export const updateStudentSchema = Joi.object({
     .trim(),
   dateOfBirth: Joi.date()
     .optional(),
+  dateOfAdmission: Joi.date()
+    .optional(),
   guardianName: Joi.string()
     .min(2)
     .max(100)
@@ -138,10 +145,10 @@ export const updateStudentSchema = Joi.object({
       'string.email': 'Please provide a valid guardian email address'
     }),
   gender: Joi.string()
-    .valid('male', 'female', 'other')
+    .valid('male', 'female')
     .optional()
     .messages({
-      'any.only': 'Gender must be one of: male, female, other'
+      'any.only': 'Gender must be either male or female'
     }),
   address: Joi.string()
     .min(10)

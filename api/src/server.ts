@@ -22,6 +22,7 @@ import divisionRoutes from './routes/divisions';
 import departmentRoutes from './routes/departments';
 import designationRoutes from './routes/designations';
 import feeRoutes from './routes/fees';
+import feeStructureRoutes from './routes/feeStructures';
 import payrollRoutes from './routes/payroll';
 import expenseRoutes from './routes/expenses';
 import expenseCategoryRoutes from './routes/expenseCategories';
@@ -31,14 +32,16 @@ import textbookIndentRoutes from './routes/textbookIndents';
 import reportRoutes from './routes/reports';
 import activityLogRoutes from './routes/activityLogs';
 import receiptConfigRoutes from './routes/receiptConfigs';
+import transportRouteRoutes from './routes/transportRoutes';
 import debugAuthRoutes from './routes/debugAuth';
 import uploadRoutes from './routes/upload';
+import accountingRoutes from './routes/accounting';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Connect to MongoDB
 connectDB();
@@ -108,6 +111,7 @@ app.use('/api/divisions', divisionRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/designations', designationRoutes);
 app.use('/api/fees', feeRoutes);
+app.use('/api/fee-structures', feeStructureRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/expense-categories', expenseCategoryRoutes);
@@ -117,8 +121,10 @@ app.use('/api/textbook-indents', textbookIndentRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/activity-logs', activityLogRoutes);
 app.use('/api/receipt-configs', receiptConfigRoutes);
+app.use('/api/transport-routes', transportRouteRoutes);
 app.use('/api/debug', debugAuthRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/accounting', accountingRoutes);
 
 // Error handling middleware
 app.use(notFound);

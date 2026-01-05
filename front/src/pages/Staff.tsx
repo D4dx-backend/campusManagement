@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -440,58 +439,67 @@ const Staff = () => {
             message: "No staff members found"
           }}
         >
-          <div className="grid gap-4">
-            {staff.map((staffMember: any) => (
-              <Card key={staffMember._id}>
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3">
-                        <h3 className="font-semibold text-lg">{staffMember.name}</h3>
-                        <span className="text-sm text-muted-foreground">
-                          {staffMember.employeeId}
-                        </span>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="text-left p-3 font-semibold">Employee ID</th>
+                  <th className="text-left p-3 font-semibold">Name</th>
+                  <th className="text-left p-3 font-semibold">Designation</th>
+                  <th className="text-left p-3 font-semibold">Department</th>
+                  <th className="text-left p-3 font-semibold">Phone</th>
+                  <th className="text-left p-3 font-semibold">Email</th>
+                  <th className="text-right p-3 font-semibold">Salary (BHD)</th>
+                  <th className="text-right p-3 font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {staff.map((staffMember: any) => (
+                  <tr key={staffMember._id} className="border-b hover:bg-muted/30">
+                    <td className="p-3">
+                      <span className="text-sm text-muted-foreground">{staffMember.employeeId}</span>
+                    </td>
+                    <td className="p-3">
+                      <span className="font-semibold">{staffMember.name}</span>
+                    </td>
+                    <td className="p-3">
+                      <span className="text-sm">{staffMember.designation}</span>
+                    </td>
+                    <td className="p-3">
+                      <span className="text-sm">{staffMember.department}</span>
+                    </td>
+                    <td className="p-3">
+                      <span className="text-sm">{staffMember.phone}</span>
+                    </td>
+                    <td className="p-3">
+                      <span className="text-sm">{staffMember.email}</span>
+                    </td>
+                    <td className="p-3 text-right">
+                      <span className="font-medium">BHD {staffMember.salary.toFixed(3)}</span>
+                    </td>
+                    <td className="p-3">
+                      <div className="flex gap-2 justify-end">
+                        <Button size="sm" variant="outline" onClick={() => handleEdit(staffMember)}>
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleDelete(staffMember._id, staffMember.name)}
+                          disabled={deleteStaffMutation.isPending}
+                        >
+                          {deleteStaffMutation.isPending ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </Button>
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">Designation:</span>
-                          <span className="ml-2 font-medium">{staffMember.designation}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Department:</span>
-                          <span className="ml-2 font-medium">{staffMember.department}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Phone:</span>
-                          <span className="ml-2 font-medium">{staffMember.phone}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Salary:</span>
-                          <span className="ml-2 font-medium">₹{staffMember.salary.toLocaleString()}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => handleEdit(staffMember)}>
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => handleDelete(staffMember._id, staffMember.name)}
-                        disabled={deleteStaffMutation.isPending}
-                      >
-                        {deleteStaffMutation.isPending ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </DataTable>
       </div>

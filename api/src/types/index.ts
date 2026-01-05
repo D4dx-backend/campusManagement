@@ -44,14 +44,16 @@ export interface IStudent {
   class: string;
   section: string;
   dateOfBirth: Date;
+  dateOfAdmission: Date;
   guardianName: string;
   guardianPhone: string;
   guardianEmail?: string;
-  gender: 'male' | 'female' | 'other';
+  gender: 'male' | 'female';
   address: string;
   transport: 'school' | 'own' | 'none';
   transportRoute?: string;
   status: 'active' | 'inactive';
+  isStaffChild?: boolean;
   branchId: string;
   createdAt: Date;
 }
@@ -70,6 +72,34 @@ export interface IIncomeCategory {
   _id: string;
   name: string;
   description?: string;
+  status: 'active' | 'inactive';
+  branchId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ITransportRoute {
+  _id: string;
+  routeName: string;
+  routeCode: string;
+  description?: string;
+  classFees: Array<{
+    classId: string;
+    className: string;
+    amount: number;
+    staffDiscount: number;
+    distanceGroupFees?: Array<{
+      groupName: string;
+      distanceRange: string;
+      amount: number;
+    }>;
+  }>;
+  useDistanceGroups: boolean;
+  vehicles: Array<{
+    vehicleNumber: string;
+    driverName: string;
+    driverPhone: string;
+  }>;
   status: 'active' | 'inactive';
   branchId: string;
   createdAt: Date;
@@ -106,23 +136,45 @@ export type FeeType = 'tuition' | 'transport' | 'cocurricular' | 'maintenance' |
 
 export interface IFeeStructure {
   _id: string;
+  title?: string;
   class: string;
+  className?: string;
+  classId?: string;
   feeType: FeeType;
   amount: number;
   frequency: 'monthly' | 'quarterly' | 'annually' | 'one-time';
   academicYear: string;
   branchId: string;
+  isActive?: boolean;
+  staffDiscountPercent?: number;
+  transportDistanceGroup?: 'group1' | 'group2' | 'group3' | 'group4';
+  distanceRange?: string;
   createdAt: Date;
+}
+
+export interface IFeeItem {
+  feeStructureId?: string;
+  title: string;
+  feeType: FeeType;
+  amount: number;
+  transportDistanceGroup?: 'group1' | 'group2' | 'group3' | 'group4';
 }
 
 export interface IFeePayment {
   _id: string;
   receiptNo: string;
+  transactionId?: string;
   studentId: string;
   studentName: string;
   class: string;
-  feeType: FeeType;
-  amount: number;
+  classId?: string;
+  className?: string;
+  // Old single fee fields (for backward compatibility)
+  feeType?: FeeType;
+  amount?: number;
+  // New multi-fee fields
+  feeItems?: IFeeItem[];
+  totalAmount?: number;
   paymentDate: Date;
   paymentMethod: 'cash' | 'bank' | 'online';
   status: 'paid' | 'partial' | 'pending';

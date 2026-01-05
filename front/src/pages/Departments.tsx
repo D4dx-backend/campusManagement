@@ -397,58 +397,76 @@ const Departments = () => {
             message: "No departments found"
           }}
         >
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {departments.map(department => (
-              <Card key={department._id}>
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h3 className="font-semibold text-lg">{department.name}</h3>
-                      <p className="text-sm text-muted-foreground font-mono">{department.code}</p>
-                      {department.description && (
-                        <p className="text-sm text-muted-foreground mt-1">{department.description}</p>
-                      )}
-                      {department.headOfDepartment && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Head: {department.headOfDepartment}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex gap-1">
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => handleEdit(department)}
-                        disabled={updateDepartmentMutation.isPending}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => handleDelete(department._id, department.name)}
-                        disabled={deleteDepartmentMutation.isPending}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      department.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {department.status}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(department.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="text-left p-3 font-semibold">Department Name</th>
+                  <th className="text-left p-3 font-semibold">Code</th>
+                  <th className="text-left p-3 font-semibold">Description</th>
+                  <th className="text-left p-3 font-semibold">Head</th>
+                  <th className="text-left p-3 font-semibold">Status</th>
+                  <th className="text-left p-3 font-semibold">Created Date</th>
+                  <th className="text-right p-3 font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {departments.map(department => (
+                  <tr key={department._id} className="border-b hover:bg-muted/30">
+                    <td className="p-3">
+                      <span className="font-semibold">{department.name}</span>
+                    </td>
+                    <td className="p-3">
+                      <span className="text-sm font-mono text-muted-foreground">{department.code}</span>
+                    </td>
+                    <td className="p-3">
+                      <span className="text-sm text-muted-foreground">
+                        {department.description || '-'}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <span className="text-sm">
+                        {department.headOfDepartment || '-'}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        department.status === 'active' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {department.status}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(department.createdAt).toLocaleDateString()}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <div className="flex gap-2 justify-end">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleEdit(department)}
+                          disabled={updateDepartmentMutation.isPending}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleDelete(department._id, department.name)}
+                          disabled={deleteDepartmentMutation.isPending}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </DataTable>
       </div>

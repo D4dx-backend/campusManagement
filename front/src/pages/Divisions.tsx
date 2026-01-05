@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -380,62 +379,66 @@ const Divisions = () => {
             message: "No divisions found"
           }}
         >
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {divisions.map(division => (
-              <Card key={division._id}>
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h3 className="font-semibold text-lg">
-                        {division.className} - {division.name}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        Capacity: {division.capacity} students
-                      </p>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => handleEdit(division)}
-                        disabled={updateDivisionMutation.isPending}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => handleDelete(division._id, `${division.className} - ${division.name}`)}
-                        disabled={deleteDivisionMutation.isPending}
-                      >
-                        {deleteDivisionMutation.isPending ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                  {division.classTeacherName && (
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Class Teacher: {division.classTeacherName}
-                    </p>
-                  )}
-                  <div className="flex justify-between items-center">
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      division.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {division.status}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="text-left p-4 font-semibold">Division</th>
+                  <th className="text-left p-4 font-semibold">Class</th>
+                  <th className="text-left p-4 font-semibold">Capacity</th>
+                  <th className="text-left p-4 font-semibold">Class Teacher</th>
+                  <th className="text-left p-4 font-semibold">Status</th>
+                  <th className="text-left p-4 font-semibold">Created Date</th>
+                  <th className="text-right p-4 font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {divisions.map(division => (
+                  <tr key={division._id} className="border-b hover:bg-muted/50 transition-colors">
+                    <td className="p-4 font-medium">{division.name}</td>
+                    <td className="p-4">{division.className}</td>
+                    <td className="p-4">{division.capacity} students</td>
+                    <td className="p-4">{division.classTeacherName || 'Not assigned'}</td>
+                    <td className="p-4">
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        division.status === 'active' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {division.status}
+                      </span>
+                    </td>
+                    <td className="p-4 text-sm text-muted-foreground">
                       {new Date(division.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    </td>
+                    <td className="p-4">
+                      <div className="flex gap-1 justify-end">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleEdit(division)}
+                          disabled={updateDivisionMutation.isPending}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleDelete(division._id, `${division.className} - ${division.name}`)}
+                          disabled={deleteDivisionMutation.isPending}
+                        >
+                          {deleteDivisionMutation.isPending ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </DataTable>
       </div>

@@ -244,7 +244,7 @@ const ReceiptConfigPage = () => {
       setLogoFile(null);
       if (logoPath && logoPath !== formData.logo) {
         // Update preview to show the uploaded image from server
-        setLogoPreview(`http://localhost:5000${logoPath}`);
+        setLogoPreview(`http://localhost:5001${logoPath}`);
       }
     } catch (error: any) {
       // Enhanced error handling

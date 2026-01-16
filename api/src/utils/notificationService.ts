@@ -1,20 +1,32 @@
 import nodemailer from 'nodemailer';
 import axios from 'axios';
 
-// Email configuration
+// Gmail configuration with App Password
+// To use Gmail:
+// 1. Enable 2-Step Verification in Google Account
+// 2. Generate App Password: https://myaccount.google.com/apppasswords
+// 3. Set SMTP_USER=your-email@gmail.com
+// 4. Set SMTP_PASS=your-16-digit-app-password
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false,
+  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // Use TLS
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
+    user: process.env.SMTP_USER, // Gmail address
+    pass: process.env.SMTP_PASS  // Gmail App Password (16 characters)
+  },
+  tls: {
+    rejectUnauthorized: false
   }
 });
 
-// WhatsApp configuration
-const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || '';
-const WHATSAPP_API_KEY = process.env.WHATSAPP_API_KEY || '';
+// DXing WhatsApp API Configuration
+// API Documentation: https://dxing.in/api-docs
+// Get your API key from: https://dxing.in/dashboard
+const DXING_API_URL = process.env.DXING_API_URL || 'https://api.dxing.in/v1/send-message';
+const DXING_API_KEY = process.env.DXING_API_KEY || '';
+const DXING_INSTANCE_ID = process.env.DXING_INSTANCE_ID || '';
 
 interface FeeReceiptData {
   receiptNo: string;
@@ -128,60 +140,74 @@ export const sendFeeReceiptEmail = async (data: FeeReceiptData): Promise<boolean
 };
 
 /**
- * Send fee receipt WhatsApp message
+ * Send fee receipt WhatsApp message via DXing API
+ * DXing API Documentation: https://dxing.in/api-docs
  */
 export const sendFeeReceiptWhatsApp = async (data: FeeReceiptData): Promise<boolean> => {
   try {
-    if (!data.guardianPhone || !WHATSAPP_API_URL || !WHATSAPP_API_KEY) {
+    if (!data.guardianPhone || !DXING_API_URL || !DXING_API_KEY || !DXING_INSTANCE_ID) {
+      console.error('WhatsApp configuration missing');
       return false;
     }
 
-    // Format phone number (remove spaces, dashes, and add country code if needed)
-    let phone = data.guardianPhone.replace(/[\s-]/g, '');
-    if (!phone.startsWith('+')) {
-      phone = '+91' + phone; // Default to India country code
+    // Format phone number for DXing (10 digits for India, add country code)
+    let phone = data.guardianPhone.replace(/[\s\-\+]/g, '');
+    
+    // If phone is 10 digits, add India country code
+    if (phone.length === 10) {
+      phone = '91' + phone;
+    }
+    // Remove leading + if present
+    if (phone.startsWith('+')) {
+      phone = phone.substring(1);
     }
 
     const feeItemsList = data.feeItems
       .map(item => `• ${item.title}: ₹${item.amount.toLocaleString()}`)
       .join('\n');
 
-    const message = `
-✅ *Fee Payment Receipt*
+    const message = `✅ *Fee Payment Receipt*
 
 📋 Receipt No: ${data.receiptNo}
 👤 Student: ${data.studentName}
 🎓 Class: ${data.class}
-📅 Date: ${new Date(data.paymentDate).toLocaleDateString()}
+📅 Date: ${new Date(data.paymentDate).toLocaleDateString('en-IN')}
 💳 Method: ${data.paymentMethod.toUpperCase()}
 
 📝 *Fee Details:*
 ${feeItemsList}
 
-💰 *Total Paid: ₹${data.totalAmount.toLocaleString()}*
+💰 *Total Paid: ₹${data.totalAmount.toLocaleString('en-IN')}*
 
 Thank you for your payment!
-- ${data.institutionName || 'Campus Management'}
-    `.trim();
+- ${data.institutionName || 'Campus Management'}`;
 
-    // Send via WhatsApp API (adjust based on your provider)
-    await axios.post(
-      WHATSAPP_API_URL,
+    // DXing API request format
+    const response = await axios.post(
+      DXING_API_URL,
       {
-        phone,
-        message
+        instance_id: DXING_INSTANCE_ID,
+        number: phone,
+        type: 'text',
+        message: message
       },
       {
         headers: {
-          'Authorization': `Bearer ${WHATSAPP_API_KEY}`,
+          'Authorization': `Bearer ${DXING_API_KEY}`,
           'Content-Type': 'application/json'
-        }
+        },
+        timeout: 10000 // 10 second timeout
       }
     );
 
-    return true;
-  } catch (error) {
-    console.error('WhatsApp sending error:', error);
+    if (response.data.status === 'success' || response.status === 200) {
+      return true;
+    }
+
+    console.error('DXing API error:', response.data);
+    return false;
+  } catch (error: any) {
+    console.error('WhatsApp sending error:', error.response?.data || error.message);
     return false;
   }
 };
@@ -276,16 +302,28 @@ export const sendBulkNotifications = async (
         results.emailsSent++;
       }
 
-      if (recipient.phone && WHATSAPP_API_URL) {
-        let phone = recipient.phone.replace(/[\s-]/g, '');
-        if (!phone.startsWith('+')) {
-          phone = '+91' + phone;
+      if (recipient.phone && DXING_API_URL && DXING_API_KEY && DXING_INSTANCE_ID) {
+        // Format phone for DXing
+        let phone = recipient.phone.replace(/[\s\-\+]/g, '');
+        if (phone.length === 10) {
+          phone = '91' + phone;
         }
 
         await axios.post(
-          WHATSAPP_API_URL,
-          { phone, message: `${recipient.name},\n\n${message}` },
-          { headers: { 'Authorization': `Bearer ${WHATSAPP_API_KEY}` } }
+          DXING_API_URL,
+          { 
+            instance_id: DXING_INSTANCE_ID,
+            number: phone,
+            type: 'text',
+            message: `${recipient.name},\n\n${message}\n\n- ${institutionName || 'Campus Management'}` 
+          },
+          { 
+            headers: { 
+              'Authorization': `Bearer ${DXING_API_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            timeout: 10000
+          }
         );
         results.whatsappSent++;
       }

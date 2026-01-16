@@ -35,6 +35,8 @@ import receiptConfigRoutes from './routes/receiptConfigs';
 import transportRouteRoutes from './routes/transportRoutes';
 import uploadRoutes from './routes/upload';
 import accountingRoutes from './routes/accounting';
+import accountRoutes from './routes/accounts';
+import incomeRoutes from './routes/income';
 
 // Load environment variables
 dotenv.config();
@@ -123,6 +125,8 @@ app.use('/api/receipt-configs', receiptConfigRoutes);
 app.use('/api/transport-routes', transportRouteRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/accounting', accountingRoutes);
+app.use('/api/accounts', accountRoutes);
+app.use('/api/income', incomeRoutes);
 
 // Error handling middleware
 app.use(notFound);

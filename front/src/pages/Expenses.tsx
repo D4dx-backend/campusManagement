@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,13 +8,16 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DataTable } from '@/components/ui/data-table';
 import { useConfirmation } from '@/hooks/useConfirmation';
-import { Plus, Search, FileText, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Search, FileText, Trash2, Loader2, Printer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useExpenses, useCreateExpense, useDeleteExpense, useExpenseStats } from '@/hooks/useExpenses';
 import { useExpenseCategories } from '@/hooks/useExpenseCategories';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { formatters } from '@/utils/exportUtils';
+import { ExpenseVoucher } from '@/components/receipt/ExpenseVoucher';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 
 const ExpensesContent = () => {
@@ -24,6 +27,9 @@ const ExpensesContent = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [filterValues, setFilterValues] = useState({});
+  const [selectedExpense, setSelectedExpense] = useState<any>(null);
+  const [showVoucher, setShowVoucher] = useState(false);
+  const voucherRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const { confirm, ConfirmationComponent } = useConfirmation();
@@ -154,6 +160,47 @@ const ExpensesContent = () => {
         }
       }
     );
+  };
+
+  const handlePrintVoucher = async (expense: any) => {
+    setSelectedExpense(expense);
+    setShowVoucher(true);
+    
+    // Wait for voucher to render
+    setTimeout(async () => {
+      if (voucherRef.current) {
+        try {
+          const canvas = await html2canvas(voucherRef.current, {
+            scale: 2,
+            logging: false,
+            useCORS: true
+          });
+          
+          const imgData = canvas.toDataURL('image/png');
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const imgWidth = 210; // A4 width in mm
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          
+          pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+          pdf.save(`Voucher-${expense.voucherNo}.pdf`);
+          
+          toast({
+            title: 'Success',
+            description: 'Voucher downloaded successfully',
+          });
+          
+          setShowVoucher(false);
+          setSelectedExpense(null);
+        } catch (error) {
+          console.error('PDF generation error:', error);
+          toast({
+            title: 'Error',
+            description: 'Failed to generate voucher PDF',
+            variant: 'destructive'
+          });
+        }
+      }
+    }, 500);
   };
 
   // Get data from API (server-side filtered and paginated)
@@ -455,18 +502,28 @@ const ExpensesContent = () => {
                         </div>
                       </div>
                     </div>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={() => handleDelete(expense._id, expense.description)}
-                      disabled={deleteExpenseMutation.isPending}
-                    >
-                      {deleteExpenseMutation.isPending ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-4 h-4" />
-                      )}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => handlePrintVoucher(expense)}
+                        title="Print Voucher"
+                      >
+                        <Printer className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => handleDelete(expense._id, expense.description)}
+                        disabled={deleteExpenseMutation.isPending}
+                      >
+                        {deleteExpenseMutation.isPending ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -474,6 +531,23 @@ const ExpensesContent = () => {
           </div>
         </DataTable>
       <ConfirmationComponent />
+      
+      {/* Hidden Voucher for Printing */}
+      {showVoucher && selectedExpense && (
+        <div className="fixed -left-[9999px] top-0">
+          <ExpenseVoucher
+            ref={voucherRef}
+            voucherNo={selectedExpense.voucherNo}
+            date={selectedExpense.date}
+            category={selectedExpense.category}
+            description={selectedExpense.description}
+            amount={selectedExpense.amount}
+            paymentMethod={selectedExpense.paymentMethod}
+            approvedBy={selectedExpense.approvedBy}
+            remarks={selectedExpense.remarks}
+          />
+        </div>
+      )}
     </div>
   );
 };

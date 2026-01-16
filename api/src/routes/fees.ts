@@ -5,6 +5,7 @@ import { ActivityLog } from '../models/ActivityLog';
 import { ReceiptConfig } from '../models/ReceiptConfig';
 import { authenticate, checkPermission } from '../middleware/auth';
 import { AuthenticatedRequest, ApiResponse } from '../types';
+import { sendFeeReceiptEmail, sendFeeReceiptWhatsApp } from '../utils/notificationService';
 
 const router = express.Router();
 
@@ -143,6 +144,34 @@ router.post('/', checkPermission('fees', 'create'), async (req: AuthenticatedReq
     });
 
     await feePayment.save();
+
+    // Send automatic notifications (email & WhatsApp)
+    const receiptConfig = await ReceiptConfig.findOne({ 
+      branchId: feePayment.branchId, 
+      isActive: true 
+    });
+
+    const notificationData = {
+      receiptNo: feePayment.receiptNo,
+      studentName: student.name,
+      class: student.class,
+      feeItems: feePayment.feeItems || [],
+      totalAmount: feePayment.totalAmount || 0,
+      paymentDate: feePayment.paymentDate,
+      paymentMethod: feePayment.paymentMethod,
+      institutionName: (receiptConfig as any)?.institutionName,
+      guardianEmail: student.guardianEmail,
+      guardianPhone: student.guardianPhone || ''
+    };
+
+    // Send notifications asynchronously (non-blocking)
+    Promise.all([
+      sendFeeReceiptEmail(notificationData),
+      sendFeeReceiptWhatsApp(notificationData)
+    ]).catch(error => {
+      console.error('Notification sending error:', error);
+      // Don't fail the transaction if notifications fail
+    });
 
     // Create detailed log message
     const feeDetails = feeItems.map((item: any) => `${item.title}: ₹${item.amount}`).join(', ');

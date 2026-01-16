@@ -505,11 +505,9 @@ router.delete('/:id', checkPermission('divisions', 'delete'), async (req: Authen
 // @access  Private
 router.get('/class/:classId', checkPermission('divisions', 'read'), async (req: AuthenticatedRequest, res) => {
   try {
-    console.log('🔍 Fetching divisions for classId:', req.params.classId);
     
     // First, let's find the class to get its name
     const classInfo = await Class.findById(req.params.classId);
-    console.log('🔍 Class info:', classInfo ? { _id: classInfo._id, name: classInfo.name, academicYear: classInfo.academicYear } : 'Not found');
     
     if (!classInfo) {
       const response: ApiResponse = {
@@ -529,28 +527,13 @@ router.get('/class/:classId', checkPermission('divisions', 'read'), async (req: 
       filter.branchId = req.user!.branchId;
     }
 
-    console.log('🔍 Filter used:', filter);
-    console.log('🔍 User branchId:', req.user!.branchId);
-
-    // Debug: Check all divisions in database
-    const allDivisions = await Division.find({}).limit(5);
-    console.log('🔍 Sample divisions in DB:', allDivisions.map(d => ({ 
-      _id: d._id, 
-      classId: d.classId.toString(), 
-      className: d.className, 
-      name: d.name,
-      branchId: d.branchId ? d.branchId.toString() : null
-    })));
-
     let divisions = await Division.find(filter)
       .populate('classTeacherId', 'name designation')
       .sort({ name: 1 });
 
-    console.log('🔍 Found divisions by classId:', divisions.length);
 
     // If no divisions found by classId, try searching by className as fallback
     if (divisions.length === 0) {
-      console.log('🔍 No divisions found by classId, trying className:', classInfo.name);
       const fallbackFilter: any = { className: classInfo.name };
       
       if (req.user!.role !== 'super_admin') {
@@ -561,10 +544,8 @@ router.get('/class/:classId', checkPermission('divisions', 'read'), async (req: 
         .populate('classTeacherId', 'name designation')
         .sort({ name: 1 });
       
-      console.log('🔍 Found divisions by className:', divisions.length);
     }
 
-    console.log('🔍 Final divisions:', divisions.map(d => ({ name: d.name, className: d.className, branchId: d.branchId?.toString() })));
 
     // Get student count for each division
     const divisionsWithStudentCount = await Promise.all(
@@ -605,7 +586,6 @@ router.get('/class/:classId', checkPermission('divisions', 'read'), async (req: 
 router.get('/debug/class/:classId', checkPermission('divisions', 'read'), async (req: AuthenticatedRequest, res) => {
   try {
     const classId = req.params.classId;
-    console.log('🐛 Debug: Testing classId:', classId);
     
     // Convert to ObjectId
     let classIdFilter;

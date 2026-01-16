@@ -34,18 +34,8 @@ const IncomeCategories = () => {
   const updateCategoryMutation = useUpdateIncomeCategory();
   const deleteCategoryMutation = useDeleteIncomeCategory();
 
-  // Get raw data from API
-  const rawCategories = categoriesResponse?.data || [];
-  
-  // Apply frontend filters
-  const categories = rawCategories.filter((category: any) => {
-    // Apply status filter
-    if (filterValues.status && category.status !== filterValues.status) {
-      return false;
-    }
-    
-    return true;
-  });
+  // Get data from API (server-side filtered and paginated)
+  const categories = categoriesResponse?.data || [];
   const pagination = categoriesResponse?.pagination;
 
   // Get configuration from templates
@@ -66,11 +56,6 @@ const IncomeCategories = () => {
     setItemsPerPage(newItemsPerPage);
     setCurrentPage(1);
   };
-
-  // Clear old localStorage data
-  useEffect(() => {
-    localStorage.removeItem('campuswise_income_categories');
-  }, []);
 
   const [formData, setFormData] = useState({
     name: '',

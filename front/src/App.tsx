@@ -16,6 +16,8 @@ import Expenses from "./pages/Expenses";
 import TextBooks from "./pages/TextBooks";
 import TextbookIndents from "./pages/TextbookIndents";
 import Reports from "./pages/Reports";
+import FeeDues from "./pages/FeeDues";
+import TransportReport from "./pages/TransportReport";
 import Classes from "./pages/Classes";
 import Divisions from "./pages/Divisions";
 import ExpenseCategories from "./pages/ExpenseCategories";
@@ -146,6 +148,22 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Reports />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports/fee-dues"
+              element={
+                <ProtectedRoute>
+                  <FeeDues />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports/transport"
+              element={
+                <ProtectedRoute>
+                  <TransportReport />
                 </ProtectedRoute>
               }
             />

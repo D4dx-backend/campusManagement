@@ -89,7 +89,6 @@ const generateIndentNo = async (branchId: string): Promise<string> => {
 // @access  Private
 router.get('/', checkPermission('textbooks', 'read'), validateQuery(queryTextbookIndentsSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    console.log('Textbook indents query params:', req.query);
     const {
       page = 1,
       limit = 10,
@@ -363,17 +362,6 @@ router.get('/:id', checkPermission('textbooks', 'read'), async (req: Authenticat
 router.post('/', checkPermission('textbooks', 'create'), validate(createTextbookIndentSchema), async (req: AuthenticatedRequest, res) => {
   try {
     const { studentId, items, paymentMethod, paidAmount = 0, expectedReturnDate, remarks } = req.body;
-    
-    console.log('Creating textbook indent with data:', {
-      studentId,
-      items,
-      paymentMethod,
-      paidAmount,
-      expectedReturnDate,
-      remarks,
-      userId: req.user!._id,
-      branchId: req.user!.branchId
-    });
 
     // Validate user has branchId
     if (!req.user!.branchId && req.user!.role !== 'super_admin') {
@@ -393,7 +381,6 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextbook
     }
     
     const student = await Student.findOne(studentFilter);
-    console.log('Student found:', student ? { id: student._id, name: student.name, class: student.class } : 'null');
     
     if (!student) {
       const response: ApiResponse = {
@@ -413,8 +400,6 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextbook
     }
     
     const textbooks = await TextBook.find(textbookFilter);
-    console.log('Textbooks found:', textbooks.length, 'Expected:', items.length);
-    console.log('Textbook IDs found:', textbooks.map(t => t._id.toString()));
 
     if (textbooks.length !== items.length) {
       const response: ApiResponse = {
@@ -459,7 +444,6 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextbook
 
     // Generate indent number
     const indentNo = await generateIndentNo(req.user!.branchId!.toString());
-    console.log('Generated indent number:', indentNo);
 
     // Calculate balance amount
     const balanceAmount = totalAmount - paidAmount;
@@ -490,13 +474,10 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextbook
       branchId: req.user!.branchId || req.user!._id // Fallback to user ID if branchId is not set
     };
 
-    console.log('Creating indent with data:', indentData);
     
     const indent = new TextbookIndent(indentData);
-    console.log('Indent created, now saving...');
     
     await indent.save();
-    console.log('Indent saved successfully with ID:', indent._id);
 
     // Log activity
     await ActivityLog.create({
@@ -556,7 +537,6 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextbook
 // @access  Private
 router.put('/:id/issue', checkPermission('textbooks', 'update'), async (req: AuthenticatedRequest, res) => {
   try {
-    console.log('Issue indent request:', { id: req.params.id, userId: req.user!._id });
     
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
@@ -763,7 +743,6 @@ router.put('/:id/return', checkPermission('textbooks', 'update'), validate(retur
 // @access  Private
 router.put('/:id/cancel', checkPermission('textbooks', 'update'), async (req: AuthenticatedRequest, res) => {
   try {
-    console.log('Cancel indent request:', { id: req.params.id, reason: req.body.reason, userId: req.user!._id });
     
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
@@ -845,7 +824,6 @@ router.put('/:id/cancel', checkPermission('textbooks', 'update'), async (req: Au
 // @access  Private
 router.post('/:id/receipt', checkPermission('textbooks', 'read'), async (req: AuthenticatedRequest, res) => {
   try {
-    console.log('Generate receipt request:', { id: req.params.id, userId: req.user!._id });
     
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {

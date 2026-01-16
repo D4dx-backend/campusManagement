@@ -242,8 +242,6 @@ router.get('/:id', checkPermission('expenses', 'read'), async (req: Authenticate
 // @access  Private
 router.post('/', checkPermission('expenses', 'create'), validate(createExpenseSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    console.log('Creating expense with data:', req.body);
-    console.log('User info:', { id: req.user!._id, branchId: req.user!.branchId, role: req.user!.role });
 
     // Check if user has branchId
     if (!req.user!.branchId && !req.body.branchId) {
@@ -263,7 +261,6 @@ router.post('/', checkPermission('expenses', 'create'), validate(createExpenseSc
     });
 
     if (!categoryExists) {
-      console.log(`Category '${req.body.category}' not found for branch ${branchId}`);
       // Don't fail the request, just log it - category validation is now dynamic
     }
 
@@ -277,12 +274,10 @@ router.post('/', checkPermission('expenses', 'create'), validate(createExpenseSc
       branchId: req.user!.branchId || req.body.branchId
     };
 
-    console.log('Expense data to save:', expenseData);
 
     const expense = new Expense(expenseData);
     await expense.save();
 
-    console.log('Expense saved successfully:', expense._id);
 
     // Log activity
     await ActivityLog.create({

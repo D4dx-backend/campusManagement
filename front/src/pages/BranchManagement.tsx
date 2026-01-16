@@ -7,23 +7,35 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useConfirmation } from '@/hooks/useConfirmation';
-import { Branch, User } from '@/types';
-import { Plus, Search, Edit, Trash2, Building, MapPin, Phone, Mail, User as UserIcon, Calendar } from 'lucide-react';
+import { useBranches, useCreateBranch, useUpdateBranch, useDeleteBranch } from '@/hooks/useBranches';
+import { useUsers } from '@/hooks/useUsers';
+import { Branch } from '@/types';
+import { Plus, Search, Edit, Trash2, Building, MapPin, Phone, Mail, User as UserIcon, Calendar, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 
 const BranchManagement = () => {
-  const [branches, setBranches] = useLocalStorage<Branch[]>('campuswise_branches', []);
-  const [users] = useLocalStorage<User[]>('campuswise_users', []);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
+  const [editingBranch, setEditingBranch] = useState<any>(null);
   const { toast } = useToast();
   const { confirm, ConfirmationComponent } = useConfirmation();
   const { user } = useAuth();
+
+  // API hooks
+  const { data: branchesResponse, isLoading } = useBranches();
+  const { data: usersResponse } = useUsers({ limit: 1000 });
+  const createBranchMutation = useCreateBranch();
+  const updateBranchMutation = useUpdateBranch();
+  const deleteBranchMutation = useDeleteBranch();
+
+  const branches = branchesResponse?.data || [];
+  const users = usersResponse?.data || [];
+  const pagination = branchesResponse?.pagination;
 
   const [formData, setFormData] = useState({
     name: '',
@@ -65,46 +77,33 @@ const BranchManagement = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check for duplicate code
-    const existingBranch = branches.find(b => 
-      b.code === formData.code && b.id !== editingBranch?.id
-    );
-    
-    if (existingBranch) {
+    try {
+      if (editingBranch) {
+        await updateBranchMutation.mutateAsync({
+          id: editingBranch._id,
+          ...formData
+        });
+        toast({ title: 'Branch updated successfully' });
+      } else {
+        await createBranchMutation.mutateAsync(formData);
+        toast({ title: 'Branch created successfully' });
+      }
+      
+      setIsDialogOpen(false);
+      resetForm();
+    } catch (error: any) {
       toast({ 
         title: 'Error', 
-        description: 'Branch code already exists. Please use a different code.',
+        description: error.response?.data?.message || 'Failed to save branch',
         variant: 'destructive'
       });
-      return;
     }
-    
-    if (editingBranch) {
-      setBranches(branches.map(b => 
-        b.id === editingBranch.id 
-          ? { ...formData, id: editingBranch.id, createdAt: editingBranch.createdAt, createdBy: editingBranch.createdBy }
-          : b
-      ));
-      toast({ title: 'Branch updated successfully' });
-    } else {
-      const newBranch: Branch = {
-        ...formData,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString(),
-        createdBy: user?.id || '',
-      };
-      setBranches([...branches, newBranch]);
-      toast({ title: 'Branch created successfully' });
-    }
-    
-    setIsDialogOpen(false);
-    resetForm();
   };
 
-  const handleEdit = (branch: Branch) => {
+  const handleEdit = (branch: any) => {
     setEditingBranch(branch);
     setFormData({
       name: branch.name,
@@ -119,9 +118,9 @@ const BranchManagement = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string, branchName: string) => {
+  const handleDelete = async (id: string, branchName: string) => {
     // Check if branch has users
-    const branchUsers = users.filter(u => u.branchId === id);
+    const branchUsers = users.filter((u: any) => u.branchId === id);
     if (branchUsers.length > 0) {
       toast({
         title: 'Cannot Delete Branch',
@@ -138,24 +137,32 @@ const BranchManagement = () => {
         confirmText: 'Delete',
         variant: 'destructive'
       },
-      () => {
-        setBranches(branches.filter(b => b.id !== id));
-        toast({ title: 'Branch deleted successfully' });
+      async () => {
+        try {
+          await deleteBranchMutation.mutateAsync(id);
+          toast({ title: 'Branch deleted successfully' });
+        } catch (error: any) {
+          toast({ 
+            title: 'Error', 
+            description: error.response?.data?.message || 'Failed to delete branch',
+            variant: 'destructive'
+          });
+        }
       }
     );
   };
 
   const getBranchStats = (branchId: string) => {
-    const branchUsers = users.filter(u => u.branchId === branchId);
+    const branchUsers = users.filter((u: any) => u.branchId === branchId);
     return {
       totalUsers: branchUsers.length,
-      admins: branchUsers.filter(u => u.role === 'branch_admin').length,
-      teachers: branchUsers.filter(u => u.role === 'teacher').length,
-      staff: branchUsers.filter(u => u.role === 'staff').length,
+      admins: branchUsers.filter((u: any) => u.role === 'branch_admin').length,
+      teachers: branchUsers.filter((u: any) => u.role === 'teacher').length,
+      staff: branchUsers.filter((u: any) => u.role === 'staff').length,
     };
   };
 
-  const filteredBranches = branches.filter(b =>
+  const filteredBranches = branches.filter((b: any) =>
     b.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     b.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
     b.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -174,6 +181,16 @@ const BranchManagement = () => {
               <p className="text-muted-foreground">Only Super Admins can manage branches.</p>
             </CardContent>
           </Card>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       </AppLayout>
     );
@@ -314,7 +331,7 @@ const BranchManagement = () => {
             <CardContent>
               <div className="text-3xl font-bold">{branches.length}</div>
               <p className="text-xs text-muted-foreground mt-2">
-                {branches.filter(b => b.status === 'active').length} active
+                {branches.filter((b: any) => b.status === 'active').length} active
               </p>
             </CardContent>
           </Card>
@@ -325,7 +342,7 @@ const BranchManagement = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">
-                {users.filter(u => u.branchId).length}
+                {users.filter((u: any) => u.branchId).length}
               </div>
               <p className="text-xs text-muted-foreground mt-2">Across all branches</p>
             </CardContent>
@@ -337,7 +354,7 @@ const BranchManagement = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">
-                {users.filter(u => u.role === 'branch_admin').length}
+                {users.filter((u: any) => u.role === 'branch_admin').length}
               </div>
               <p className="text-xs text-muted-foreground mt-2">Managing branches</p>
             </CardContent>

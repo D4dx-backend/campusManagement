@@ -687,4 +687,312 @@ router.get('/fees', checkPermission('reports', 'read'), validateQuery(dateRangeS
   }
 });
 
+// @desc    Get fee dues report (pending/overdue fees)
+// @route   GET /api/reports/fee-dues
+// @access  Private
+router.get('/fee-dues', checkPermission('reports', 'read'), async (req: AuthenticatedRequest, res) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    
+    const filter: any = { status: 'pending' };
+
+    // Branch filter for non-super admins
+    if (req.user!.role !== 'super_admin') {
+      filter.branchId = req.user!.branchId;
+    }
+
+    // Optional filters
+    if (req.query.classId) {
+      filter.classId = req.query.classId;
+    }
+    if (req.query.divisionId) {
+      filter.divisionId = req.query.divisionId;
+    }
+
+    // Calculate skip for pagination
+    const skip = (page - 1) * limit;
+
+    // Get all pending fee payments with student details
+    const [pendingFees, total] = await Promise.all([
+      FeePayment.find(filter)
+        .populate('studentId', 'admissionNo name class section guardianPhone guardianEmail')
+        .populate('classId', 'name')
+        .sort({ paymentDate: -1 })
+        .skip(skip)
+        .limit(limit),
+      FeePayment.countDocuments(filter)
+    ]);
+
+    // Calculate aging buckets
+    const currentDate = new Date();
+    const dues = pendingFees.map(fee => {
+      const paymentDate = new Date(fee.paymentDate);
+      const daysDue = Math.floor((currentDate.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      let agingBucket = 'Not Due Yet';
+      if (daysDue > 0 && daysDue <= 30) {
+        agingBucket = '1-30 Days';
+      } else if (daysDue > 30 && daysDue <= 60) {
+        agingBucket = '31-60 Days';
+      } else if (daysDue > 60 && daysDue <= 90) {
+        agingBucket = '61-90 Days';
+      } else if (daysDue > 90) {
+        agingBucket = '90+ Days';
+      }
+
+      return {
+        _id: fee._id,
+        student: fee.studentId,
+        class: fee.classId,
+        className: fee.className,
+        amount: fee.amount || fee.totalAmount || 0,
+        paymentDate: fee.paymentDate,
+        feeType: fee.feeType,
+        remarks: fee.remarks,
+        daysDue,
+        agingBucket,
+        isOverdue: daysDue > 0,
+      };
+    });
+
+    // Calculate summary statistics (across all records, not just current page)
+    const allPendingFees = await FeePayment.find(filter);
+    const allDues = allPendingFees.map(fee => {
+      const paymentDate = new Date(fee.paymentDate);
+      const daysDue = Math.floor((currentDate.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      let agingBucket = 'Not Due Yet';
+      if (daysDue > 0 && daysDue <= 30) {
+        agingBucket = '1-30 Days';
+      } else if (daysDue > 30 && daysDue <= 60) {
+        agingBucket = '31-60 Days';
+      } else if (daysDue > 60 && daysDue <= 90) {
+        agingBucket = '61-90 Days';
+      } else if (daysDue > 90) {
+        agingBucket = '90+ Days';
+      }
+
+      return {
+        amount: fee.amount || fee.totalAmount || 0,
+        daysDue,
+        agingBucket,
+        isOverdue: daysDue > 0,
+      };
+    });
+    const totalDueAmount = allDues.reduce((sum, due) => sum + (due.amount || 0), 0);
+    const overdueAmount = allDues.filter(d => d.isOverdue).reduce((sum, due) => sum + (due.amount || 0), 0);
+    const totalStudents = new Set(allPendingFees.map(f => f.studentId?.toString())).size;
+
+    // Aging analysis
+    const agingAnalysis = {
+      'Not Due Yet': { count: 0, amount: 0 },
+      '1-30 Days': { count: 0, amount: 0 },
+      '31-60 Days': { count: 0, amount: 0 },
+      '61-90 Days': { count: 0, amount: 0 },
+      '90+ Days': { count: 0, amount: 0 },
+    };
+
+    allDues.forEach(due => {
+      agingAnalysis[due.agingBucket as keyof typeof agingAnalysis].count++;
+      agingAnalysis[due.agingBucket as keyof typeof agingAnalysis].amount += (due.amount || 0);
+    });
+
+    // Class-wise breakdown
+    const classWiseData = await FeePayment.aggregate([
+      { $match: filter },
+      {
+        $lookup: {
+          from: 'classes',
+          localField: 'classId',
+          foreignField: '_id',
+          as: 'classInfo'
+        }
+      },
+      { $unwind: '$classInfo' },
+      {
+        $group: {
+          _id: '$classInfo.name',
+          count: { $sum: 1 },
+          amount: { $sum: '$amount' }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    const response: ApiResponse = {
+      success: true,
+      message: 'Fee dues report fetched successfully',
+      data: {
+        dues,
+        summary: {
+          totalDueAmount,
+          overdueAmount,
+          totalStudents,
+          totalRecords: total,
+          overdueRecords: allDues.filter(d => d.isOverdue).length,
+        },
+        agingAnalysis,
+        classWiseBreakdown: classWiseData.map((item: any) => ({
+          class: item._id,
+          count: item.count,
+          amount: item.amount,
+        })),
+      },
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    };
+    res.json(response);
+  } catch (error) {
+    console.error('Get fee dues report error:', error);
+    const response: ApiResponse = {
+      success: false,
+      message: 'Server error retrieving fee dues report'
+    };
+    res.status(500).json(response);
+  }
+});
+
+// @desc    Get transport report
+// @route   GET /api/reports/transport
+// @access  Private
+router.get('/transport', checkPermission('reports', 'read'), async (req: AuthenticatedRequest, res) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 50;
+    const transportType = req.query.transportType as string; // 'school', 'own', 'none'
+    
+    const filter: any = { status: 'active' };
+
+    // Branch filter for non-super admins
+    if (req.user!.role !== 'super_admin') {
+      filter.branchId = req.user!.branchId;
+    }
+
+    // Filter by transport type if specified
+    if (transportType && ['school', 'own', 'none'].includes(transportType)) {
+      filter.transport = transportType;
+    }
+
+    // Calculate skip for pagination
+    const skip = (page - 1) * limit;
+
+    // Get paginated students with transport information
+    const [students, total] = await Promise.all([
+      Student.find(filter)
+        .populate('classId', 'name')
+        .populate('divisionId', 'name')
+        .populate('transportRouteId', 'routeName vehicleNumber driverName')
+        .select('admissionNo firstName middleName lastName class division transport transportRouteId guardianContact')
+        .sort({ class: 1, division: 1, lastName: 1 })
+        .skip(skip)
+        .limit(limit),
+      Student.countDocuments(filter)
+    ]);
+
+    // Get all students for statistics (without pagination)
+    const allStudentsFilter: any = { status: 'active' };
+    if (req.user!.role !== 'super_admin') {
+      allStudentsFilter.branchId = req.user!.branchId;
+    }
+    
+    const allStudents = await Student.find(allStudentsFilter)
+      .populate('classId', 'name')
+      .select('transport classId transportRoute admissionNo name class section guardianPhone');
+
+    // Transport statistics
+    const transportStats = {
+      total: allStudents.length,
+      schoolTransport: allStudents.filter(s => s.transport === 'school').length,
+      ownTransport: allStudents.filter(s => s.transport === 'own').length,
+      noTransport: allStudents.filter(s => s.transport === 'none').length,
+    };
+
+    // Route-wise breakdown
+    const routeWiseData = allStudents
+      .filter(s => s.transport === 'school' && s.transportRoute)
+      .reduce((acc: any, student) => {
+        const routeName = student.transportRoute || 'Unknown';
+        
+        if (!acc[routeName]) {
+          acc[routeName] = {
+            routeName,
+            students: [],
+            count: 0,
+          };
+        }
+        
+        acc[routeName].count++;
+        
+        return acc;
+      }, {});
+
+    // Class-wise transport breakdown
+    const classWiseData = allStudents.reduce((acc: any, student) => {
+      const className = (student.classId as any)?.name || 'Unknown';
+      if (!acc[className]) {
+        acc[className] = {
+          total: 0,
+          schoolTransport: 0,
+          ownTransport: 0,
+          noTransport: 0,
+        };
+      }
+      acc[className].total++;
+      if (student.transport === 'school') acc[className].schoolTransport++;
+      else if (student.transport === 'own') acc[className].ownTransport++;
+      else acc[className].noTransport++;
+      return acc;
+    }, {});
+
+    const response: ApiResponse = {
+      success: true,
+      message: 'Transport report fetched successfully',
+      data: {
+        statistics: transportStats,
+        routeWiseBreakdown: Object.values(routeWiseData),
+        classWiseBreakdown: Object.entries(classWiseData).map(([className, data]: [string, any]) => ({
+          class: className,
+          ...data,
+        })),
+        students: {
+          schoolTransport: students.filter(s => s.transport === 'school').map(s => ({
+            admissionNo: s.admissionNo,
+            name: s.name,
+            class: s.class,
+            division: s.section,
+            route: s.transportRoute || 'Not Assigned',
+            guardianContact: s.guardianPhone,
+          })),
+          ownTransport: students.filter(s => s.transport === 'own').map(s => ({
+            admissionNo: s.admissionNo,
+            name: s.name,
+            class: s.class,
+            division: s.section,
+            guardianContact: s.guardianPhone,
+          })),
+        },
+      },
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    };
+    res.json(response);
+  } catch (error) {
+    console.error('Get transport report error:', error);
+    const response: ApiResponse = {
+      success: false,
+      message: 'Server error retrieving transport report'
+    };
+    res.status(500).json(response);
+  }
+});
+
 export default router;

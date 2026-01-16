@@ -33,7 +33,6 @@ import reportRoutes from './routes/reports';
 import activityLogRoutes from './routes/activityLogs';
 import receiptConfigRoutes from './routes/receiptConfigs';
 import transportRouteRoutes from './routes/transportRoutes';
-import debugAuthRoutes from './routes/debugAuth';
 import uploadRoutes from './routes/upload';
 import accountingRoutes from './routes/accounting';
 
@@ -122,7 +121,6 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/activity-logs', activityLogRoutes);
 app.use('/api/receipt-configs', receiptConfigRoutes);
 app.use('/api/transport-routes', transportRouteRoutes);
-app.use('/api/debug', debugAuthRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/accounting', accountingRoutes);
 
@@ -132,7 +130,6 @@ app.use(errorHandler);
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
 });
 
 export default app;

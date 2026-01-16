@@ -58,7 +58,7 @@ const ExpensesContent = () => {
 
 
   // Early return if there's a critical error
-  if (error && error.response?.status === 401) {
+  if (error && (error as any).response?.status === 401) {
     return (
       <div className="text-center py-12">
         <p className="text-destructive">Authentication error. Please log in again.</p>
@@ -118,16 +118,6 @@ const ExpensesContent = () => {
       });
       return;
     }
-
-    console.log('Submitting expense data:', {
-      date: formData.date,
-      category: formData.category,
-      description: formData.description,
-      amount: Number(formData.amount),
-      paymentMethod: formData.paymentMethod,
-      approvedBy: user?.name || 'System',
-      remarks: formData.remarks,
-    });
     
     try {
       await createExpenseMutation.mutateAsync({
@@ -166,47 +156,15 @@ const ExpensesContent = () => {
     );
   };
 
-  // Get raw data from API
-  const rawExpenses = expensesResponse?.data || [];
-  
-  // Apply frontend filters
-  const expenses = rawExpenses.filter((expense: any) => {
-    // Apply category filter
-    if (filterValues.category && expense.category !== filterValues.category) {
-      return false;
-    }
-    
-    // Apply payment method filter
-    if (filterValues.paymentMethod && expense.paymentMethod !== filterValues.paymentMethod) {
-      return false;
-    }
-    
-    // Apply date range filter
-    if (filterValues.date_from) {
-      const expenseDate = new Date(expense.date);
-      const fromDate = new Date(filterValues.date_from);
-      if (expenseDate < fromDate) return false;
-    }
-    
-    if (filterValues.date_to) {
-      const expenseDate = new Date(expense.date);
-      const toDate = new Date(filterValues.date_to);
-      if (expenseDate > toDate) return false;
-    }
-    
-    // Apply amount filter (minimum amount)
-    if (filterValues.amount && expense.amount < parseFloat(filterValues.amount)) {
-      return false;
-    }
-    
-    return true;
-  });
-  const categories = categoriesResponse?.data || [];
-  const stats = statsResponse?.data || statsResponse || { 
+  // Get data from API (server-side filtered and paginated)
+  const expenses = (expensesResponse?.data || []) as any[];
+  const categories = (categoriesResponse?.data || []) as any[];
+  const statsData = statsResponse?.data?.totalExpenses ? statsResponse.data : (statsResponse || {
     totalExpenses: { total: 0, count: 0 }, 
     monthlyExpenses: { total: 0, count: 0 },
     yearlyExpenses: { total: 0, count: 0 }
-  };
+  });
+  const stats = statsData as { totalExpenses: { total: number; count: number }; monthlyExpenses: { total: number; count: number }; yearlyExpenses: { total: number; count: number } };
   const pagination = expensesResponse?.pagination;
 
   // Filter configuration

@@ -14,13 +14,6 @@ export interface ApiResponse<T = any> {
   };
 }
 
-// Debug environment variables
-console.log('Environment variables:', {
-  VITE_API_URL: import.meta.env.VITE_API_URL,
-  NODE_ENV: import.meta.env.NODE_ENV,
-  MODE: import.meta.env.MODE
-});
-
 // Create axios instance
 const api: AxiosInstance = axios.create({
   baseURL: import.meta.env.DEV ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:8000/api'),

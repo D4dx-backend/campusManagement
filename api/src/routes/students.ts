@@ -384,4 +384,186 @@ router.get('/stats/overview', checkPermission('students', 'read'), async (req: A
   }
 });
 
+// @desc    Promote students to next class
+// @route   POST /api/students/promote
+// @access  Private
+router.post('/promote', checkPermission('students', 'update'), async (req: AuthenticatedRequest, res) => {
+  try {
+    const { studentIds, targetClassId, targetDivisionId, academicYear } = req.body;
+
+    if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'Student IDs array is required'
+      };
+      return res.status(400).json(response);
+    }
+
+    if (!targetClassId || !targetDivisionId) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'Target class and division are required'
+      };
+      return res.status(400).json(response);
+    }
+
+    // Verify target class and division exist
+    const targetClass = await Class.findById(targetClassId);
+    if (!targetClass) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'Target class not found'
+      };
+      return res.status(404).json(response);
+    }
+
+    const promoted = [];
+    const failed = [];
+
+    for (const studentId of studentIds) {
+      try {
+        const student = await Student.findById(studentId);
+        if (!student) {
+          failed.push({ studentId, reason: 'Student not found' });
+          continue;
+        }
+
+        // Store old class info for logging
+        const oldClass = student.classId;
+
+        // Update student class
+        student.classId = targetClassId;
+        
+        await student.save();
+
+        // Log activity
+        await ActivityLog.create({
+          userId: req.user!._id,
+          userEmail: req.user!.mobile,
+          action: 'promote_student',
+          entity: 'student',
+          entityId: student._id,
+          details: `Promoted student ${student.name} from class ${oldClass} to ${targetClassId}`,
+          branchId: student.branchId,
+          ipAddress: req.ip
+        });
+
+        promoted.push({
+          studentId: student._id,
+          name: student.name,
+          admissionNo: student.admissionNo
+        });
+      } catch (error) {
+        failed.push({ studentId, reason: 'Update failed' });
+      }
+    }
+
+    const response: ApiResponse = {
+      success: true,
+      message: `Promoted ${promoted.length} student(s)${failed.length > 0 ? `, ${failed.length} failed` : ''}`,
+      data: {
+        promoted,
+        failed,
+        summary: {
+          total: studentIds.length,
+          success: promoted.length,
+          failed: failed.length
+        }
+      }
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('Promote students error:', error);
+    const response: ApiResponse = {
+      success: false,
+      message: 'Server error promoting students'
+    };
+    res.status(500).json(response);
+  }
+});
+
+// @desc    Transfer student and generate TC
+// @route   POST /api/students/:id/transfer
+// @access  Private
+router.post('/:id/transfer', checkPermission('students', 'update'), async (req: AuthenticatedRequest, res) => {
+  try {
+    const { transferSchoolName, transferDate, reason, remarks } = req.body;
+
+    const student = await Student.findById(req.params.id)
+      .populate('classId', 'name')
+      .populate('divisionId', 'name')
+      .populate('branchId', 'name address');
+
+    if (!student) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'Student not found'
+      };
+      return res.status(404).json(response);
+    }
+
+    // Create transfer certificate data
+    const transferCertificate = {
+      studentName: student.name,
+      admissionNo: student.admissionNo,
+      class: student.class,
+      section: student.section,
+      dateOfBirth: student.dateOfBirth,
+      dateOfAdmission: student.dateOfAdmission,
+      transferDate: transferDate || new Date(),
+      transferSchoolName: transferSchoolName || 'Not Specified',
+      reason: reason || '',
+      remarks: remarks || '',
+      guardianName: student.guardianName,
+      guardianContact: student.guardianPhone,
+      currentSchool: {
+        name: (student.branchId as any)?.name || 'School Name',
+        address: (student.branchId as any)?.address || ''
+      },
+      generatedDate: new Date(),
+      generatedBy: req.user!.name || req.user!.mobile
+    };
+
+    // Update student status to transferred
+    student.status = 'inactive';
+    await student.save();
+
+    // Log activity
+    await ActivityLog.create({
+      userId: req.user!._id,
+      userEmail: req.user!.mobile,
+      action: 'transfer_student',
+      entity: 'student',
+      entityId: student._id,
+      details: `Generated transfer certificate for ${student.name}`,
+      branchId: student.branchId,
+      ipAddress: req.ip
+    });
+
+    const response: ApiResponse = {
+      success: true,
+      message: 'Transfer certificate generated successfully',
+      data: {
+        student: {
+          _id: student._id,
+          name: transferCertificate.studentName,
+          admissionNo: student.admissionNo,
+          status: student.status
+        },
+        transferCertificate
+      }
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('Transfer student error:', error);
+    const response: ApiResponse = {
+      success: false,
+      message: 'Server error generating transfer certificate'
+    };
+    res.status(500).json(response);
+  }
+});
+
 export default router;

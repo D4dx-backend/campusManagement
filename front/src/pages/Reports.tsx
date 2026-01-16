@@ -1,11 +1,14 @@
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState, useMemo } from 'react';
-import { TrendingUp, TrendingDown, DollarSign, FileText, Loader2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, FileText, Loader2, AlertCircle, Bus, ArrowRight } from 'lucide-react';
 import { useDashboardReport, useFinancialReport } from '@/hooks/useReports';
+import { useNavigate } from 'react-router-dom';
 
 const Reports = () => {
+  const navigate = useNavigate();
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth().toString());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
 
@@ -218,7 +221,57 @@ const Reports = () => {
             </CardContent>
           </Card>
         </div>
+{/* Quick Access to Specialized Reports */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Specialized Reports</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/reports/fee-dues')}>
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertCircle className="w-5 h-5 text-red-500" />
+                        <h3 className="font-semibold text-lg">Fee Dues Report</h3>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        View pending and overdue fee payments with aging analysis
+                      </p>
+                      <Button variant="outline" size="sm">
+                        View Report
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/reports/transport')}>
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Bus className="w-5 h-5 text-blue-500" />
+                        <h3 className="font-semibold text-lg">Transport Report</h3>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Student transport statistics and route-wise breakdown
+                      </p>
+                      <Button variant="outline" size="sm">
+                        View Report
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </CardContent>
+        </Card>
+
+        
         <Card>
           <CardHeader>
             <CardTitle>Overall Statistics</CardTitle>

@@ -44,30 +44,10 @@ const Divisions = () => {
   const updateDivisionMutation = useUpdateDivision();
   const deleteDivisionMutation = useDeleteDivision();
 
-  // Get raw data from API
-  const rawDivisions = divisionsResponse?.data || [];
-  
-  // Apply frontend filters
-  const divisions = rawDivisions.filter((division: any) => {
-    // Apply class filter
-    if (filterValues.class && division.classId !== filterValues.class) {
-      return false;
-    }
-    
-    // Apply class teacher filter
-    if (filterValues.classTeacher && division.classTeacherId !== filterValues.classTeacher) {
-      return false;
-    }
-    
-    // Apply capacity filter (minimum capacity)
-    if (filterValues.capacity && division.capacity < parseFloat(filterValues.capacity)) {
-      return false;
-    }
-    
-    return true;
-  });
+  // Get data from API (server-side filtered and paginated)
+  const divisions = divisionsResponse?.data || [];
   const classes = classesResponse?.data || [];
-  const staff = staffResponse?.data || [];
+  const staff = (staffResponse?.data || []) as any[];
   const pagination = divisionsResponse?.pagination;
 
   // Get configuration from templates with dynamic options
@@ -99,15 +79,6 @@ const Divisions = () => {
     setItemsPerPage(newItemsPerPage);
     setCurrentPage(1);
   };
-
-  // Clear old localStorage data on component mount
-  useEffect(() => {
-    // Clear old localStorage divisions data
-    localStorage.removeItem('campuswise_divisions');
-    localStorage.removeItem('campuswise_staff');
-  }, []);
-
-
 
   const [formData, setFormData] = useState({
     classId: '',

@@ -203,15 +203,6 @@ router.get('/:id', checkPermission('textbooks', 'read'), async (req: Authenticat
 // @access  Private
 router.post('/', checkPermission('textbooks', 'create'), validate(createTextBookSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    console.log('Create textbook request:', {
-      body: req.body,
-      user: {
-        id: req.user!._id,
-        role: req.user!.role,
-        branchId: req.user!.branchId
-      }
-    });
-
     // Check if book code already exists
     const existingBook = await TextBook.findOne({ 
       bookCode: req.body.bookCode,
@@ -219,7 +210,6 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextBook
     });
 
     if (existingBook) {
-      console.log('Book code already exists:', req.body.bookCode);
       const response: ApiResponse = {
         success: false,
         message: 'Textbook with this book code already exists'
@@ -229,13 +219,10 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextBook
 
     // Handle class lookup
     const classIdFromPayload = req.body.class || req.body.classId;
-    console.log('Looking up class with ID:', classIdFromPayload);
     
     const classInfo = await Class.findById(classIdFromPayload);
-    console.log('Class found:', classInfo);
     
     if (!classInfo) {
-      console.log('Class not found for ID:', classIdFromPayload);
       const response: ApiResponse = {
         success: false,
         message: 'Invalid class selected'
@@ -252,7 +239,6 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextBook
       const preferredBranchId = classInfo.branchId || req.body.branchId;
       branchId = await getRequiredBranchId(req, preferredBranchId);
     } catch (error) {
-      console.log('No branchId available for textbook creation');
       const response: ApiResponse = {
         success: false,
         message: error.message || 'Branch information is required for textbook creation'
@@ -268,7 +254,6 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextBook
       branchId: branchId
     };
 
-    console.log('Creating textbook with data:', textbookData);
 
     const textbook = new TextBook(textbookData);
     await textbook.save();

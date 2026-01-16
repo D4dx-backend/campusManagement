@@ -38,23 +38,8 @@ const Designations = () => {
   const updateDesignationMutation = useUpdateDesignation();
   const deleteDesignationMutation = useDeleteDesignation();
 
-  // Get raw data from API
-  const rawDesignations = designationsResponse?.data || [];
-  
-  // Apply frontend filters
-  const designations = rawDesignations.filter((designation: any) => {
-    // Apply department filter
-    if (filterValues.department && designation.department !== filterValues.department) {
-      return false;
-    }
-    
-    // Apply status filter
-    if (filterValues.status && designation.status !== filterValues.status) {
-      return false;
-    }
-    
-    return true;
-  });
+  // Get data from API (server-side filtered and paginated)
+  const designations = designationsResponse?.data || [];
   const pagination = designationsResponse?.pagination;
 
   // Get configuration from templates
@@ -118,8 +103,6 @@ const Designations = () => {
       };
 
       // Debug logging
-      console.log('Submitting designation data:', submitData);
-      console.log('User info:', { role: user?.role, branchId: user?.branchId });
 
       if (editingDesignation) {
         await updateDesignationMutation.mutateAsync({

@@ -33,7 +33,6 @@ const Departments = () => {
   const { data: branchesResponse, isLoading: branchesLoading, error: branchesError } = useBranches(user?.role === 'super_admin');
   const branches = branchesResponse?.data || [];
   
-  console.log('Branches data:', { branches, branchesLoading, branchesError, userRole: user?.role });
 
   // API hooks - only pass basic parameters
   const { data: departmentsResponse, isLoading, error } = useDepartments({ 
@@ -45,31 +44,8 @@ const Departments = () => {
   const updateDepartmentMutation = useUpdateDepartment();
   const deleteDepartmentMutation = useDeleteDepartment();
 
-  // Get raw data from API
-  const rawDepartments = departmentsResponse?.data || [];
-  
-  // Apply frontend filters
-  const departments = rawDepartments.filter((department: any) => {
-    // Apply status filter
-    if (filterValues.status && department.status !== filterValues.status) {
-      return false;
-    }
-    
-    // Apply date range filter for createdAt
-    if (filterValues.createdAt_from) {
-      const createdDate = new Date(department.createdAt);
-      const fromDate = new Date(filterValues.createdAt_from);
-      if (createdDate < fromDate) return false;
-    }
-    
-    if (filterValues.createdAt_to) {
-      const createdDate = new Date(department.createdAt);
-      const toDate = new Date(filterValues.createdAt_to);
-      if (createdDate > toDate) return false;
-    }
-    
-    return true;
-  });
+  // Get data from API (server-side filtered and paginated)
+  const departments = departmentsResponse?.data || [];
   const pagination = departmentsResponse?.pagination;
 
   // Get configuration from templates
@@ -132,9 +108,7 @@ const Departments = () => {
     
     try {
       // Validate branch selection for super admin
-      console.log('Validation check:', { userRole: user?.role, formDataBranchId: formData.branchId });
       if (user?.role === 'super_admin' && !formData.branchId) {
-        console.log('Validation failed: super_admin without branchId');
         toast({
           title: 'Validation Error',
           description: 'Please select a branch for this department.',
@@ -155,8 +129,6 @@ const Departments = () => {
         ...(targetBranchId && { branchId: targetBranchId })
       };
 
-      console.log('Submitting department data:', submitData);
-      console.log('Current user:', { role: user?.role, branchId: user?.branchId });
 
       if (editingDepartment) {
         await updateDepartmentMutation.mutateAsync({

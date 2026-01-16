@@ -34,7 +34,6 @@ const Classes = () => {
   // Debug log
   useEffect(() => {
     if (user?.role === 'super_admin') {
-      console.log('Branches loaded:', branches.length, branches);
     }
   }, [branches, user?.role]);
 
@@ -125,7 +124,6 @@ const Classes = () => {
         if (!createData.branchId || createData.branchId === '') {
           delete createData.branchId;
         }
-        console.log('Creating class with data:', createData);
         await createClassMutation.mutateAsync(createData);
       }
       

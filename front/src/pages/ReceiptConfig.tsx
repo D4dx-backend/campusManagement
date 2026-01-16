@@ -33,8 +33,6 @@ const ReceiptConfigPage = () => {
   const currentBranchId = user?.branchId || '';
 
   // Debug: Log user and branch info
-  console.log('Current user:', user);
-  console.log('Current branch ID:', currentBranchId);
 
   // Get receipt config for current user's branch
   const { data: configResponse, isLoading, error } = useCurrentReceiptConfig();
@@ -46,11 +44,6 @@ const ReceiptConfigPage = () => {
   const config = configResponse?.data || null;
 
   // Debug: Log config loading
-  console.log('Config response:', configResponse);
-  console.log('Config:', config);
-  console.log('Is loading:', isLoading);
-  console.log('Error:', error);
-  console.log('Is editing:', isEditing);
 
   const [formData, setFormData] = useState<CreateReceiptConfigData>({
     schoolName: '',

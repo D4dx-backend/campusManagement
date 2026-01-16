@@ -185,14 +185,11 @@ router.get('/:id', checkPermission('departments', 'read'), async (req: Authentic
 // @access  Private
 router.post('/', checkPermission('departments', 'create'), validate(createDepartmentSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    console.log('Create department request body:', req.body);
-    console.log('User info:', { id: req.user!._id, role: req.user!.role, branchId: req.user!.branchId });
     
     const { name, description, code, headOfDepartment, branchId } = req.body;
 
     // Determine the branchId to use
     const targetBranchId = req.user!.branchId || branchId;
-    console.log('Target branchId:', targetBranchId);
     
     if (!targetBranchId) {
       const response: ApiResponse = {

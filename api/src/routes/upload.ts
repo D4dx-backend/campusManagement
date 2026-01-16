@@ -138,10 +138,6 @@ router.delete('/logo/:filename', async (req: AuthenticatedRequest, res) => {
 // @access  Private
 router.post('/test', upload.single('logo'), async (req: AuthenticatedRequest, res) => {
   try {
-    console.log('=== UPLOAD TEST ===');
-    console.log('Body:', req.body);
-    console.log('File:', req.file);
-    console.log('Headers:', req.headers);
     
     const response: ApiResponse = {
       success: true,

@@ -34,18 +34,8 @@ const ExpenseCategories = () => {
   const updateCategoryMutation = useUpdateExpenseCategory();
   const deleteCategoryMutation = useDeleteExpenseCategory();
 
-  // Get raw data from API
-  const rawCategories = categoriesResponse?.data || [];
-  
-  // Apply frontend filters
-  const categories = rawCategories.filter((category: any) => {
-    // Apply status filter
-    if (filterValues.status && category.status !== filterValues.status) {
-      return false;
-    }
-    
-    return true;
-  });
+  // Get data from API (server-side filtered and paginated)
+  const categories = (categoriesResponse?.data || []) as any[];
   const pagination = categoriesResponse?.pagination;
 
   // Get configuration from templates
@@ -66,11 +56,6 @@ const ExpenseCategories = () => {
     setItemsPerPage(newItemsPerPage);
     setCurrentPage(1);
   };
-
-  // Clear old localStorage data
-  useEffect(() => {
-    localStorage.removeItem('campuswise_expense_categories');
-  }, []);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -94,7 +79,7 @@ const ExpenseCategories = () => {
       if (editingCategory) {
         await updateCategoryMutation.mutateAsync({
           id: editingCategory._id,
-          ...formData
+          data: formData
         });
       } else {
         await createCategoryMutation.mutateAsync(formData);

@@ -8,8 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { DataTable } from '@/components/ui/data-table';
+import { Checkbox } from '@/components/ui/checkbox';
+import { PromoteStudentsDialog } from '@/components/students/PromoteStudentsDialog';
+import { TransferCertificateDialog } from '@/components/students/TransferCertificateDialog';
 import { useConfirmation } from '@/hooks/useConfirmation';
-import { Plus, Search, Edit, Trash2, UserCircle, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, UserCircle, Loader2, ArrowUpCircle, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useStudents, useCreateStudent, useUpdateStudent, useDeleteStudent } from '@/hooks/useStudents';
 import { useClasses } from '@/hooks/useClasses';
@@ -25,6 +28,10 @@ const Students = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [filterValues, setFilterValues] = useState({});
+  const [selectedStudents, setSelectedStudents] = useState<any[]>([]);
+  const [isPromoteDialogOpen, setIsPromoteDialogOpen] = useState(false);
+  const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
+  const [transferStudent, setTransferStudent] = useState<any>(null);
   const { toast } = useToast();
   const { confirm, ConfirmationComponent } = useConfirmation();
 
@@ -138,11 +145,6 @@ const Students = () => {
   // Debug: Log when class changes
   useEffect(() => {
     if (formData.class) {
-      console.log('Class selected:', formData.class);
-      console.log('Will fetch divisions for class ID:', formData.class);
-      console.log('Divisions response:', divisionsResponse);
-      console.log('Divisions loading:', divisionsLoading);
-      console.log('Divisions data:', divisions);
     }
   }, [formData.class, divisionsResponse, divisionsLoading, divisions]);
 
@@ -251,6 +253,32 @@ const Students = () => {
     setCurrentPage(1);
   };
 
+  const handleSelectStudent = (student: any, checked: boolean) => {
+    if (checked) {
+      setSelectedStudents([...selectedStudents, student]);
+    } else {
+      setSelectedStudents(selectedStudents.filter(s => s._id !== student._id));
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedStudents(studentsResponse?.data || []);
+    } else {
+      setSelectedStudents([]);
+    }
+  };
+
+  const handleTransferClick = (student: any) => {
+    setTransferStudent(student);
+    setIsTransferDialogOpen(true);
+  };
+
+  const refreshStudents = () => {
+    // The query will automatically refetch
+    setSelectedStudents([]);
+  };
+
   if (error) {
     return (
       <AppLayout>
@@ -272,12 +300,23 @@ const Students = () => {
             <h1 className="text-3xl font-bold">Students Management</h1>
             <p className="text-muted-foreground mt-1">Manage student records and information</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={(open) => {
-            setIsDialogOpen(open);
-            if (!open) resetForm();
-          }}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
+          <div className="flex gap-2">
+            {selectedStudents.length > 0 && (
+              <Button 
+                variant="outline" 
+                className="gap-2"
+                onClick={() => setIsPromoteDialogOpen(true)}
+              >
+                <ArrowUpCircle className="w-4 h-4" />
+                Promote ({selectedStudents.length})
+              </Button>
+            )}
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) resetForm();
+            }}>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
                 <Plus className="w-4 h-4" />
                 Add Student
               </Button>
@@ -514,8 +553,9 @@ const Students = () => {
             </DialogContent>
           </Dialog>
         </div>
+      </div>
 
-        <DataTable
+      <DataTable
           searchPlaceholder="Search by name, admission no, or guardian name..."
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
@@ -554,6 +594,12 @@ const Students = () => {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b bg-muted/50">
+                  <th className="text-left p-3 font-semibold w-12">
+                    <Checkbox
+                      checked={selectedStudents.length === students.length && students.length > 0}
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </th>
                   <th className="text-left p-3 font-semibold">Admission No</th>
                   <th className="text-left p-3 font-semibold">Student Name</th>
                   <th className="text-left p-3 font-semibold">Class</th>
@@ -568,6 +614,12 @@ const Students = () => {
               <tbody>
                 {students.map((student: any) => (
                   <tr key={student._id} className="border-b hover:bg-muted/30">
+                    <td className="p-3">
+                      <Checkbox
+                        checked={selectedStudents.some(s => s._id === student._id)}
+                        onCheckedChange={(checked) => handleSelectStudent(student, checked as boolean)}
+                      />
+                    </td>
                     <td className="p-3">
                       <span className="text-sm text-muted-foreground">{student.admissionNo}</span>
                     </td>
@@ -598,6 +650,14 @@ const Students = () => {
                     </td>
                     <td className="p-3">
                       <div className="flex gap-2 justify-end">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleTransferClick(student)}
+                          title="Generate Transfer Certificate"
+                        >
+                          <FileText className="w-4 h-4" />
+                        </Button>
                         <Button size="sm" variant="outline" onClick={() => handleEdit(student)}>
                           <Edit className="w-4 h-4" />
                         </Button>
@@ -623,6 +683,24 @@ const Students = () => {
         </DataTable>
       </div>
       <ConfirmationComponent />
+
+      {/* Promote Students Dialog */}
+      <PromoteStudentsDialog
+        open={isPromoteDialogOpen}
+        onOpenChange={setIsPromoteDialogOpen}
+        selectedStudents={selectedStudents}
+        onSuccess={refreshStudents}
+        classes={classes}
+        divisions={divisions}
+      />
+
+      {/* Transfer Certificate Dialog */}
+      <TransferCertificateDialog
+        open={isTransferDialogOpen}
+        onOpenChange={setIsTransferDialogOpen}
+        student={transferStudent}
+        onSuccess={refreshStudents}
+      />
     </AppLayout>
   );
 };

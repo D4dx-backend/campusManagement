@@ -37,17 +37,12 @@ export const receiptService = {
 
   // Create receipt configuration - simplified approach
   createReceiptConfig: async (data: CreateReceiptConfigData): Promise<SingleReceiptConfigResponse> => {
-    console.log('Creating receipt config with data:', data);
-    console.log('Current token:', localStorage.getItem('auth_token'));
     
     const currentUser = localStorage.getItem('auth_user');
     const user = currentUser ? JSON.parse(currentUser) : null;
-    console.log('Current user role:', user?.role);
-    console.log('User permissions:', user?.permissions);
     
     try {
       const response = await apiClient.post<ReceiptConfig>('/receipt-configs', data);
-      console.log('Success with standard endpoint');
       return response.data;
     } catch (error: any) {
       console.error('Receipt config creation failed:', error.response?.data);

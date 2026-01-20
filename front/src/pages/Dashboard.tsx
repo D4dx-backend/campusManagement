@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { userHasAccess } from '@/utils/accessControl';
 import { useDashboardStats } from '@/hooks/useDashboard';
 import { Users, UserCog, DollarSign, TrendingUp, BookOpen, Receipt, Search, Clock, Calendar, ArrowRight, Loader2 } from 'lucide-react';
 
@@ -27,36 +28,36 @@ const Dashboard = () => {
   // Quick menu items for search - organized by categories
   const quickMenuItems = [
     // Academic Management
-    { label: 'Students', path: '/students', icon: Users, description: 'Academic: Manage student records' },
-    { label: 'Staff', path: '/staff', icon: UserCog, description: 'Academic: Manage staff information' },
-    { label: 'Textbook Indents', path: '/textbook-indents', icon: BookOpen, description: 'Academic: Manage textbook indents' },
+    { label: 'Students', path: '/students', icon: Users, description: 'Academic: Manage student records', permission: { module: 'students' } },
+    { label: 'Staff', path: '/staff', icon: UserCog, description: 'Academic: Manage staff information', permission: { module: 'staff' } },
+    { label: 'Textbook Indents', path: '/textbook-indents', icon: BookOpen, description: 'Academic: Manage textbook indents', permission: { module: 'textbooks' } },
     
     // Financial Management
-    { label: 'Fee Management', path: '/fees', icon: DollarSign, description: 'Financial: Collect and manage fees' },
-    { label: 'Payroll', path: '/payroll', icon: Receipt, description: 'Financial: Staff salary management' },
-    { label: 'Expenses', path: '/expenses', icon: Receipt, description: 'Financial: Track school expenses' },
+    { label: 'Fee Management', path: '/fees', icon: DollarSign, description: 'Financial: Collect and manage fees', permission: { module: 'fees' } },
+    { label: 'Payroll', path: '/payroll', icon: Receipt, description: 'Financial: Staff salary management', permission: { module: 'payroll' } },
+    { label: 'Expenses', path: '/expenses', icon: Receipt, description: 'Financial: Track school expenses', permission: { module: 'expenses' } },
     
     // Reports & Analytics
-    { label: 'Reports', path: '/reports', icon: TrendingUp, description: 'Analytics: View reports and insights' },
-    { label: 'Activity Log', path: '/activity-log', icon: Clock, description: 'Analytics: View system activities' },
+    { label: 'Reports', path: '/reports', icon: TrendingUp, description: 'Analytics: View reports and insights', permission: { module: 'reports' } },
+    { label: 'Activity Log', path: '/activity-log', icon: Clock, description: 'Analytics: View system activities', permission: { module: 'activity_logs' } },
     
     // Master Data items
-    { label: 'Classes', path: '/classes', icon: Users, description: 'Master Data: Manage class structures' },
-    { label: 'Divisions', path: '/divisions', icon: Users, description: 'Master Data: Manage class divisions' },
-    { label: 'Departments', path: '/departments', icon: UserCog, description: 'Master Data: Manage departments' },
-    { label: 'Text Books', path: '/textbooks', icon: BookOpen, description: 'Master Data: Manage textbook inventory' },
-    { label: 'User Access', path: '/user-access', icon: UserCog, description: 'Master Data: Manage user permissions' },
+    { label: 'Classes', path: '/classes', icon: Users, description: 'Master Data: Manage class structures', permission: { module: 'classes' } },
+    { label: 'Divisions', path: '/divisions', icon: Users, description: 'Master Data: Manage class divisions', permission: { module: 'divisions' } },
+    { label: 'Departments', path: '/departments', icon: UserCog, description: 'Master Data: Manage departments', permission: { module: 'departments' } },
+    { label: 'Text Books', path: '/textbooks', icon: BookOpen, description: 'Master Data: Manage textbook inventory', permission: { module: 'textbooks' } },
+    { label: 'User Access', path: '/user-access', icon: UserCog, description: 'Master Data: Manage user permissions', permission: { roles: ['super_admin'] } },
     
     // Super Admin
-    ...(user?.role === 'super_admin' ? [
-      { label: 'Branch Management', path: '/branch-management', icon: Users, description: 'Super Admin: Manage multiple branches' },
-    ] : []),
+    { label: 'Branch Management', path: '/branch-management', icon: Users, description: 'Super Admin: Manage multiple branches', permission: { roles: ['super_admin'] } },
   ];
 
-  const filteredMenuItems = quickMenuItems.filter(item =>
-    item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredMenuItems = quickMenuItems
+    .filter((item) => userHasAccess(user, item.permission))
+    .filter((item) =>
+      item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.description.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
   const handleQuickNavigation = (path: string) => {
     navigate(path);

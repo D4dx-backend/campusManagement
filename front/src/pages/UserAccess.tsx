@@ -8,9 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DataTable } from '@/components/ui/data-table';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useConfirmation } from '@/hooks/useConfirmation';
 import { useBranches } from '@/hooks/useBranches';
+import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/hooks/useUsers';
 import { authService } from '@/services/authService';
 import { User, UserRole, Permission } from '@/types';
 import { Plus, Search, Edit, Trash2, Users, Shield, Smartphone, Eye, EyeOff, Loader2 } from 'lucide-react';
@@ -19,24 +19,40 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { formatters } from '@/utils/exportUtils';
 import { pageConfigurations } from '@/utils/pageTemplates';
+import { normalizeModule } from '@/utils/accessControl';
 
 const UserAccess = () => {
-  const [users, setUsers] = useLocalStorage<User[]>('campuswise_users', []);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showPin, setShowPin] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [filterValues, setFilterValues] = useState({});
+  const [filterValues, setFilterValues] = useState<any>({});
   const { toast } = useToast();
   const { confirm, ConfirmationComponent } = useConfirmation();
   const { user: currentUser } = useAuth();
 
+  // API hooks
+  const { data: usersResponse, isLoading } = useUsers({
+    page: currentPage,
+    limit: itemsPerPage,
+    search: searchTerm,
+    role: filterValues.role,
+    status: filterValues.status,
+  });
+  
   // Get branches from API only for super admins
   const { data: branchesResponse, isLoading: branchesLoading, error: branchesError } = useBranches(
     currentUser?.role === 'super_admin'
   );
+  
+  const createUserMutation = useCreateUser();
+  const updateUserMutation = useUpdateUser();
+  const deleteUserMutation = useDeleteUser();
+
+  const users = usersResponse?.data || [];
+  const pagination = usersResponse?.pagination;
   const branches = branchesResponse?.data || [];
 
   const [formData, setFormData] = useState({
@@ -51,8 +67,18 @@ const UserAccess = () => {
   });
 
   const availableModules = [
-    'Students', 'Staff', 'Fees', 'Payroll', 'Expenses', 'TextBooks', 'Reports', 
-    'Classes', 'Divisions', 'Departments', 'ActivityLog'
+    { label: 'Students', value: 'students' },
+    { label: 'Staff', value: 'staff' },
+    { label: 'Fees', value: 'fees' },
+    { label: 'Payroll', value: 'payroll' },
+    { label: 'Expenses', value: 'expenses' },
+    { label: 'Text Books', value: 'textbooks' },
+    { label: 'Reports', value: 'reports' },
+    { label: 'Classes', value: 'classes' },
+    { label: 'Divisions', value: 'divisions' },
+    { label: 'Departments', value: 'departments' },
+    { label: 'Activity Logs', value: 'activity_logs' },
+    { label: 'Accounting', value: 'accounting' },
   ];
 
   const availableActions = ['create', 'read', 'update', 'delete'] as const;
@@ -70,25 +96,6 @@ const UserAccess = () => {
     });
     setEditingUser(null);
   };
-
-  // Pagination logic for local data
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  
-  // Apply filters to users
-  let filteredUsers = users.filter(u => {
-    const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         u.mobile.includes(searchTerm);
-    
-    const matchesRole = !filterValues.role || u.role === filterValues.role;
-    const matchesStatus = !filterValues.status || u.status === filterValues.status;
-    
-    return matchesSearch && matchesRole && matchesStatus;
-  });
-
-  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
 
   // Get configuration from templates
   const config = pageConfigurations.userAccess;
@@ -129,38 +136,33 @@ const UserAccess = () => {
       }
 
       // Prepare user data - for non-super admins, don't include branchId (backend will handle it)
-      const userData = {
+      const userData: any = {
         name: formData.name,
         email: formData.email,
         mobile: formData.mobile,
-        pin: formData.pin,
         role: formData.role,
         ...(currentUser?.role === 'super_admin' && formData.role !== 'super_admin' && formData.branchId && { branchId: formData.branchId }),
-        permissions: formData.permissions,
+        permissions: formData.permissions.map((permission) => ({
+          ...permission,
+          module: normalizeModule(permission.module),
+        })),
         status: formData.status
       };
 
+      if (!editingUser || formData.pin) {
+        userData.pin = formData.pin;
+      }
 
-      
       if (editingUser) {
-        // TODO: Implement user update API call
-        setUsers(users.map(u => 
-          u.id === editingUser.id 
-            ? { ...userData, id: editingUser.id, createdAt: editingUser.createdAt, lastLogin: editingUser.lastLogin }
-            : u
-        ));
+        // Update existing user
+        await updateUserMutation.mutateAsync({
+          id: editingUser._id || editingUser.id,
+          ...userData
+        });
         toast({ title: 'User updated successfully' });
       } else {
         // Create new user via API
-        const newUser = await authService.register(userData);
-        
-        // Add to local state for immediate UI update
-        setUsers([...users, {
-          ...newUser,
-          id: newUser.id || Date.now().toString(),
-          createdAt: newUser.createdAt || new Date().toISOString(),
-        }]);
-        
+        await createUserMutation.mutateAsync(userData);
         toast({ title: 'User created successfully' });
       }
       
@@ -169,7 +171,7 @@ const UserAccess = () => {
     } catch (error: any) {
       toast({ 
         title: 'Error', 
-        description: error.response?.data?.message || 'Failed to create user',
+        description: error.response?.data?.message || (editingUser ? 'Failed to update user' : 'Failed to create user'),
         variant: 'destructive'
       });
     }
@@ -177,20 +179,28 @@ const UserAccess = () => {
 
   const handleEdit = (user: User) => {
     setEditingUser(user);
+    const branchIdValue =
+      (user as any).branchId?._id ||
+      (user as any).branchId?.id ||
+      (user as any).branchId ||
+      '';
     setFormData({
       name: user.name,
       email: user.email,
       mobile: user.mobile,
-      pin: user.pin,
+      pin: '',
       role: user.role,
-      branchId: user.branchId || '',
+      branchId: branchIdValue,
       status: user.status,
-      permissions: user.permissions || [],
+      permissions: (user.permissions || []).map((permission) => ({
+        ...permission,
+        module: normalizeModule(permission.module),
+      })),
     });
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string, userName: string) => {
+  const handleDelete = async (id: string, userName: string) => {
     confirm(
       {
         title: 'Delete User',
@@ -198,16 +208,25 @@ const UserAccess = () => {
         confirmText: 'Delete',
         variant: 'destructive'
       },
-      () => {
-        setUsers(users.filter(u => u.id !== id));
-        toast({ title: 'User deleted successfully' });
+      async () => {
+        try {
+          await deleteUserMutation.mutateAsync(id);
+          toast({ title: 'User deleted successfully' });
+        } catch (error: any) {
+          toast({ 
+            title: 'Error', 
+            description: error.response?.data?.message || 'Failed to delete user',
+            variant: 'destructive'
+          });
+        }
       }
     );
   };
 
   const handlePermissionChange = (module: string, action: string, checked: boolean) => {
     const updatedPermissions = [...formData.permissions];
-    const moduleIndex = updatedPermissions.findIndex(p => p.module === module);
+    const normalizedModule = normalizeModule(module);
+    const moduleIndex = updatedPermissions.findIndex(p => normalizeModule(p.module) === normalizedModule);
     
     if (moduleIndex >= 0) {
       if (checked) {
@@ -221,14 +240,15 @@ const UserAccess = () => {
         }
       }
     } else if (checked) {
-      updatedPermissions.push({ module, actions: [action as any] });
+      updatedPermissions.push({ module: normalizedModule, actions: [action as any] });
     }
     
     setFormData({ ...formData, permissions: updatedPermissions });
   };
 
   const hasPermission = (module: string, action: string) => {
-    const modulePermission = formData.permissions.find(p => p.module === module);
+    const normalizedModule = normalizeModule(module);
+    const modulePermission = formData.permissions.find(p => normalizeModule(p.module) === normalizedModule);
     return modulePermission?.actions.includes(action as any) || false;
   };
 
@@ -328,10 +348,10 @@ const UserAccess = () => {
                         <Input
                           id="pin"
                           type={showPin ? "text" : "password"}
-                          placeholder="4-digit PIN"
+                          placeholder={editingUser ? "Leave blank to keep current PIN" : "4-digit PIN"}
                           value={formData.pin}
                           onChange={e => setFormData({ ...formData, pin: e.target.value.replace(/\D/g, '').slice(0, 4) })}
-                          required
+                          required={!editingUser}
                           maxLength={4}
                         />
                         <button
@@ -432,20 +452,20 @@ const UserAccess = () => {
                     <Label className="text-base font-semibold">Module Permissions</Label>
                   </div>
                   <div className="grid gap-4">
-                    {availableModules.map(module => (
-                      <Card key={module} className="p-4">
+                    {availableModules.map((module) => (
+                      <Card key={module.value} className="p-4">
                         <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-medium">{module}</h4>
+                          <h4 className="font-medium">{module.label}</h4>
                         </div>
                         <div className="grid grid-cols-4 gap-4">
                           {availableActions.map(action => (
                             <div key={action} className="flex items-center space-x-2">
                               <Checkbox
-                                id={`${module}-${action}`}
-                                checked={hasPermission(module, action)}
-                                onCheckedChange={(checked) => handlePermissionChange(module, action, checked as boolean)}
+                                id={`${module.value}-${action}`}
+                                checked={hasPermission(module.value, action)}
+                                onCheckedChange={(checked) => handlePermissionChange(module.value, action, checked as boolean)}
                               />
-                              <Label htmlFor={`${module}-${action}`} className="text-sm capitalize">
+                              <Label htmlFor={`${module.value}-${action}`} className="text-sm capitalize">
                                 {action}
                               </Label>
                             </div>
@@ -486,14 +506,14 @@ const UserAccess = () => {
           }}
           pagination={{
             currentPage,
-            totalPages,
-            totalItems: filteredUsers.length,
+            totalPages: pagination?.pages || 1,
+            totalItems: pagination?.total || 0,
             itemsPerPage,
             onPageChange: setCurrentPage,
             onItemsPerPageChange: handleItemsPerPageChange
           }}
-          data={paginatedUsers}
-          isLoading={false}
+          data={users}
+          isLoading={isLoading}
           error={null}
           emptyState={{
             icon: <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />,
@@ -501,8 +521,8 @@ const UserAccess = () => {
           }}
         >
           <div className="grid gap-4">
-            {paginatedUsers.map(user => (
-              <Card key={user.id}>
+            {users.map(user => (
+              <Card key={user._id || user.id}>
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start">
                     <div className="space-y-2 flex-1">
@@ -549,7 +569,7 @@ const UserAccess = () => {
                       <Button size="sm" variant="outline" onClick={() => handleEdit(user)}>
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleDelete(user.id, user.name)}>
+                      <Button size="sm" variant="outline" onClick={() => handleDelete(user._id || user.id, user.name)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>

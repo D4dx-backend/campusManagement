@@ -41,40 +41,15 @@ const TextBooks = () => {
   // Get active classes
   const activeClasses = classesResponse?.data?.filter(c => c.status === 'active') || [];
 
-  // Get raw data from API
-  const rawTextbooks = textbooksResponse?.data || [];
-  
-  // Apply frontend filters
-  const textbooks = rawTextbooks.filter((book: any) => {
-    // Apply class filter
-    if (filterValues.class && book.classId !== filterValues.class) {
-      return false;
-    }
-    
-    // Apply subject filter
-    if (filterValues.subject && !book.subject.toLowerCase().includes(filterValues.subject.toLowerCase())) {
-      return false;
-    }
-    
-    // Apply publisher filter
-    if (filterValues.publisher && !book.publisher.toLowerCase().includes(filterValues.publisher.toLowerCase())) {
-      return false;
-    }
-    
-    // Apply price filter (minimum price)
-    if (filterValues.price && book.price < parseFloat(filterValues.price)) {
-      return false;
-    }
-    
-    return true;
-  });
+  // Get data from API (server-side filtered and paginated)
+  const textbooks = (textbooksResponse?.data || []) as any[];
   const pagination = textbooksResponse?.pagination;
-  const stats = statsResponse?.data || {
+  const stats = (statsResponse?.data || {
     totalBooks: 0,
     totalTitles: 0,
     availableBooks: 0,
     issuedBooks: 0
-  };
+  }) as { totalBooks: number; totalTitles: number; availableBooks: number; issuedBooks: number };
 
   // Get configuration from templates with dynamic class options
   const config = {
@@ -135,7 +110,7 @@ const TextBooks = () => {
         bookCode: formData.bookCode,
         title: formData.title,
         subject: formData.subject,
-        classId: formData.class,
+        class: formData.class,
         publisher: formData.publisher,
         price: Number(formData.price),
         quantity: Number(formData.quantity),
@@ -145,7 +120,7 @@ const TextBooks = () => {
       if (editingBook) {
         await updateTextbookMutation.mutateAsync({
           id: editingBook._id,
-          ...bookData,
+          data: bookData,
         });
       } else {
         await createTextbookMutation.mutateAsync(bookData);

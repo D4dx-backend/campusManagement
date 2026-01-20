@@ -80,14 +80,7 @@ const Login = () => {
           </form>
           
           <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-            <p className="text-sm font-medium text-muted-foreground mb-2">Demo Credentials:</p>
-            <div className="space-y-1 text-xs text-muted-foreground">
-              <p><strong>Super Admin:</strong> Mobile: 9876543210, PIN: 1234</p>
-              <p><strong>Branch Admin:</strong> Mobile: 9876543211, PIN: 5678</p>
-              <p><strong>Teacher:</strong> Mobile: 9876543212, PIN: 9012</p>
-              <p><strong>Accountant:</strong> Mobile: 9876543213, PIN: 3456</p>
-            </div>
-            <div className="mt-3 pt-3 border-t border-border">
+            <div className="mt-1">
               <p className="text-xs text-muted-foreground">
                 Make sure the backend API is running on port 8000
               </p>

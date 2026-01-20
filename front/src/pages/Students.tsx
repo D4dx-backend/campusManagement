@@ -2,18 +2,22 @@ import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { DataTable } from '@/components/ui/data-table';
+import { Checkbox } from '@/components/ui/checkbox';
+import { PromoteStudentsDialog } from '@/components/students/PromoteStudentsDialog';
+import { TransferCertificateDialog } from '@/components/students/TransferCertificateDialog';
 import { useConfirmation } from '@/hooks/useConfirmation';
-import { Plus, Search, Edit, Trash2, UserCircle, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, UserCircle, Loader2, ArrowUpCircle, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useStudents, useCreateStudent, useUpdateStudent, useDeleteStudent } from '@/hooks/useStudents';
 import { useClasses } from '@/hooks/useClasses';
 import { useDivisionsByClass } from '@/hooks/useDivisions';
+import { useTransportRoutes } from '@/hooks/useTransportRoutes';
 import { formatters } from '@/utils/exportUtils';
 import { createApiFilters, filterMappings, createExportDataFetcher } from '@/utils/apiFilters';
 
@@ -24,6 +28,10 @@ const Students = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [filterValues, setFilterValues] = useState({});
+  const [selectedStudents, setSelectedStudents] = useState<any[]>([]);
+  const [isPromoteDialogOpen, setIsPromoteDialogOpen] = useState(false);
+  const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
+  const [transferStudent, setTransferStudent] = useState<any>(null);
   const { toast } = useToast();
   const { confirm, ConfirmationComponent } = useConfirmation();
 
@@ -48,21 +56,25 @@ const Students = () => {
     class: '',
     section: '',
     dateOfBirth: '',
+    dateOfAdmission: '',
     guardianName: '',
     guardianPhone: '',
     guardianEmail: '',
-    gender: '' as 'male' | 'female' | 'other' | '',
+    gender: '' as 'male' | 'female' | '',
     address: '',
     transport: 'none' as 'school' | 'own' | 'none',
     transportRoute: '',
+    isStaffChild: false,
   });
 
   // API hooks for classes and divisions
   const { data: classesResponse } = useClasses({ status: 'active', limit: 100 });
   const { data: divisionsResponse, isLoading: divisionsLoading, error: divisionsError } = useDivisionsByClass(formData.class);
+  const { data: transportRoutesResponse } = useTransportRoutes({ status: 'active', limit: 100 });
 
   const classes = classesResponse?.data || [];
   const divisions = divisionsResponse?.data || [];
+  const transportRoutes = transportRoutesResponse?.data || [];
 
   // Filter configuration
   const filterOptions = [
@@ -81,8 +93,7 @@ const Students = () => {
       type: 'select' as const,
       options: [
         { value: 'male', label: 'Male' },
-        { value: 'female', label: 'Female' },
-        { value: 'other', label: 'Other' }
+        { value: 'female', label: 'Female' }
       ]
     },
     {
@@ -109,6 +120,7 @@ const Students = () => {
     { key: 'class', label: 'Class' },
     { key: 'section', label: 'Section' },
     { key: 'dateOfBirth', label: 'Date of Birth', formatter: formatters.date },
+    { key: 'dateOfAdmission', label: 'Date of Admission', formatter: formatters.date },
     { key: 'gender', label: 'Gender', formatter: formatters.capitalize },
     { key: 'guardianName', label: 'Guardian Name' },
     { key: 'guardianPhone', label: 'Guardian Phone' },
@@ -133,51 +145,8 @@ const Students = () => {
   // Debug: Log when class changes
   useEffect(() => {
     if (formData.class) {
-      console.log('Class selected:', formData.class);
-      console.log('Will fetch divisions for class ID:', formData.class);
-      console.log('Divisions response:', divisionsResponse);
-      console.log('Divisions loading:', divisionsLoading);
-      console.log('Divisions data:', divisions);
     }
   }, [formData.class, divisionsResponse, divisionsLoading, divisions]);
-
-  // Debug function to test API
-  const debugAPI = async () => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/divisions/debug/all`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      const data = await response.json();
-      console.log('🐛 Debug API Response:', data);
-      
-      // Also test the specific class divisions endpoint
-      if (formData.class) {
-        const divisionsResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/divisions/class/${formData.class}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        const divisionsData = await divisionsResponse.json();
-        console.log('🐛 Divisions for selected class:', divisionsData);
-      }
-      
-      toast({
-        title: 'Debug Info',
-        description: `Found ${data.data?.totalClasses || 0} classes and ${data.data?.totalDivisions || 0} divisions. Check console for details.`,
-      });
-    } catch (error) {
-      console.error('Debug API Error:', error);
-      toast({
-        title: 'Debug Error',
-        description: 'Failed to fetch debug info. Check console for details.',
-        variant: 'destructive',
-      });
-    }
-  };
 
   const resetForm = () => {
     setFormData({
@@ -186,6 +155,7 @@ const Students = () => {
       class: '',
       section: '',
       dateOfBirth: '',
+      dateOfAdmission: '',
       guardianName: '',
       guardianPhone: '',
       guardianEmail: '',
@@ -193,6 +163,7 @@ const Students = () => {
       address: '',
       transport: 'none',
       transportRoute: '',
+      isStaffChild: false,
     });
     setEditingStudent(null);
   };
@@ -235,6 +206,7 @@ const Students = () => {
       class: student.classId || student.class, // Use classId if available, fallback to class name
       section: student.section,
       dateOfBirth: student.dateOfBirth.split('T')[0], // Format date for input
+      dateOfAdmission: student.dateOfAdmission ? student.dateOfAdmission.split('T')[0] : '',
       guardianName: student.guardianName,
       guardianPhone: student.guardianPhone,
       guardianEmail: student.guardianEmail || '',
@@ -242,6 +214,7 @@ const Students = () => {
       address: student.address,
       transport: student.transport,
       transportRoute: student.transportRoute || '',
+      isStaffChild: student.isStaffChild || false,
     });
     setIsDialogOpen(true);
   };
@@ -280,6 +253,32 @@ const Students = () => {
     setCurrentPage(1);
   };
 
+  const handleSelectStudent = (student: any, checked: boolean) => {
+    if (checked) {
+      setSelectedStudents([...selectedStudents, student]);
+    } else {
+      setSelectedStudents(selectedStudents.filter(s => s._id !== student._id));
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedStudents(studentsResponse?.data || []);
+    } else {
+      setSelectedStudents([]);
+    }
+  };
+
+  const handleTransferClick = (student: any) => {
+    setTransferStudent(student);
+    setIsTransferDialogOpen(true);
+  };
+
+  const refreshStudents = () => {
+    // The query will automatically refetch
+    setSelectedStudents([]);
+  };
+
   if (error) {
     return (
       <AppLayout>
@@ -301,12 +300,23 @@ const Students = () => {
             <h1 className="text-3xl font-bold">Students Management</h1>
             <p className="text-muted-foreground mt-1">Manage student records and information</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={(open) => {
-            setIsDialogOpen(open);
-            if (!open) resetForm();
-          }}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
+          <div className="flex gap-2">
+            {selectedStudents.length > 0 && (
+              <Button 
+                variant="outline" 
+                className="gap-2"
+                onClick={() => setIsPromoteDialogOpen(true)}
+              >
+                <ArrowUpCircle className="w-4 h-4" />
+                Promote ({selectedStudents.length})
+              </Button>
+            )}
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) resetForm();
+            }}>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
                 <Plus className="w-4 h-4" />
                 Add Student
               </Button>
@@ -413,6 +423,16 @@ const Students = () => {
                     />
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="dateOfAdmission">Date of Admission *</Label>
+                    <Input
+                      id="dateOfAdmission"
+                      type="date"
+                      value={formData.dateOfAdmission}
+                      onChange={e => setFormData({ ...formData, dateOfAdmission: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="guardianName">Guardian Name *</Label>
                     <Input
                       id="guardianName"
@@ -444,7 +464,7 @@ const Students = () => {
                     <Label htmlFor="gender">Gender *</Label>
                     <Select
                       value={formData.gender}
-                      onValueChange={(value: 'male' | 'female' | 'other') => setFormData({ ...formData, gender: value })}
+                      onValueChange={(value: 'male' | 'female') => setFormData({ ...formData, gender: value })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select gender" />
@@ -452,7 +472,6 @@ const Students = () => {
                       <SelectContent>
                         <SelectItem value="male">Male</SelectItem>
                         <SelectItem value="female">Female</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -475,48 +494,68 @@ const Students = () => {
                   {formData.transport === 'school' && (
                     <div className="space-y-2">
                       <Label htmlFor="transportRoute">Transport Route</Label>
-                      <Input
-                        id="transportRoute"
+                      <Select
                         value={formData.transportRoute}
-                        onChange={e => setFormData({ ...formData, transportRoute: e.target.value })}
-                      />
+                        onValueChange={(value) => setFormData({ ...formData, transportRoute: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select transport route" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {transportRoutes.map((route: any) => (
+                            <SelectItem key={route._id} value={route.routeCode}>
+                              {route.routeName} ({route.routeCode})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="address">Address *</Label>
-                  <Input
+                  <Textarea
                     id="address"
                     value={formData.address}
                     onChange={e => setFormData({ ...formData, address: e.target.value })}
                     required
+                    rows={3}
+                    placeholder="Enter full address"
                   />
                 </div>
-                <div className="flex justify-between items-center">
-                  <Button type="button" variant="ghost" size="sm" onClick={debugAPI}>
-                    🐛 Debug API
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="isStaffChild"
+                    checked={formData.isStaffChild}
+                    onChange={e => setFormData({ ...formData, isStaffChild: e.target.checked })}
+                    className="rounded"
+                  />
+                  <Label htmlFor="isStaffChild" className="cursor-pointer">
+                    Staff Child (Eligible for fee discount)
+                  </Label>
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                    Cancel
                   </Button>
-                  <div className="flex gap-2">
-                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button 
-                      type="submit" 
-                      disabled={createStudentMutation.isPending || updateStudentMutation.isPending}
-                    >
-                      {(createStudentMutation.isPending || updateStudentMutation.isPending) && (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      )}
-                      {editingStudent ? 'Update' : 'Add'} Student
-                    </Button>
-                  </div>
+                  <Button 
+                    type="submit" 
+                    disabled={createStudentMutation.isPending || updateStudentMutation.isPending}
+                  >
+                    {(createStudentMutation.isPending || updateStudentMutation.isPending) && (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    )}
+                    {editingStudent ? 'Update' : 'Add'} Student
+                  </Button>
                 </div>
               </form>
             </DialogContent>
           </Dialog>
         </div>
+      </div>
 
-        <DataTable
+      <DataTable
           searchPlaceholder="Search by name, admission no, or guardian name..."
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
@@ -551,66 +590,117 @@ const Students = () => {
             message: "No students found"
           }}
         >
-          <div className="grid gap-4">
-            {students.map((student: any) => (
-              <Card key={student._id}>
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3">
-                        <h3 className="font-semibold text-lg">{student.name}</h3>
-                        <span className="text-sm text-muted-foreground">
-                          {student.admissionNo}
-                        </span>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="text-left p-3 font-semibold w-12">
+                    <Checkbox
+                      checked={selectedStudents.length === students.length && students.length > 0}
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </th>
+                  <th className="text-left p-3 font-semibold">Admission No</th>
+                  <th className="text-left p-3 font-semibold">Student Name</th>
+                  <th className="text-left p-3 font-semibold">Class</th>
+                  <th className="text-left p-3 font-semibold">Guardian</th>
+                  <th className="text-left p-3 font-semibold">Phone</th>
+                  <th className="text-left p-3 font-semibold">Gender</th>
+                  <th className="text-left p-3 font-semibold">Transport</th>
+                  <th className="text-left p-3 font-semibold">Staff Child</th>
+                  <th className="text-right p-3 font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {students.map((student: any) => (
+                  <tr key={student._id} className="border-b hover:bg-muted/30">
+                    <td className="p-3">
+                      <Checkbox
+                        checked={selectedStudents.some(s => s._id === student._id)}
+                        onCheckedChange={(checked) => handleSelectStudent(student, checked as boolean)}
+                      />
+                    </td>
+                    <td className="p-3">
+                      <span className="text-sm text-muted-foreground">{student.admissionNo}</span>
+                    </td>
+                    <td className="p-3">
+                      <span className="font-semibold">{student.name}</span>
+                    </td>
+                    <td className="p-3">
+                      <span className="font-medium">{student.class}-{student.section}</span>
+                    </td>
+                    <td className="p-3">
+                      <span className="text-sm">{student.guardianName}</span>
+                    </td>
+                    <td className="p-3">
+                      <span className="text-sm">{student.guardianPhone}</span>
+                    </td>
+                    <td className="p-3">
+                      <span className="text-sm capitalize">{student.gender}</span>
+                    </td>
+                    <td className="p-3">
+                      <span className="text-sm capitalize">{student.transport}</span>
+                    </td>
+                    <td className="p-3">
+                      {student.isStaffChild ? (
+                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Yes</span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">No</span>
+                      )}
+                    </td>
+                    <td className="p-3">
+                      <div className="flex gap-2 justify-end">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleTransferClick(student)}
+                          title="Generate Transfer Certificate"
+                        >
+                          <FileText className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleEdit(student)}>
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleDelete(student._id, student.name)}
+                          disabled={deleteStudentMutation.isPending}
+                        >
+                          {deleteStudentMutation.isPending ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </Button>
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">Class:</span>
-                          <span className="ml-2 font-medium">{student.class}-{student.section}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Guardian:</span>
-                          <span className="ml-2 font-medium">{student.guardianName}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Phone:</span>
-                          <span className="ml-2 font-medium">{student.guardianPhone}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Gender:</span>
-                          <span className="ml-2 font-medium capitalize">{student.gender}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Transport:</span>
-                          <span className="ml-2 font-medium capitalize">{student.transport}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => handleEdit(student)}>
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => handleDelete(student._id, student.name)}
-                        disabled={deleteStudentMutation.isPending}
-                      >
-                        {deleteStudentMutation.isPending ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </DataTable>
       </div>
       <ConfirmationComponent />
+
+      {/* Promote Students Dialog */}
+      <PromoteStudentsDialog
+        open={isPromoteDialogOpen}
+        onOpenChange={setIsPromoteDialogOpen}
+        selectedStudents={selectedStudents}
+        onSuccess={refreshStudents}
+        classes={classes}
+        divisions={divisions}
+      />
+
+      {/* Transfer Certificate Dialog */}
+      <TransferCertificateDialog
+        open={isTransferDialogOpen}
+        onOpenChange={setIsTransferDialogOpen}
+        student={transferStudent}
+        onSuccess={refreshStudents}
+      />
     </AppLayout>
   );
 };

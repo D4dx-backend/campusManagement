@@ -34,7 +34,6 @@ const Classes = () => {
   // Debug log
   useEffect(() => {
     if (user?.role === 'super_admin') {
-      console.log('Branches loaded:', branches.length, branches);
     }
   }, [branches, user?.role]);
 
@@ -125,7 +124,6 @@ const Classes = () => {
         if (!createData.branchId || createData.branchId === '') {
           delete createData.branchId;
         }
-        console.log('Creating class with data:', createData);
         await createClassMutation.mutateAsync(createData);
       }
       
@@ -335,49 +333,63 @@ const Classes = () => {
                   </div>
                 ) : (
                   <>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {classes.map(classItem => (
-                        <Card key={classItem._id}>
-                          <CardContent className="p-4">
-                            <div className="flex justify-between items-start mb-3">
-                              <div>
-                                <h3 className="font-semibold text-lg">{classItem.name}</h3>
-                                <p className="text-sm text-muted-foreground">{classItem.academicYear}</p>
-                              </div>
-                              <div className="flex gap-1">
-                                <Button size="sm" variant="outline" onClick={() => handleEdit(classItem)}>
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  onClick={() => handleDelete(classItem._id, classItem.name)}
-                                  disabled={deleteClassMutation.isPending}
-                                >
-                                  {deleteClassMutation.isPending ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    <Trash2 className="w-4 h-4" />
-                                  )}
-                                </Button>
-                              </div>
-                            </div>
-
-                            <div className="flex justify-between items-center">
-                              <span className={`text-xs px-2 py-1 rounded-full ${
-                                classItem.status === 'active' 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-gray-100 text-gray-800'
-                              }`}>
-                                {classItem.status}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                {new Date(classItem.createdAt).toLocaleDateString()}
-                              </span>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="border-b bg-muted/50">
+                            <th className="text-left p-3 font-semibold">Class Name</th>
+                            <th className="text-left p-3 font-semibold">Academic Year</th>
+                            <th className="text-left p-3 font-semibold">Status</th>
+                            <th className="text-left p-3 font-semibold">Created Date</th>
+                            <th className="text-right p-3 font-semibold">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {classes.map(classItem => (
+                            <tr key={classItem._id} className="border-b hover:bg-muted/30">
+                              <td className="p-3">
+                                <span className="font-semibold">{classItem.name}</span>
+                              </td>
+                              <td className="p-3">
+                                <span className="text-sm">{classItem.academicYear}</span>
+                              </td>
+                              <td className="p-3">
+                                <span className={`text-xs px-2 py-1 rounded-full ${
+                                  classItem.status === 'active' 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {classItem.status}
+                                </span>
+                              </td>
+                              <td className="p-3">
+                                <span className="text-sm text-muted-foreground">
+                                  {new Date(classItem.createdAt).toLocaleDateString()}
+                                </span>
+                              </td>
+                              <td className="p-3">
+                                <div className="flex gap-2 justify-end">
+                                  <Button size="sm" variant="outline" onClick={() => handleEdit(classItem)}>
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    onClick={() => handleDelete(classItem._id, classItem.name)}
+                                    disabled={deleteClassMutation.isPending}
+                                  >
+                                    {deleteClassMutation.isPending ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="w-4 h-4" />
+                                    )}
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                     
                     {pagination && pagination.totalPages > 1 && (

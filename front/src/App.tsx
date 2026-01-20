@@ -10,21 +10,30 @@ import Dashboard from "./pages/Dashboard";
 import Students from "./pages/Students";
 import Staff from "./pages/Staff";
 import Fees from "./pages/Fees";
+import FeeStructures from "./pages/FeeStructures";
 import Payroll from "./pages/Payroll";
 import Expenses from "./pages/Expenses";
 import TextBooks from "./pages/TextBooks";
 import TextbookIndents from "./pages/TextbookIndents";
 import Reports from "./pages/Reports";
+import FeeDues from "./pages/FeeDues";
+import TransportReport from "./pages/TransportReport";
 import Classes from "./pages/Classes";
 import Divisions from "./pages/Divisions";
 import ExpenseCategories from "./pages/ExpenseCategories";
 import IncomeCategories from "./pages/IncomeCategories";
 import Departments from "./pages/Departments";
 import Designations from "./pages/Designations";
+import TransportRoutes from "./pages/TransportRoutes";
 import ActivityLog from "./pages/ActivityLog";
 import UserAccess from "./pages/UserAccess";
 import BranchManagement from "./pages/BranchManagement";
 import ReceiptConfig from "./pages/ReceiptConfig";
+import { DayBook } from "./pages/accounting/DayBook";
+import { Ledger } from "./pages/accounting/Ledger";
+import { FeeDetails } from "./pages/accounting/FeeDetails";
+import { BalanceSheet } from "./pages/accounting/BalanceSheet";
+import { AnnualReport } from "./pages/accounting/AnnualReport";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -95,6 +104,14 @@ const App = () => (
               }
             />
             <Route
+              path="/fee-structures"
+              element={
+                <ProtectedRoute>
+                  <FeeStructures />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/payroll"
               element={
                 <ProtectedRoute>
@@ -131,6 +148,22 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Reports />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports/fee-dues"
+              element={
+                <ProtectedRoute>
+                  <FeeDues />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports/transport"
+              element={
+                <ProtectedRoute>
+                  <TransportReport />
                 </ProtectedRoute>
               }
             />
@@ -183,6 +216,14 @@ const App = () => (
               }
             />
             <Route
+              path="/transport-routes"
+              element={
+                <ProtectedRoute>
+                  <TransportRoutes />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/activity-log"
               element={
                 <ProtectedRoute>
@@ -211,6 +252,46 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ReceiptConfig />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/accounting/daybook"
+              element={
+                <ProtectedRoute>
+                  <DayBook />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/accounting/ledger"
+              element={
+                <ProtectedRoute>
+                  <Ledger />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/accounting/fee-details"
+              element={
+                <ProtectedRoute>
+                  <FeeDetails />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/accounting/balance-sheet"
+              element={
+                <ProtectedRoute>
+                  <BalanceSheet />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/accounting/annual-report"
+              element={
+                <ProtectedRoute>
+                  <AnnualReport />
                 </ProtectedRoute>
               }
             />

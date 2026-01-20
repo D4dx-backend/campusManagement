@@ -45,6 +45,7 @@ export interface Student {
   class: string;
   section: string;
   dateOfBirth: string;
+  dateOfAdmission: string;
   guardianName: string;
   guardianPhone: string;
   guardianEmail: string;
@@ -52,6 +53,7 @@ export interface Student {
   transport: 'school' | 'own' | 'none';
   transportRoute?: string;
   status: 'active' | 'inactive';
+  isStaffChild?: boolean;
   createdAt: string;
 }
 

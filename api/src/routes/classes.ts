@@ -206,8 +206,6 @@ router.get('/:id', checkPermission('classes', 'read'), async (req: Authenticated
 // @access  Private
 router.post('/', checkPermission('classes', 'create'), validate(createClassSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    console.log('Creating class - User:', req.user!.name, 'Role:', req.user!.role, 'User branchId:', req.user!.branchId);
-    console.log('Request body:', req.body);
     
     // Check if class name already exists for the same academic year and branch
     const existingClass = await Class.findOne({
@@ -231,7 +229,6 @@ router.post('/', checkPermission('classes', 'create'), validate(createClassSchem
     try {
       branchId = await getRequiredBranchId(req, req.body.branchId);
     } catch (error) {
-      console.log('❌ No branchId found! User branchId:', req.user!.branchId, 'Body branchId:', req.body.branchId);
       const response: ApiResponse = {
         success: false,
         message: error.message || 'Branch information is required for class creation'
@@ -247,7 +244,6 @@ router.post('/', checkPermission('classes', 'create'), validate(createClassSchem
       branchId: branchId
     };
     
-    console.log('✅ Class data prepared:', classData);
 
     const newClass = new Class(classData);
     await newClass.save();

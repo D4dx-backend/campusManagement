@@ -27,6 +27,7 @@ export interface CreateStudentData {
   class: string;
   section: string;
   dateOfBirth: string;
+  dateOfAdmission: string;
   guardianName: string;
   guardianPhone: string;
   guardianEmail?: string;

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,13 +8,16 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DataTable } from '@/components/ui/data-table';
 import { useConfirmation } from '@/hooks/useConfirmation';
-import { Plus, Search, FileText, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Search, FileText, Trash2, Loader2, Printer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useExpenses, useCreateExpense, useDeleteExpense, useExpenseStats } from '@/hooks/useExpenses';
 import { useExpenseCategories } from '@/hooks/useExpenseCategories';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { formatters } from '@/utils/exportUtils';
+import { ExpenseVoucher } from '@/components/receipt/ExpenseVoucher';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 
 const ExpensesContent = () => {
@@ -24,6 +27,9 @@ const ExpensesContent = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [filterValues, setFilterValues] = useState({});
+  const [selectedExpense, setSelectedExpense] = useState<any>(null);
+  const [showVoucher, setShowVoucher] = useState(false);
+  const voucherRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const { confirm, ConfirmationComponent } = useConfirmation();
@@ -58,7 +64,7 @@ const ExpensesContent = () => {
 
 
   // Early return if there's a critical error
-  if (error && error.response?.status === 401) {
+  if (error && (error as any).response?.status === 401) {
     return (
       <div className="text-center py-12">
         <p className="text-destructive">Authentication error. Please log in again.</p>
@@ -118,16 +124,6 @@ const ExpensesContent = () => {
       });
       return;
     }
-
-    console.log('Submitting expense data:', {
-      date: formData.date,
-      category: formData.category,
-      description: formData.description,
-      amount: Number(formData.amount),
-      paymentMethod: formData.paymentMethod,
-      approvedBy: user?.name || 'System',
-      remarks: formData.remarks,
-    });
     
     try {
       await createExpenseMutation.mutateAsync({
@@ -166,47 +162,56 @@ const ExpensesContent = () => {
     );
   };
 
-  // Get raw data from API
-  const rawExpenses = expensesResponse?.data || [];
-  
-  // Apply frontend filters
-  const expenses = rawExpenses.filter((expense: any) => {
-    // Apply category filter
-    if (filterValues.category && expense.category !== filterValues.category) {
-      return false;
-    }
+  const handlePrintVoucher = async (expense: any) => {
+    setSelectedExpense(expense);
+    setShowVoucher(true);
     
-    // Apply payment method filter
-    if (filterValues.paymentMethod && expense.paymentMethod !== filterValues.paymentMethod) {
-      return false;
-    }
-    
-    // Apply date range filter
-    if (filterValues.date_from) {
-      const expenseDate = new Date(expense.date);
-      const fromDate = new Date(filterValues.date_from);
-      if (expenseDate < fromDate) return false;
-    }
-    
-    if (filterValues.date_to) {
-      const expenseDate = new Date(expense.date);
-      const toDate = new Date(filterValues.date_to);
-      if (expenseDate > toDate) return false;
-    }
-    
-    // Apply amount filter (minimum amount)
-    if (filterValues.amount && expense.amount < parseFloat(filterValues.amount)) {
-      return false;
-    }
-    
-    return true;
-  });
-  const categories = categoriesResponse?.data || [];
-  const stats = statsResponse?.data || statsResponse || { 
+    // Wait for voucher to render
+    setTimeout(async () => {
+      if (voucherRef.current) {
+        try {
+          const canvas = await html2canvas(voucherRef.current, {
+            scale: 2,
+            logging: false,
+            useCORS: true
+          });
+          
+          const imgData = canvas.toDataURL('image/png');
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const imgWidth = 210; // A4 width in mm
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          
+          pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+          pdf.save(`Voucher-${expense.voucherNo}.pdf`);
+          
+          toast({
+            title: 'Success',
+            description: 'Voucher downloaded successfully',
+          });
+          
+          setShowVoucher(false);
+          setSelectedExpense(null);
+        } catch (error) {
+          console.error('PDF generation error:', error);
+          toast({
+            title: 'Error',
+            description: 'Failed to generate voucher PDF',
+            variant: 'destructive'
+          });
+        }
+      }
+    }, 500);
+  };
+
+  // Get data from API (server-side filtered and paginated)
+  const expenses = (expensesResponse?.data || []) as any[];
+  const categories = (categoriesResponse?.data || []) as any[];
+  const statsData = statsResponse?.data?.totalExpenses ? statsResponse.data : (statsResponse || {
     totalExpenses: { total: 0, count: 0 }, 
     monthlyExpenses: { total: 0, count: 0 },
     yearlyExpenses: { total: 0, count: 0 }
-  };
+  });
+  const stats = statsData as { totalExpenses: { total: number; count: number }; monthlyExpenses: { total: number; count: number }; yearlyExpenses: { total: number; count: number } };
   const pagination = expensesResponse?.pagination;
 
   // Filter configuration
@@ -497,18 +502,28 @@ const ExpensesContent = () => {
                         </div>
                       </div>
                     </div>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={() => handleDelete(expense._id, expense.description)}
-                      disabled={deleteExpenseMutation.isPending}
-                    >
-                      {deleteExpenseMutation.isPending ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-4 h-4" />
-                      )}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => handlePrintVoucher(expense)}
+                        title="Print Voucher"
+                      >
+                        <Printer className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => handleDelete(expense._id, expense.description)}
+                        disabled={deleteExpenseMutation.isPending}
+                      >
+                        {deleteExpenseMutation.isPending ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -516,6 +531,23 @@ const ExpensesContent = () => {
           </div>
         </DataTable>
       <ConfirmationComponent />
+      
+      {/* Hidden Voucher for Printing */}
+      {showVoucher && selectedExpense && (
+        <div className="fixed -left-[9999px] top-0">
+          <ExpenseVoucher
+            ref={voucherRef}
+            voucherNo={selectedExpense.voucherNo}
+            date={selectedExpense.date}
+            category={selectedExpense.category}
+            description={selectedExpense.description}
+            amount={selectedExpense.amount}
+            paymentMethod={selectedExpense.paymentMethod}
+            approvedBy={selectedExpense.approvedBy}
+            remarks={selectedExpense.remarks}
+          />
+        </div>
+      )}
     </div>
   );
 };

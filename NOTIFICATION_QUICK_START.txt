@@ -1,0 +1,93 @@
+╔═══════════════════════════════════════════════════════════════════════╗
+║           QUICK START: Email & WhatsApp Notifications                 ║
+╚═══════════════════════════════════════════════════════════════════════╝
+
+📧 GMAIL SETUP (5 Minutes)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Enable 2-Step Verification
+   → https://myaccount.google.com/security
+   
+2. Generate App Password
+   → https://myaccount.google.com/apppasswords
+   → Select "Mail" and "Other"
+   → Copy 16-digit password
+   
+3. Update .env file:
+   SMTP_USER=your-email@gmail.com
+   SMTP_PASS=abcdefghijklmnop  (16 digits, no spaces)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📱 DXING WHATSAPP SETUP (10 Minutes)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Create Account
+   → https://dxing.in
+   → Sign up and verify email
+   
+2. Connect WhatsApp
+   → Login to dashboard: https://dxing.in/dashboard
+   → Add New Instance
+   → Scan QR code with WhatsApp
+   
+3. Get Credentials
+   → Copy API Key from dashboard
+   → Copy Instance ID
+   
+4. Update .env file:
+   DXING_API_KEY=your_api_key_here
+   DXING_INSTANCE_ID=your_instance_id_here
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ COMPLETE .ENV CONFIGURATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# Gmail (Email)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-16-digit-app-password
+FROM_EMAIL=your-email@gmail.com
+
+# DXing (WhatsApp)
+DXING_API_URL=https://api.dxing.in/v1/send-message
+DXING_API_KEY=your_dxing_api_key
+DXING_INSTANCE_ID=your_dxing_instance_id
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 AUTOMATIC FEATURES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Once configured, notifications are AUTOMATICALLY sent when:
+
+✅ Fee payment is recorded → Email + WhatsApp receipt sent
+✅ Payment reminder triggered → Email + WhatsApp reminder sent
+✅ Bulk notifications → Email + WhatsApp to multiple recipients
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔍 TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Gmail not working?
+→ Check 2-Step Verification is ON
+→ Use App Password, not regular password
+→ Remove spaces from 16-digit password
+
+WhatsApp not sending?
+→ Check Instance is connected in DXing dashboard
+→ Verify API Key and Instance ID are correct
+→ Ensure phone has 10 digits (India)
+→ Check DXing credits/balance
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 DETAILED GUIDE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+See NOTIFICATION_SETUP_GUIDE.md for complete instructions
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

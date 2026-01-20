@@ -164,6 +164,23 @@ router.post('/register', authenticate, validate(registerSchema), async (req: Aut
       return res.status(400).json(response);
     }
 
+    // Set default permissions based on role
+    let defaultPermissions = permissions || [];
+    
+    // Accountants automatically get accounting module permissions
+    if (role === 'accountant') {
+      const hasAccountingPermission = defaultPermissions.some(
+        (p: any) => p.module === 'accounting'
+      );
+      
+      if (!hasAccountingPermission) {
+        defaultPermissions.push({
+          module: 'accounting',
+          actions: ['create', 'read', 'update', 'delete']
+        });
+      }
+    }
+
     // Create new user
     const user = new User({
       email,
@@ -172,7 +189,7 @@ router.post('/register', authenticate, validate(registerSchema), async (req: Aut
       name,
       role,
       branchId: assignedBranchId,
-      permissions: permissions || [],
+      permissions: defaultPermissions,
       status: status || 'active'
     });
 

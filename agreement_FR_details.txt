@@ -1,0 +1,92 @@
+# Functional Requirements (FR) for Madrasa Management Software
+
+## 1. Fee Management
+- Define and manage multiple fee categories: Tuition, Transport, Annual Co-curricular, Annual Maintenance, Exam fees, Textbook charges
+- Student-wise fee assignment and schedule
+- Automated fee calculation and due tracking
+- Fee receipt generation and printing
+- Fee payment history and outstanding dues tracking
+- Concession/discount management
+
+## 2. Payroll Management
+- Staff salary structure definition
+- Monthly payroll processing
+- Allowances, deductions, and advances management
+- Payslip generation and printing
+- Payroll reports (monthly/yearly)
+
+## 3. Staff Master File
+- Staff personal and professional details
+- Designation, department, and joining details
+- Document uploads (ID, certificates, etc.)
+- Active/inactive status management
+
+## 4. Expenditure Management
+- Expense category creation
+- Expense entry and approval workflow
+- Recurring and one-time expense tracking
+- Expense receipt upload
+- Expense reporting and analytics
+
+## 5. Student Master File
+- Student personal, academic, and contact details
+- Admission, promotion, and transfer management
+- Parent/guardian information
+- Document uploads (ID, certificates, etc.)
+- Active/inactive status management
+
+## 6. Monthly Income & Expenditure Report
+- Automated monthly summary of all income and expenses
+- Downloadable and printable reports
+- Graphical representation (charts/graphs)
+
+## 7. Monthly Fee Dues & Collection Report
+- Student-wise and class-wise fee dues
+- Collection summary by date, class, or fee type
+- Export to Excel/PDF
+
+## 8. Multiple Users Login & Access Assignment
+- Role-based access control (Admin, Accountant, Teacher, etc.)
+- User creation, activation, and deactivation
+- Permission assignment for modules/features
+
+## 9. Textbook Inventory Management
+- Textbook master data (title, author, price, etc.)
+- Stock entry, issue, and return tracking
+- Inventory alerts (low stock)
+- Textbook indent and requisition management
+
+## 10. Transport & Own Transport Report
+- Student transport assignment (route, vehicle, driver)
+- Transport fee management
+- Transport attendance and usage reports
+- Own vs. hired transport analysis
+
+## 11. Receipt & Voucher Print
+- Customizable receipt and voucher templates
+- Print and PDF export options
+- Unique numbering and tracking
+
+## 12. Document Conversion to PDF, Email & WhatsApp Option
+- Convert receipts, reports, and documents to PDF
+- Email and WhatsApp integration for sending documents
+- Email/SMS/WhatsApp notification templates
+
+## 13. Cash & Bank Ledger
+- Cash and bank account management
+- Ledger entry for all transactions
+- Reconciliation and reporting
+
+## 14. Expenses Ledger
+- Detailed expense ledger by category/date
+- Search and filter options
+- Export to Excel/PDF
+
+## 15. Income Ledger
+- Detailed income ledger by source/date
+- Search and filter options
+- Export to Excel/PDF
+
+---
+
+This list can be further expanded or customized as per the Client's operational needs.

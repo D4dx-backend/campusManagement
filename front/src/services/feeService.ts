@@ -12,6 +12,7 @@ export interface FeeQueryParams {
   endDate?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+  branchId?: string;
 }
 
 export interface FeeStats {
@@ -22,10 +23,17 @@ export interface FeeStats {
   paymentMethodStats: Array<{ _id: string; total: number; count: number }>;
 }
 
+export interface FeeItemData {
+  feeStructureId: string;
+  title: string;
+  feeType: string;
+  amount: number;
+  transportDistanceGroup?: string;
+}
+
 export interface CreateFeePaymentData {
   studentId: string;
-  feeType: 'tuition' | 'transport' | 'cocurricular' | 'maintenance' | 'exam' | 'textbook';
-  amount: number;
+  feeItems: FeeItemData[];
   paymentMethod: 'cash' | 'bank' | 'online';
   remarks?: string;
 }

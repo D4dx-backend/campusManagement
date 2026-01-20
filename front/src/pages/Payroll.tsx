@@ -38,7 +38,7 @@ const PayrollContent = () => {
 
 
   // Early return if there's a critical error
-  if (error && error.response?.status === 401) {
+  if (error && (error as any).response?.status === 401) {
     return (
       <div className="text-center py-12">
         <p className="text-destructive">Authentication error. Please log in again.</p>
@@ -88,45 +88,17 @@ const PayrollContent = () => {
     }
   };
 
-  // Get raw data from API
-  const rawPayrollEntries = payrollResponse?.data || [];
-  
-  // Apply frontend filters
-  const payrollEntries = rawPayrollEntries.filter((entry: any) => {
-    // Apply department filter (through staff relationship)
-    if (filterValues.department && entry.staff?.department !== filterValues.department) {
-      return false;
-    }
-    
-    // Apply designation filter (through staff relationship)
-    if (filterValues.designation && entry.staff?.designation !== filterValues.designation) {
-      return false;
-    }
-    
-    // Apply payroll month filter
-    if (filterValues.payrollMonth) {
-      const entryDate = new Date(entry.year, entry.month - 1); // month is 0-indexed
-      const filterDate = new Date(filterValues.payrollMonth);
-      if (entryDate.getMonth() !== filterDate.getMonth() || entryDate.getFullYear() !== filterDate.getFullYear()) {
-        return false;
-      }
-    }
-    
-    // Apply salary filter (minimum net salary)
-    if (filterValues.salary && entry.netSalary < parseFloat(filterValues.salary)) {
-      return false;
-    }
-    
-    return true;
-  });
-  const staff = staffResponse?.data || [];
-  const stats = statsResponse?.data || statsResponse || { 
-    totalPaid: 0, 
-    thisMonthTotal: 0, 
+  // Get data from API (server-side filtered and paginated)
+  const payrollEntries = (payrollResponse?.data || []) as any[];
+  const staff = (staffResponse?.data || []) as any[];
+  const statsData = statsResponse?.data?.totalEntries !== undefined ? statsResponse.data : (statsResponse || {
+    totalPaid: 0,
+    thisMonthTotal: 0,
     totalEntries: 0, 
     thisMonthEntries: 0,
     totalAmountPaid: 0
-  };
+  });
+  const stats = statsData as { totalPaid: number; thisMonthTotal: number; totalEntries: number; thisMonthEntries: number; totalAmountPaid: number };
 
   const pagination = payrollResponse?.pagination;
 

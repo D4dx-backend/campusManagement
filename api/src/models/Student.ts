@@ -32,6 +32,10 @@ const StudentSchema = new Schema<IStudent>({
     type: Date,
     required: true
   },
+  dateOfAdmission: {
+    type: Date,
+    required: true
+  },
   guardianName: {
     type: String,
     required: true,
@@ -49,7 +53,7 @@ const StudentSchema = new Schema<IStudent>({
   },
   gender: {
     type: String,
-    enum: ['male', 'female', 'other'],
+    enum: ['male', 'female'],
     required: true
   },
   address: {
@@ -70,6 +74,10 @@ const StudentSchema = new Schema<IStudent>({
     type: String,
     enum: ['active', 'inactive'],
     default: 'active'
+  },
+  isStaffChild: {
+    type: Boolean,
+    default: false
   },
   branchId: {
     type: Schema.Types.ObjectId as any,

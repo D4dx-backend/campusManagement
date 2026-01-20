@@ -109,8 +109,6 @@ router.get('/', checkPermission('staff', 'read'), validateQuery(queryDesignation
 router.post('/', checkPermission('staff', 'create'), validate(createDesignationSchema), async (req: AuthenticatedRequest, res) => {
   try {
     // Debug logging
-    console.log('Create designation request body:', req.body);
-    console.log('User info:', { id: req.user!._id, role: req.user!.role, branchId: req.user!.branchId });
     
     // Check if designation name already exists for the same branch
     const existingDesignation = await Designation.findOne({
@@ -119,7 +117,6 @@ router.post('/', checkPermission('staff', 'create'), validate(createDesignationS
     });
 
     if (existingDesignation) {
-      console.log('❌ Designation already exists:', existingDesignation.name);
       const response: ApiResponse = {
         success: false,
         message: 'Designation with this name already exists'

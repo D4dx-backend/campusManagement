@@ -8,7 +8,6 @@ export const connectDB = async (): Promise<void> => {
       // Remove deprecated options
     });
 
-    console.log(`📦 MongoDB Connected: ${conn.connection.host}`);
 
     // Handle connection events
     mongoose.connection.on('error', (err) => {
@@ -16,13 +15,11 @@ export const connectDB = async (): Promise<void> => {
     });
 
     mongoose.connection.on('disconnected', () => {
-      console.log('MongoDB disconnected');
     });
 
     // Graceful shutdown
     process.on('SIGINT', async () => {
       await mongoose.connection.close();
-      console.log('MongoDB connection closed through app termination');
       process.exit(0);
     });
 

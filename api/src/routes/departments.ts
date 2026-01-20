@@ -27,7 +27,8 @@ const updateDepartmentSchema = Joi.object({
   description: Joi.string().optional().allow('').trim(),
   code: Joi.string().min(2).max(10).optional().trim().uppercase(),
   headOfDepartment: Joi.string().optional().allow('').trim(),
-  status: Joi.string().valid('active', 'inactive').optional()
+  status: Joi.string().valid('active', 'inactive').optional(),
+  branchId: Joi.string().optional().allow('').trim()
 });
 
 const queryDepartmentsSchema = Joi.object({
@@ -325,6 +326,16 @@ router.put('/:id', checkPermission('departments', 'update'), validate(updateDepa
 
     // Prepare update data
     const updateData = { ...req.body };
+
+    if (updateData.branchId) {
+      if (req.user!.role !== 'super_admin') {
+        const response: ApiResponse = {
+          success: false,
+          message: 'Only super admins can change department branch'
+        };
+        return res.status(403).json(response);
+      }
+    }
     if (updateData.code) {
       updateData.code = updateData.code.toUpperCase();
     }

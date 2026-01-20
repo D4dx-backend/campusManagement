@@ -118,9 +118,13 @@ const BranchManagement = () => {
     setIsDialogOpen(true);
   };
 
+  const resolveBranchId = (userBranchId: any) => {
+    return userBranchId?._id || userBranchId?.id || userBranchId;
+  };
+
   const handleDelete = async (id: string, branchName: string) => {
     // Check if branch has users
-    const branchUsers = users.filter((u: any) => u.branchId === id);
+    const branchUsers = users.filter((u: any) => resolveBranchId(u.branchId) === id);
     if (branchUsers.length > 0) {
       toast({
         title: 'Cannot Delete Branch',
@@ -153,7 +157,7 @@ const BranchManagement = () => {
   };
 
   const getBranchStats = (branchId: string) => {
-    const branchUsers = users.filter((u: any) => u.branchId === branchId);
+    const branchUsers = users.filter((u: any) => resolveBranchId(u.branchId) === branchId);
     return {
       totalUsers: branchUsers.length,
       admins: branchUsers.filter((u: any) => u.role === 'branch_admin').length,
@@ -217,6 +221,9 @@ const BranchManagement = () => {
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>{editingBranch ? 'Edit Branch' : 'Create New Branch'}</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  {editingBranch ? 'Update branch information below.' : 'Fill in the details to create a new branch.'}
+                </p>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">

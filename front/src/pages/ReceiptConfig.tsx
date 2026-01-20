@@ -145,9 +145,11 @@ const ReceiptConfigPage = () => {
     setIsUploading(true);
     try {
       const result = await receiptService.uploadLogo(logoFile, currentBranchId);
-      return result.data.logoPath;
+      const logoPath = result.data.logoPath;
+      return logoPath;
     } catch (error: any) {
       console.error('Logo upload error:', error);
+      console.error('Error details:', error.response?.data);
       
       // Show specific error message if available
       const errorMessage = error.response?.data?.message || error.message || 'Failed to upload logo';
@@ -233,11 +235,22 @@ const ReceiptConfigPage = () => {
         setIsEditing(false); // Exit edit mode after successful creation
       }
 
-      // Clear the selected file and update preview to show server image
+      // Clear the selected file and update preview to show CDN image
       setLogoFile(null);
       if (logoPath && logoPath !== formData.logo) {
-        // Update preview to show the uploaded image from server
-        setLogoPreview(`http://localhost:5001${logoPath}`);
+        // Validate that we received a CDN URL, not a local path
+        if (logoPath.startsWith('/uploads/') || logoPath.startsWith('uploads/') || logoPath.includes('localhost')) {
+          console.error('Received local path instead of CDN URL');
+          toast({
+            title: 'Upload Error',
+            description: 'Received local path instead of CDN URL. Please check backend CDN configuration.',
+            variant: 'destructive',
+          });
+          return; // Don't update preview with invalid path
+        }
+        
+        // Update preview to show the uploaded image from CDN
+        setLogoPreview(logoPath);
       }
     } catch (error: any) {
       // Enhanced error handling
@@ -433,16 +446,21 @@ const ReceiptConfigPage = () => {
                         src={logoPreview} 
                         alt="Logo preview" 
                         className="h-24 w-24 object-contain border rounded-lg bg-gray-50 p-2"
+                        onError={(e) => {
+                          console.error('Image failed to load');
+                        }}
                       />
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="destructive"
-                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
-                        onClick={removeLogo}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
+                      {isEditing && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="destructive"
+                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                          onClick={removeLogo}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
                   )}
                   

@@ -85,8 +85,16 @@ export const receiptService = {
     return response.data;
   },
 
-  // Upload logo file
-  uploadLogo: async (file: File, branchId?: string): Promise<{ success: boolean; data: { logoPath: string } }> => {
+  // Upload logo file to CDN
+  uploadLogo: async (file: File, branchId?: string): Promise<{ 
+    success: boolean; 
+    data: { 
+      logoPath: string; 
+      cdnUrl: string; 
+      directUrl: string; 
+      key: string;
+    } 
+  }> => {
     const formData = new FormData();
     formData.append('logo', file);
     if (branchId) {
@@ -105,10 +113,48 @@ export const receiptService = {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
 
     const result = await response.json();
     return result;
+  },
+
+  // Delete logo from CDN by key
+  deleteLogo: async (key: string): Promise<{ success: boolean; message: string }> => {
+    const response = await apiClient.delete(`/upload/logo/${encodeURIComponent(key)}`);
+    return response.data;
+  },
+
+  // Delete logo from CDN by URL
+  deleteLogoByUrl: async (url: string): Promise<{ success: boolean; message: string }> => {
+    const response = await apiClient.post('/upload/logo/delete-by-url', { url });
+    return response.data;
+  },
+
+  // List all uploaded files (optional - for admin purposes)
+  listUploadedFiles: async (branchId?: string): Promise<{
+    success: boolean;
+    data: {
+      files: Array<{
+        key: string;
+        size: number;
+        lastModified: Date;
+        url: string;
+        cdnUrl: string;
+      }>;
+      count: number;
+    };
+  }> => {
+    const params = branchId ? { branchId } : {};
+    const response = await apiClient.get('/upload/files', { params });
+    return response.data;
+  },
+
+  // Check if file exists in CDN
+  checkFileExists: async (key: string): Promise<{ success: boolean; data: { exists: boolean } }> => {
+    const response = await apiClient.post('/upload/check-file', { key });
+    return response.data;
   }
 };

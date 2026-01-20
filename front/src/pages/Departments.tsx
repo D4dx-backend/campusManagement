@@ -131,9 +131,10 @@ const Departments = () => {
 
 
       if (editingDepartment) {
+        const { branchId, ...updateData } = submitData;
         await updateDepartmentMutation.mutateAsync({
           id: editingDepartment._id,
-          ...submitData
+          ...updateData
         });
       } else {
         await createDepartmentMutation.mutateAsync(submitData);

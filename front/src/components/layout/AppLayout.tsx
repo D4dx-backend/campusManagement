@@ -32,67 +32,83 @@ import {
   MapPin,
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import type { LucideIcon } from 'lucide-react';
+import { useConfirmation } from '@/hooks/useConfirmation';
+import { PermissionAction, userHasAccess } from '@/utils/accessControl';
+import { UserRole } from '@/types';
 
 interface AppLayoutProps {
   children: ReactNode;
 }
 
+type MenuItem = {
+  icon: LucideIcon;
+  label: string;
+  path: string;
+  permission?: {
+    module?: string;
+    action?: PermissionAction;
+    roles?: UserRole[];
+  };
+};
+
 // Main dashboard item (always visible)
-const dashboardItem = { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' };
+const dashboardItem: MenuItem = { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' };
 
 // Academic Management Section
-const academicManagementItems = [
-  { icon: Users, label: 'Students', path: '/students' },
-  { icon: UserCog, label: 'Staff', path: '/staff' },
-  { icon: BookOpen, label: 'Textbook Indents', path: '/textbook-indents' },
+const academicManagementItems: MenuItem[] = [
+  { icon: Users, label: 'Students', path: '/students', permission: { module: 'students' } },
+  { icon: UserCog, label: 'Staff', path: '/staff', permission: { module: 'staff' } },
+  { icon: BookOpen, label: 'Textbook Indents', path: '/textbook-indents', permission: { module: 'textbooks' } },
 ];
 
 // Financial Management Section
-const financialManagementItems = [
-  { icon: DollarSign, label: 'Fee Management', path: '/fees' },
-  { icon: Settings, label: 'Fee Structures', path: '/fee-structures' },
-  { icon: Receipt, label: 'Payroll', path: '/payroll' },
-  { icon: FileText, label: 'Expenses', path: '/expenses' },
+const financialManagementItems: MenuItem[] = [
+  { icon: DollarSign, label: 'Fee Management', path: '/fees', permission: { module: 'fees' } },
+  { icon: Settings, label: 'Fee Structures', path: '/fee-structures', permission: { module: 'fees' } },
+  { icon: Receipt, label: 'Payroll', path: '/payroll', permission: { module: 'payroll' } },
+  { icon: FileText, label: 'Expenses', path: '/expenses', permission: { module: 'expenses' } },
 ];
 
 // Accounting Section
-const accountingItems = [
-  { icon: Book, label: 'Day Book', path: '/accounting/daybook' },
-  { icon: FileText, label: 'Ledger', path: '/accounting/ledger' },
-  { icon: Receipt, label: 'Fee Details', path: '/accounting/fee-details' },
-  { icon: BarChart, label: 'Balance Sheet', path: '/accounting/balance-sheet' },
-  { icon: TrendingUp, label: 'Annual Report', path: '/accounting/annual-report' },
+const accountingItems: MenuItem[] = [
+  { icon: Book, label: 'Day Book', path: '/accounting/daybook', permission: { module: 'accounting' } },
+  { icon: FileText, label: 'Ledger', path: '/accounting/ledger', permission: { module: 'accounting' } },
+  { icon: Receipt, label: 'Fee Details', path: '/accounting/fee-details', permission: { module: 'accounting' } },
+  { icon: BarChart, label: 'Balance Sheet', path: '/accounting/balance-sheet', permission: { module: 'accounting' } },
+  { icon: TrendingUp, label: 'Annual Report', path: '/accounting/annual-report', permission: { module: 'accounting' } },
 ];
 
 // Reports & Analytics Section
-const reportsAnalyticsItems = [
-  { icon: TrendingUp, label: 'Reports', path: '/reports' },
-  { icon: Activity, label: 'Activity Log', path: '/activity-log' },
+const reportsAnalyticsItems: MenuItem[] = [
+  { icon: TrendingUp, label: 'Reports', path: '/reports', permission: { module: 'reports' } },
+  { icon: Activity, label: 'Activity Log', path: '/activity-log', permission: { module: 'activity_logs' } },
 ];
 
 // Super Admin Section
-const superAdminItems = [
-  { icon: Building2, label: 'Branch Management', path: '/branch-management' },
+const superAdminItems: MenuItem[] = [
+  { icon: Building2, label: 'Branch Management', path: '/branch-management', permission: { roles: ['super_admin'] } },
 ];
 
 // Master Data Section
-const masterDataItems = [
-  { icon: GraduationCap, label: 'Classes', path: '/classes' },
-  { icon: Users, label: 'Divisions', path: '/divisions' },
-  { icon: Building2, label: 'Departments', path: '/departments' },
-  { icon: Briefcase, label: 'Designations', path: '/designations' },
-  { icon: BookOpen, label: 'Text Books', path: '/textbooks' },
-  { icon: MapPin, label: 'Transport Routes', path: '/transport-routes' },
-  { icon: Receipt, label: 'Expense Categories', path: '/expense-categories' },
-  { icon: TrendingUp, label: 'Income Categories', path: '/income-categories' },
-  { icon: FileText, label: 'Receipt Config', path: '/receipt-config' },
-  { icon: UserCog, label: 'User Access', path: '/user-access' },
+const masterDataItems: MenuItem[] = [
+  { icon: GraduationCap, label: 'Classes', path: '/classes', permission: { module: 'classes' } },
+  { icon: Users, label: 'Divisions', path: '/divisions', permission: { module: 'divisions' } },
+  { icon: Building2, label: 'Departments', path: '/departments', permission: { module: 'departments' } },
+  { icon: Briefcase, label: 'Designations', path: '/designations', permission: { module: 'designations' } },
+  { icon: BookOpen, label: 'Text Books', path: '/textbooks', permission: { module: 'textbooks' } },
+  { icon: MapPin, label: 'Transport Routes', path: '/transport-routes', permission: { module: 'classes' } },
+  { icon: Receipt, label: 'Expense Categories', path: '/expense-categories', permission: { module: 'expenses' } },
+  { icon: TrendingUp, label: 'Income Categories', path: '/income-categories', permission: { module: 'fees' } },
+  { icon: FileText, label: 'Receipt Config', path: '/receipt-config', permission: { roles: ['super_admin', 'branch_admin'] } },
+  { icon: UserCog, label: 'User Access', path: '/user-access', permission: { roles: ['super_admin'] } },
 ];
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { confirm, ConfirmationComponent } = useConfirmation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAcademicOpen, setIsAcademicOpen] = useState(false);
   const [isFinancialOpen, setIsFinancialOpen] = useState(false);
@@ -102,52 +118,40 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   const [menuSearchTerm, setMenuSearchTerm] = useState('');
 
   const handleLogout = () => {
-    logout();
-    navigate('/login');
+    confirm(
+      {
+        title: 'Log out',
+        description: 'Are you sure you want to log out?',
+        confirmText: 'Logout',
+        variant: 'destructive',
+      },
+      async () => {
+        await logout();
+        navigate('/login');
+      }
+    );
   };
 
-  // Filter menu items based on search term
-  const filteredAcademicItems = useMemo(() => {
-    if (!menuSearchTerm) return academicManagementItems;
-    return academicManagementItems.filter(item => 
+  const filterMenuItems = (items: MenuItem[]) => {
+    const accessibleItems = items.filter((item) => userHasAccess(user, item.permission));
+    if (!menuSearchTerm) return accessibleItems;
+    return accessibleItems.filter((item) =>
       item.label.toLowerCase().includes(menuSearchTerm.toLowerCase())
     );
-  }, [menuSearchTerm]);
+  };
 
-  const filteredFinancialItems = useMemo(() => {
-    if (!menuSearchTerm) return financialManagementItems;
-    return financialManagementItems.filter(item => 
-      item.label.toLowerCase().includes(menuSearchTerm.toLowerCase())
-    );
-  }, [menuSearchTerm]);
+  // Filter menu items based on search term and access
+  const filteredAcademicItems = useMemo(() => filterMenuItems(academicManagementItems), [menuSearchTerm, user]);
 
-  const filteredAccountingItems = useMemo(() => {
-    if (!menuSearchTerm) return accountingItems;
-    return accountingItems.filter(item => 
-      item.label.toLowerCase().includes(menuSearchTerm.toLowerCase())
-    );
-  }, [menuSearchTerm]);
+  const filteredFinancialItems = useMemo(() => filterMenuItems(financialManagementItems), [menuSearchTerm, user]);
 
-  const filteredReportsItems = useMemo(() => {
-    if (!menuSearchTerm) return reportsAnalyticsItems;
-    return reportsAnalyticsItems.filter(item => 
-      item.label.toLowerCase().includes(menuSearchTerm.toLowerCase())
-    );
-  }, [menuSearchTerm]);
+  const filteredAccountingItems = useMemo(() => filterMenuItems(accountingItems), [menuSearchTerm, user]);
 
-  const filteredSuperAdminItems = useMemo(() => {
-    if (!menuSearchTerm) return superAdminItems;
-    return superAdminItems.filter(item => 
-      item.label.toLowerCase().includes(menuSearchTerm.toLowerCase())
-    );
-  }, [menuSearchTerm]);
+  const filteredReportsItems = useMemo(() => filterMenuItems(reportsAnalyticsItems), [menuSearchTerm, user]);
 
-  const filteredMasterDataItems = useMemo(() => {
-    if (!menuSearchTerm) return masterDataItems;
-    return masterDataItems.filter(item => 
-      item.label.toLowerCase().includes(menuSearchTerm.toLowerCase())
-    );
-  }, [menuSearchTerm]);
+  const filteredSuperAdminItems = useMemo(() => filterMenuItems(superAdminItems), [menuSearchTerm, user]);
+
+  const filteredMasterDataItems = useMemo(() => filterMenuItems(masterDataItems), [menuSearchTerm, user]);
 
   // Auto-expand sections if search matches any items
   const shouldExpandAcademic = useMemo(() => {
@@ -193,27 +197,27 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="p-6 border-b border-sidebar-border">
-            <h1 className="text-2xl font-bold text-sidebar-primary">CampusWise</h1>
-            <p className="text-sm text-sidebar-foreground/70 mt-1">D4Media Institution</p>
+          <div className="px-5 py-4 border-b border-sidebar-border">
+            <h1 className="text-xl font-semibold text-sidebar-primary tracking-tight">CampusWise</h1>
+            <p className="text-xs text-sidebar-foreground/70 mt-0.5">D4Media Institution</p>
           </div>
 
           {/* Menu Search */}
-          <div className="px-3 py-2 border-b border-sidebar-border/20">
+          <div className="px-4 py-2 border-b border-sidebar-border/20">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sidebar-foreground/50 w-4 h-4" />
               <Input
                 placeholder="Search menu..."
                 value={menuSearchTerm}
                 onChange={(e) => setMenuSearchTerm(e.target.value)}
-                className="pl-10 bg-sidebar-accent/20 border-sidebar-border/30 text-sidebar-foreground placeholder:text-sidebar-foreground/50"
+                className="h-9 pl-10 bg-sidebar-accent/20 border-sidebar-border/30 text-sidebar-foreground placeholder:text-sidebar-foreground/50 text-sm"
               />
             </div>
           </div>
 
           {/* Navigation */}
-          <ScrollArea className="flex-1 px-3 py-4">
-            <nav className="space-y-1">
+          <ScrollArea className="flex-1 px-3 py-3">
+            <nav className="space-y-0.5">
               {/* Dashboard - Always visible */}
               <button
                 onClick={() => {
@@ -221,24 +225,24 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                   setIsSidebarOpen(false);
                   setMenuSearchTerm('');
                 }}
-                className={`w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${
+                className={`w-full flex items-center justify-start gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors text-left ${
                   location.pathname === dashboardItem.path
                     ? 'bg-sidebar-accent text-sidebar-accent-foreground'
                     : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
                 }`}
               >
-                <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
+                <LayoutDashboard className="w-[18px] h-[18px] flex-shrink-0" />
                 <span className="flex-1 text-left">{dashboardItem.label}</span>
               </button>
 
               {/* Academic Management Section */}
               {filteredAcademicItems.length > 0 && (
-                <div className="pt-4">
+                <div className="pt-3">
                   <button
                     onClick={() => setIsAcademicOpen(!isAcademicOpen)}
-                    className="w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors text-left"
+                    className="w-full flex items-center justify-start gap-2.5 px-3 py-2 rounded-md text-[13px] font-semibold text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors text-left"
                   >
-                    <School className="w-5 h-5 flex-shrink-0" />
+                    <School className="w-[18px] h-[18px] flex-shrink-0" />
                     <span className="flex-1 text-left">Academic Management</span>
                     {shouldExpandAcademic ? (
                       <ChevronDown className="w-4 h-4 flex-shrink-0" />
@@ -248,7 +252,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                   </button>
                   
                   {shouldExpandAcademic && (
-                    <div className="ml-6 mt-1 space-y-1">
+                    <div className="ml-4 mt-1 space-y-0.5">
                       {filteredAcademicItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = location.pathname === item.path;
@@ -260,7 +264,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                               setIsSidebarOpen(false);
                               setMenuSearchTerm('');
                             }}
-                            className={`w-full flex items-center justify-start gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left ${
+                            className={`w-full flex items-center justify-start gap-2.5 px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors text-left ${
                               isActive
                                 ? 'bg-sidebar-accent text-sidebar-accent-foreground'
                                 : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
@@ -278,12 +282,12 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
 
               {/* Financial Management Section */}
               {filteredFinancialItems.length > 0 && (
-                <div className="pt-4">
+                <div className="pt-3">
                   <button
                     onClick={() => setIsFinancialOpen(!isFinancialOpen)}
-                    className="w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors text-left"
+                    className="w-full flex items-center justify-start gap-2.5 px-3 py-2 rounded-md text-[13px] font-semibold text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors text-left"
                   >
-                    <Wallet className="w-5 h-5 flex-shrink-0" />
+                    <Wallet className="w-[18px] h-[18px] flex-shrink-0" />
                     <span className="flex-1 text-left">Financial Management</span>
                     {shouldExpandFinancial ? (
                       <ChevronDown className="w-4 h-4 flex-shrink-0" />
@@ -293,7 +297,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                   </button>
                   
                   {shouldExpandFinancial && (
-                    <div className="ml-6 mt-1 space-y-1">
+                    <div className="ml-4 mt-1 space-y-0.5">
                       {filteredFinancialItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = location.pathname === item.path;
@@ -305,7 +309,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                               setIsSidebarOpen(false);
                               setMenuSearchTerm('');
                             }}
-                            className={`w-full flex items-center justify-start gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left ${
+                            className={`w-full flex items-center justify-start gap-2.5 px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors text-left ${
                               isActive
                                 ? 'bg-sidebar-accent text-sidebar-accent-foreground'
                                 : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
@@ -323,12 +327,12 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
 
               {/* Accounting Section */}
               {filteredAccountingItems.length > 0 && (
-                <div className="pt-4">
+                <div className="pt-3">
                   <button
                     onClick={() => setIsAccountingOpen(!isAccountingOpen)}
-                    className="w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors text-left"
+                    className="w-full flex items-center justify-start gap-2.5 px-3 py-2 rounded-md text-[13px] font-semibold text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors text-left"
                   >
-                    <BarChart3 className="w-5 h-5 flex-shrink-0" />
+                    <BarChart3 className="w-[18px] h-[18px] flex-shrink-0" />
                     <span className="flex-1 text-left">Accounting</span>
                     {shouldExpandAccounting ? (
                       <ChevronDown className="w-4 h-4 flex-shrink-0" />
@@ -338,7 +342,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                   </button>
                   
                   {shouldExpandAccounting && (
-                    <div className="ml-6 mt-1 space-y-1">
+                    <div className="ml-4 mt-1 space-y-0.5">
                       {filteredAccountingItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = location.pathname === item.path;
@@ -350,7 +354,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                               setIsSidebarOpen(false);
                               setMenuSearchTerm('');
                             }}
-                            className={`w-full flex items-center justify-start gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left ${
+                            className={`w-full flex items-center justify-start gap-2.5 px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors text-left ${
                               isActive
                                 ? 'bg-sidebar-accent text-sidebar-accent-foreground'
                                 : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
@@ -368,12 +372,12 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
 
               {/* Reports & Analytics Section */}
               {filteredReportsItems.length > 0 && (
-                <div className="pt-4">
+                <div className="pt-3">
                   <button
                     onClick={() => setIsReportsOpen(!isReportsOpen)}
-                    className="w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors text-left"
+                    className="w-full flex items-center justify-start gap-2.5 px-3 py-2 rounded-md text-[13px] font-semibold text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors text-left"
                   >
-                    <BarChart3 className="w-5 h-5 flex-shrink-0" />
+                    <BarChart3 className="w-[18px] h-[18px] flex-shrink-0" />
                     <span className="flex-1 text-left">Reports & Analytics</span>
                     {shouldExpandReports ? (
                       <ChevronDown className="w-4 h-4 flex-shrink-0" />
@@ -383,7 +387,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                   </button>
                   
                   {shouldExpandReports && (
-                    <div className="ml-6 mt-1 space-y-1">
+                    <div className="ml-4 mt-1 space-y-0.5">
                       {filteredReportsItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = location.pathname === item.path;
@@ -395,7 +399,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                               setIsSidebarOpen(false);
                               setMenuSearchTerm('');
                             }}
-                            className={`w-full flex items-center justify-start gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left ${
+                            className={`w-full flex items-center justify-start gap-2.5 px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors text-left ${
                               isActive
                                 ? 'bg-sidebar-accent text-sidebar-accent-foreground'
                                 : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
@@ -412,9 +416,9 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               )}
               
               {/* Super Admin Only Items */}
-              {user?.role === 'super_admin' && filteredSuperAdminItems.length > 0 && (
-                <div className="pt-4 border-t border-sidebar-border/20">
-                  <p className="px-3 text-xs font-medium text-sidebar-foreground/70 mb-2">SUPER ADMIN</p>
+              {filteredSuperAdminItems.length > 0 && (
+                <div className="pt-3 border-t border-sidebar-border/20">
+                  <p className="px-3 text-[11px] font-semibold tracking-wide text-sidebar-foreground/70 mb-2">SUPER ADMIN</p>
                   {filteredSuperAdminItems.map((item) => {
                     const Icon = item.icon;
                     const isActive = location.pathname === item.path;
@@ -426,13 +430,13 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                           setIsSidebarOpen(false);
                           setMenuSearchTerm('');
                         }}
-                        className={`w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${
+                        className={`w-full flex items-center justify-start gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors text-left ${
                           isActive
                             ? 'bg-sidebar-accent text-sidebar-accent-foreground'
                             : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
                         }`}
                       >
-                        <Icon className="w-5 h-5 flex-shrink-0" />
+                        <Icon className="w-[18px] h-[18px] flex-shrink-0" />
                         <span className="flex-1 text-left">{item.label}</span>
                       </button>
                     );
@@ -442,12 +446,12 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               
               {/* Master Data Section */}
               {filteredMasterDataItems.length > 0 && (
-                <div className="pt-4">
+                <div className="pt-3">
                   <button
                     onClick={() => setIsMasterDataOpen(!isMasterDataOpen)}
-                    className="w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors text-left"
+                    className="w-full flex items-center justify-start gap-2.5 px-3 py-2 rounded-md text-[13px] font-semibold text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors text-left"
                   >
-                    <Settings className="w-5 h-5 flex-shrink-0" />
+                    <Settings className="w-[18px] h-[18px] flex-shrink-0" />
                     <span className="flex-1 text-left">Master Data</span>
                     {shouldExpandMasterData ? (
                       <ChevronDown className="w-4 h-4 flex-shrink-0" />
@@ -457,7 +461,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                   </button>
                   
                   {shouldExpandMasterData && (
-                    <div className="ml-6 mt-1 space-y-1">
+                    <div className="ml-4 mt-1 space-y-0.5">
                       {filteredMasterDataItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = location.pathname === item.path;
@@ -469,7 +473,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                               setIsSidebarOpen(false);
                               setMenuSearchTerm('');
                             }}
-                            className={`w-full flex items-center justify-start gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left ${
+                            className={`w-full flex items-center justify-start gap-2.5 px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors text-left ${
                               isActive
                                 ? 'bg-sidebar-accent text-sidebar-accent-foreground'
                                 : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
@@ -488,16 +492,16 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
           </ScrollArea>
 
           {/* User Info & Logout */}
-          <div className="p-4 border-t border-sidebar-border">
-            <div className="mb-3 px-3">
-              <p className="text-sm font-medium text-white">{user?.name}</p>
-              <p className="text-xs text-white/80">{user?.email}</p>
-              <p className="text-xs text-white/90 mt-1 capitalize font-medium">{user?.role}</p>
+          <div className="px-4 py-3 border-t border-sidebar-border">
+            <div className="mb-2 px-3">
+              <p className="text-sm font-semibold text-sidebar-foreground">{user?.name}</p>
+              <p className="text-xs text-sidebar-foreground/80">{user?.email}</p>
+              <p className="text-[11px] text-sidebar-foreground/90 mt-0.5 capitalize font-medium">{user?.role}</p>
             </div>
             <Button
               onClick={handleLogout}
               variant="outline"
-              className="w-full justify-start gap-2 border-white/20 text-white bg-white/10 hover:bg-white/20 hover:text-white hover:border-white/30 transition-colors"
+              className="w-full justify-start gap-2 border-sidebar-border/60 text-sidebar-foreground bg-sidebar-accent/30 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground transition-colors"
             >
               <LogOut className="w-4 h-4" />
               Logout
@@ -520,6 +524,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
           {children}
         </div>
       </main>
+      <ConfirmationComponent />
     </div>
   );
 };

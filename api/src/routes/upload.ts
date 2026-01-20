@@ -1,49 +1,33 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
 import { authenticate } from '../middleware/auth';
 import { AuthenticatedRequest, ApiResponse } from '../types';
+import { doSpacesService } from '../services/doSpacesService';
 
 const router = express.Router();
 
 // Apply authentication to all routes
 router.use(authenticate);
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = 'uploads/logos';
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    // Generate unique filename: branchId_timestamp.ext
-    const branchId = req.body.branchId || 'default';
-    const timestamp = Date.now();
-    const ext = path.extname(file.originalname);
-    cb(null, `${branchId}_${timestamp}${ext}`);
-  }
-});
+// Configure multer to use memory storage (files stored in buffer)
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
   limits: {
-    fileSize: 2 * 1024 * 1024, // 2MB limit
+    fileSize: 5 * 1024 * 1024, // 5MB limit (increased from 2MB)
   },
   fileFilter: (req, file, cb) => {
-    // Check file type
-    const allowedTypes = /jpeg|jpg|png|gif/;
+    // Check file type - support more image formats
+    const allowedTypes = /jpeg|jpg|png|gif|webp|svg/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
+    const mimetype = allowedTypes.test(file.mimetype) || file.mimetype === 'image/svg+xml';
 
     if (mimetype && extname) {
       return cb(null, true);
     } else {
-      cb(new Error('Only image files (JPEG, JPG, PNG, GIF) are allowed'));
+      cb(new Error('Only image files (JPEG, JPG, PNG, GIF, WEBP, SVG) are allowed'));
     }
   }
 });
@@ -73,15 +57,44 @@ router.post('/logo', (req: AuthenticatedRequest, res, next) => {
       return res.status(400).json(response);
     }
 
-    // Generate the logo path (relative to public directory)
-    const logoPath = `/uploads/logos/${req.file.filename}`;
+    const branchId = req.body.branchId || req.user?.branchId?.toString();
+
+    // Upload to DigitalOcean Spaces - NO FALLBACK TO LOCAL STORAGE
+    const uploadResult = await doSpacesService.uploadFile(
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype,
+      branchId
+    );
+
+    if (!uploadResult.success || !uploadResult.cdnUrl) {
+      console.error('CDN upload failed:', uploadResult.message);
+      const response: ApiResponse = {
+        success: false,
+        message: uploadResult.message || 'Failed to upload file to CDN. Please check your DigitalOcean Spaces configuration.'
+      };
+      return res.status(500).json(response);
+    }
+
+    // Validate that we got a CDN URL (not a local path)
+    if (uploadResult.cdnUrl.startsWith('/uploads/') || uploadResult.cdnUrl.startsWith('uploads/')) {
+      console.error('CDN configuration error: Received local path instead of CDN URL');
+      const response: ApiResponse = {
+        success: false,
+        message: 'CDN configuration error: Received local path. Please check your DigitalOcean Spaces environment variables.'
+      };
+      return res.status(500).json(response);
+    }
 
     const response: ApiResponse = {
       success: true,
-      message: 'Logo uploaded successfully',
+      message: 'Logo uploaded successfully to CDN',
       data: {
-        logoPath,
-        filename: req.file.filename,
+        logoPath: uploadResult.cdnUrl, // Use CDN URL as the primary path
+        cdnUrl: uploadResult.cdnUrl,
+        directUrl: uploadResult.url,
+        key: uploadResult.key,
+        filename: req.file.originalname,
         originalName: req.file.originalname,
         size: req.file.size
       }
@@ -89,7 +102,7 @@ router.post('/logo', (req: AuthenticatedRequest, res, next) => {
 
     res.json(response);
   } catch (error) {
-    console.error('Logo upload error:', error);
+    console.error('Logo upload error:', error instanceof Error ? error.message : 'Unknown error');
     
     let message = 'Server error uploading logo';
     if (error instanceof Error) {
@@ -98,28 +111,41 @@ router.post('/logo', (req: AuthenticatedRequest, res, next) => {
 
     const response: ApiResponse = {
       success: false,
-      message
+      message: `CDN upload failed: ${message}. Please check your DigitalOcean Spaces configuration.`
     };
     res.status(500).json(response);
   }
 });
 
-// @desc    Delete logo file
-// @route   DELETE /api/upload/logo/:filename
+// @desc    Delete logo file from CDN
+// @route   DELETE /api/upload/logo/:key
 // @access  Private
-router.delete('/logo/:filename', async (req: AuthenticatedRequest, res) => {
+router.delete('/logo/:key(*)', async (req: AuthenticatedRequest, res) => {
   try {
-    const { filename } = req.params;
-    const filePath = path.join('uploads/logos', filename);
+    const { key } = req.params;
 
-    // Check if file exists
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    if (!key) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'File key is required'
+      };
+      return res.status(400).json(response);
+    }
+
+    // Delete from DigitalOcean Spaces
+    const deleteResult = await doSpacesService.deleteFile(key);
+
+    if (!deleteResult.success) {
+      const response: ApiResponse = {
+        success: false,
+        message: deleteResult.message || 'Failed to delete file from CDN'
+      };
+      return res.status(500).json(response);
     }
 
     const response: ApiResponse = {
       success: true,
-      message: 'Logo deleted successfully'
+      message: 'Logo deleted successfully from CDN'
     };
 
     res.json(response);
@@ -133,15 +159,129 @@ router.delete('/logo/:filename', async (req: AuthenticatedRequest, res) => {
   }
 });
 
+// @desc    Delete logo by URL
+// @route   POST /api/upload/logo/delete-by-url
+// @access  Private
+router.post('/logo/delete-by-url', async (req: AuthenticatedRequest, res) => {
+  try {
+    const { url } = req.body;
+
+    if (!url) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'URL is required'
+      };
+      return res.status(400).json(response);
+    }
+
+    // Delete from DigitalOcean Spaces by URL
+    const deleteResult = await doSpacesService.deleteFileByUrl(url);
+
+    if (!deleteResult.success) {
+      const response: ApiResponse = {
+        success: false,
+        message: deleteResult.message || 'Failed to delete file from CDN'
+      };
+      return res.status(500).json(response);
+    }
+
+    const response: ApiResponse = {
+      success: true,
+      message: 'Logo deleted successfully from CDN'
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('Logo delete by URL error:', error);
+    const response: ApiResponse = {
+      success: false,
+      message: 'Server error deleting logo'
+    };
+    res.status(500).json(response);
+  }
+});
+
+// @desc    List files in CDN
+// @route   GET /api/upload/files
+// @access  Private
+router.get('/files', async (req: AuthenticatedRequest, res) => {
+  try {
+    const prefix = req.query.prefix as string | undefined;
+    const branchId = req.query.branchId as string | undefined;
+
+    // List files from DigitalOcean Spaces
+    const listResult = await doSpacesService.listFiles(branchId || prefix);
+
+    if (!listResult.success) {
+      const response: ApiResponse = {
+        success: false,
+        message: listResult.message || 'Failed to list files from CDN'
+      };
+      return res.status(500).json(response);
+    }
+
+    const response: ApiResponse = {
+      success: true,
+      message: listResult.message || 'Files retrieved successfully',
+      data: {
+        files: listResult.files,
+        count: listResult.files?.length || 0
+      }
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('List files error:', error);
+    const response: ApiResponse = {
+      success: false,
+      message: 'Server error listing files'
+    };
+    res.status(500).json(response);
+  }
+});
+
+// @desc    Check if file exists in CDN
+// @route   POST /api/upload/check-file
+// @access  Private
+router.post('/check-file', async (req: AuthenticatedRequest, res) => {
+  try {
+    const { key } = req.body;
+
+    if (!key) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'File key is required'
+      };
+      return res.status(400).json(response);
+    }
+
+    const exists = await doSpacesService.fileExists(key);
+
+    const response: ApiResponse = {
+      success: true,
+      message: exists ? 'File exists' : 'File not found',
+      data: { exists }
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('Check file error:', error);
+    const response: ApiResponse = {
+      success: false,
+      message: 'Server error checking file'
+    };
+    res.status(500).json(response);
+  }
+});
+
 // @desc    Test upload endpoint (for debugging)
 // @route   POST /api/upload/test
 // @access  Private
 router.post('/test', upload.single('logo'), async (req: AuthenticatedRequest, res) => {
   try {
-    
     const response: ApiResponse = {
       success: true,
-      message: 'Upload test successful',
+      message: 'Upload test successful - CDN configured',
       data: {
         hasFile: !!req.file,
         body: req.body,
@@ -149,8 +289,15 @@ router.post('/test', upload.single('logo'), async (req: AuthenticatedRequest, re
           fieldname: req.file.fieldname,
           originalname: req.file.originalname,
           mimetype: req.file.mimetype,
-          size: req.file.size
-        } : null
+          size: req.file.size,
+          buffer_size: req.file.buffer.length
+        } : null,
+        cdnConfig: {
+          bucket: process.env.DO_SPACES_BUCKET,
+          endpoint: process.env.DO_SPACES_ENDPOINT,
+          cdnEndpoint: process.env.DO_SPACES_CDN_ENDPOINT,
+          folder: process.env.DO_SPACES_FOLDER
+        }
       }
     };
 

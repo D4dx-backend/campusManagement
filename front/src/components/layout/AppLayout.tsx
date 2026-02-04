@@ -52,6 +52,27 @@ type MenuItem = {
   };
 };
 
+// Helpers to persist sidebar open/collapsed state across page loads
+const getStoredBoolean = (key: string, defaultValue: boolean) => {
+  if (typeof window === 'undefined') return defaultValue;
+  try {
+    const stored = window.localStorage.getItem(key);
+    if (stored === null) return defaultValue;
+    return stored === 'true';
+  } catch {
+    return defaultValue;
+  }
+};
+
+const setStoredBoolean = (key: string, value: boolean) => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(key, value ? 'true' : 'false');
+  } catch {
+    // Ignore storage errors – do not break UI
+  }
+};
+
 // Main dashboard item (always visible)
 const dashboardItem: MenuItem = { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' };
 
@@ -109,12 +130,24 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const { confirm, ConfirmationComponent } = useConfirmation();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isAcademicOpen, setIsAcademicOpen] = useState(false);
-  const [isFinancialOpen, setIsFinancialOpen] = useState(false);
-  const [isAccountingOpen, setIsAccountingOpen] = useState(false);
-  const [isReportsOpen, setIsReportsOpen] = useState(false);
-  const [isMasterDataOpen, setIsMasterDataOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() =>
+    getStoredBoolean('sidebar:isOpen', false)
+  );
+  const [isAcademicOpen, setIsAcademicOpen] = useState(() =>
+    getStoredBoolean('sidebar:academic', false)
+  );
+  const [isFinancialOpen, setIsFinancialOpen] = useState(() =>
+    getStoredBoolean('sidebar:financial', false)
+  );
+  const [isAccountingOpen, setIsAccountingOpen] = useState(() =>
+    getStoredBoolean('sidebar:accounting', false)
+  );
+  const [isReportsOpen, setIsReportsOpen] = useState(() =>
+    getStoredBoolean('sidebar:reports', false)
+  );
+  const [isMasterDataOpen, setIsMasterDataOpen] = useState(() =>
+    getStoredBoolean('sidebar:masterData', false)
+  );
   const [menuSearchTerm, setMenuSearchTerm] = useState('');
 
   const handleLogout = () => {
@@ -183,7 +216,13 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Mobile Menu Button */}
       <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        onClick={() => {
+          setIsSidebarOpen((prev) => {
+            const next = !prev;
+            setStoredBoolean('sidebar:isOpen', next);
+            return next;
+          });
+        }}
         className="fixed top-4 left-4 z-50 lg:hidden p-2 rounded-lg bg-card border border-border"
       >
         {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -197,9 +236,8 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="px-5 py-4 border-b border-sidebar-border">
-            <h1 className="text-xl font-semibold text-sidebar-primary tracking-tight">CampusWise</h1>
-            <p className="text-xs text-sidebar-foreground/70 mt-0.5">D4Media Institution</p>
+          <div className="px-4 py-4 border-b border-sidebar-border flex items-center justify-center">
+            <img src="/logoo.png" alt="Friends Academy" className="h-14 w-full max-w-[240px] object-contain object-center" />
           </div>
 
           {/* Menu Search */}
@@ -222,7 +260,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               <button
                 onClick={() => {
                   navigate(dashboardItem.path);
-                  setIsSidebarOpen(false);
+                  // Keep sidebar state sticky; do not auto-close on navigation
                   setMenuSearchTerm('');
                 }}
                 className={`w-full flex items-center justify-start gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors text-left ${
@@ -239,7 +277,13 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               {filteredAcademicItems.length > 0 && (
                 <div className="pt-3">
                   <button
-                    onClick={() => setIsAcademicOpen(!isAcademicOpen)}
+                    onClick={() =>
+                      setIsAcademicOpen((prev) => {
+                        const next = !prev;
+                        setStoredBoolean('sidebar:academic', next);
+                        return next;
+                      })
+                    }
                     className="w-full flex items-center justify-start gap-2.5 px-3 py-2 rounded-md text-[13px] font-semibold text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors text-left"
                   >
                     <School className="w-[18px] h-[18px] flex-shrink-0" />
@@ -261,7 +305,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                             key={item.path}
                             onClick={() => {
                               navigate(item.path);
-                              setIsSidebarOpen(false);
+                              // Keep sidebar state sticky; do not auto-close on navigation
                               setMenuSearchTerm('');
                             }}
                             className={`w-full flex items-center justify-start gap-2.5 px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors text-left ${
@@ -284,7 +328,13 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               {filteredFinancialItems.length > 0 && (
                 <div className="pt-3">
                   <button
-                    onClick={() => setIsFinancialOpen(!isFinancialOpen)}
+                    onClick={() =>
+                      setIsFinancialOpen((prev) => {
+                        const next = !prev;
+                        setStoredBoolean('sidebar:financial', next);
+                        return next;
+                      })
+                    }
                     className="w-full flex items-center justify-start gap-2.5 px-3 py-2 rounded-md text-[13px] font-semibold text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors text-left"
                   >
                     <Wallet className="w-[18px] h-[18px] flex-shrink-0" />
@@ -306,7 +356,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                             key={item.path}
                             onClick={() => {
                               navigate(item.path);
-                              setIsSidebarOpen(false);
+                              // Keep sidebar state sticky; do not auto-close on navigation
                               setMenuSearchTerm('');
                             }}
                             className={`w-full flex items-center justify-start gap-2.5 px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors text-left ${
@@ -329,7 +379,13 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               {filteredAccountingItems.length > 0 && (
                 <div className="pt-3">
                   <button
-                    onClick={() => setIsAccountingOpen(!isAccountingOpen)}
+                    onClick={() =>
+                      setIsAccountingOpen((prev) => {
+                        const next = !prev;
+                        setStoredBoolean('sidebar:accounting', next);
+                        return next;
+                      })
+                    }
                     className="w-full flex items-center justify-start gap-2.5 px-3 py-2 rounded-md text-[13px] font-semibold text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors text-left"
                   >
                     <BarChart3 className="w-[18px] h-[18px] flex-shrink-0" />
@@ -351,7 +407,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                             key={item.path}
                             onClick={() => {
                               navigate(item.path);
-                              setIsSidebarOpen(false);
+                              // Keep sidebar state sticky; do not auto-close on navigation
                               setMenuSearchTerm('');
                             }}
                             className={`w-full flex items-center justify-start gap-2.5 px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors text-left ${
@@ -374,7 +430,13 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               {filteredReportsItems.length > 0 && (
                 <div className="pt-3">
                   <button
-                    onClick={() => setIsReportsOpen(!isReportsOpen)}
+                    onClick={() =>
+                      setIsReportsOpen((prev) => {
+                        const next = !prev;
+                        setStoredBoolean('sidebar:reports', next);
+                        return next;
+                      })
+                    }
                     className="w-full flex items-center justify-start gap-2.5 px-3 py-2 rounded-md text-[13px] font-semibold text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors text-left"
                   >
                     <BarChart3 className="w-[18px] h-[18px] flex-shrink-0" />
@@ -396,7 +458,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                             key={item.path}
                             onClick={() => {
                               navigate(item.path);
-                              setIsSidebarOpen(false);
+                            // Keep sidebar state sticky; do not auto-close on navigation
                               setMenuSearchTerm('');
                             }}
                             className={`w-full flex items-center justify-start gap-2.5 px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors text-left ${
@@ -427,7 +489,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                         key={item.path}
                         onClick={() => {
                           navigate(item.path);
-                          setIsSidebarOpen(false);
+                          // Keep sidebar state sticky; do not auto-close on navigation
                           setMenuSearchTerm('');
                         }}
                         className={`w-full flex items-center justify-start gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors text-left ${
@@ -448,7 +510,13 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               {filteredMasterDataItems.length > 0 && (
                 <div className="pt-3">
                   <button
-                    onClick={() => setIsMasterDataOpen(!isMasterDataOpen)}
+                    onClick={() =>
+                      setIsMasterDataOpen((prev) => {
+                        const next = !prev;
+                        setStoredBoolean('sidebar:masterData', next);
+                        return next;
+                      })
+                    }
                     className="w-full flex items-center justify-start gap-2.5 px-3 py-2 rounded-md text-[13px] font-semibold text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors text-left"
                   >
                     <Settings className="w-[18px] h-[18px] flex-shrink-0" />
@@ -470,7 +538,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                             key={item.path}
                             onClick={() => {
                               navigate(item.path);
-                              setIsSidebarOpen(false);
+                            // Keep sidebar state sticky; do not auto-close on navigation
                               setMenuSearchTerm('');
                             }}
                             className={`w-full flex items-center justify-start gap-2.5 px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors text-left ${

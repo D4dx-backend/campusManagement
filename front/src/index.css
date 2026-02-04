@@ -38,14 +38,14 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
 
-    --sidebar-background: 221 39% 18%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 221 55% 72%;
-    --sidebar-primary-foreground: 221 35% 16%;
-    --sidebar-accent: 221 35% 26%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 221 28% 25%;
-    --sidebar-ring: 221 55% 72%;
+    --sidebar-background: 100 100% 100%;
+    --sidebar-foreground: 0 0% 0%;
+    --sidebar-primary: 238 70% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 238 70% 95%;
+    --sidebar-accent-foreground: 238 70% 20%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 238 70% 58%;
 
     --success: 160 65% 55%;
     --warning: 45 93% 58%;

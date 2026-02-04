@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { GraduationCap, Smartphone, Lock } from 'lucide-react';
+import { Smartphone, Lock } from 'lucide-react';
 
 const Login = () => {
   const [mobile, setMobile] = useState('');
@@ -30,8 +30,8 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="space-y-4 text-center">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-            <GraduationCap className="w-10 h-10 text-primary" />
+          <div className="mx-auto flex justify-center">
+            <img src="/logoo.png" alt="Friends Academy" className="h-20 w-auto object-contain" />
           </div>
           <div>
             <CardTitle className="text-3xl font-bold">CampusWise</CardTitle>
@@ -79,13 +79,13 @@ const Login = () => {
             </Button>
           </form>
           
-          <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+          {/* <div className="mt-6 p-4 bg-muted/50 rounded-lg">
             <div className="mt-1">
               <p className="text-xs text-muted-foreground">
                 Make sure the backend API is running on port 8000
               </p>
             </div>
-          </div>
+          </div> */}
         </CardContent>
       </Card>
     </div>

@@ -45,8 +45,17 @@ export interface IStudent {
   section: string;
   dateOfBirth: Date;
   dateOfAdmission: Date;
-  guardianName: string;
-  guardianPhone: string;
+  fatherName: string;
+  fatherPhone: string;
+  fatherEmail?: string;
+  fatherJobCompany?: string;
+  motherName?: string;
+  motherPhone?: string;
+  motherEmail?: string;
+  motherJobCompany?: string;
+  // legacy guardian fields (kept for backward compatibility)
+  guardianName?: string;
+  guardianPhone?: string;
   guardianEmail?: string;
   gender: 'male' | 'female';
   address: string;
@@ -417,6 +426,7 @@ export interface QueryParams {
   action?: string;
   // Classes
   academicYear?: string;
+  branchId?: string;
   // Divisions
   classId?: string;
   // Expenses
@@ -432,6 +442,7 @@ export interface QueryParams {
   class?: string;
   section?: string;
   transport?: string;
+  gender?: string;
   // Textbooks
   subject?: string;
   availability?: string;

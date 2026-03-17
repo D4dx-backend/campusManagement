@@ -28,9 +28,14 @@ export interface CreateStudentData {
   section: string;
   dateOfBirth: string;
   dateOfAdmission: string;
-  guardianName: string;
-  guardianPhone: string;
-  guardianEmail?: string;
+  fatherName: string;
+  fatherPhone: string;
+  fatherEmail?: string;
+  fatherJobCompany?: string;
+  motherName?: string;
+  motherPhone?: string;
+  motherEmail?: string;
+  motherJobCompany?: string;
   address: string;
   transport: 'school' | 'own' | 'none';
   transportRoute?: string;
@@ -71,5 +76,11 @@ export const studentService = {
   getStudentStats: async () => {
     const response = await apiClient.get<StudentStats>('/students/stats/overview');
     return response.data;
+  },
+
+  // Get next auto-generated admission number
+  getNextAdmissionNo: async (classId: string, divisionName: string): Promise<string> => {
+    const response = await apiClient.get<{ admissionNo: string }>('/students/next-admission-no', { classId, divisionName });
+    return response.data.data.admissionNo;
   }
 };

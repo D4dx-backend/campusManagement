@@ -23,11 +23,9 @@ export const createStudentSchema = Joi.object({
       'any.required': 'Class is required'
     }),
   section: Joi.string()
-    .required()
-    .trim()
-    .messages({
-      'any.required': 'Section is required'
-    }),
+    .optional()
+    .allow('')
+    .trim(),
   dateOfBirth: Joi.date()
     .required()
     .messages({
@@ -38,30 +36,21 @@ export const createStudentSchema = Joi.object({
     .messages({
       'any.required': 'Date of admission is required'
     }),
-  guardianName: Joi.string()
-    .min(2)
-    .max(100)
-    .required()
-    .trim()
-    .messages({
-      'string.min': 'Guardian name must be at least 2 characters',
-      'string.max': 'Guardian name must not exceed 100 characters',
-      'any.required': 'Guardian name is required'
-    }),
-  guardianPhone: Joi.string()
-    .pattern(/^\+\d{1,4}\d{6,14}$/)
-    .required()
-    .messages({
-      'string.pattern.base': 'Guardian phone must include country code and be valid format (e.g., +911234567890)',
-      'any.required': 'Guardian phone is required'
-    }),
-  guardianEmail: Joi.string()
-    .email()
-    .optional()
-    .allow('')
-    .messages({
-      'string.email': 'Please provide a valid guardian email address'
-    }),
+  fatherName: Joi.string().min(2).max(100).required().trim()
+    .messages({ 'any.required': "Father's name is required" }),
+  fatherPhone: Joi.string().pattern(/^\+\d{1,4}\d{6,14}$/).required()
+    .messages({ 'string.pattern.base': "Father's phone must include country code (e.g., +911234567890)", 'any.required': "Father's phone is required" }),
+  fatherEmail: Joi.string().email().optional().allow(''),
+  fatherJobCompany: Joi.string().optional().allow('').trim(),
+  motherName: Joi.string().min(2).max(100).optional().allow('').trim(),
+  motherPhone: Joi.string().pattern(/^\+\d{1,4}\d{6,14}$/).optional().allow('')
+    .messages({ 'string.pattern.base': "Mother's phone must include country code (e.g., +911234567890)" }),
+  motherEmail: Joi.string().email().optional().allow(''),
+  motherJobCompany: Joi.string().optional().allow('').trim(),
+  // legacy guardian fields allowed for backward compatibility
+  guardianName: Joi.string().min(2).max(100).optional().allow('').trim(),
+  guardianPhone: Joi.string().pattern(/^\+\d{1,4}\d{6,14}$/).optional().allow(''),
+  guardianEmail: Joi.string().email().optional().allow(''),
   gender: Joi.string()
     .valid('male', 'female')
     .required()
@@ -89,6 +78,7 @@ export const createStudentSchema = Joi.object({
     .optional()
     .allow('')
     .trim(),
+  isStaffChild: Joi.boolean().optional().default(false),
   status: Joi.string()
     .valid('active', 'inactive')
     .default('active')
@@ -122,28 +112,17 @@ export const updateStudentSchema = Joi.object({
     .optional(),
   dateOfAdmission: Joi.date()
     .optional(),
-  guardianName: Joi.string()
-    .min(2)
-    .max(100)
-    .optional()
-    .trim()
-    .messages({
-      'string.min': 'Guardian name must be at least 2 characters',
-      'string.max': 'Guardian name must not exceed 100 characters'
-    }),
-  guardianPhone: Joi.string()
-    .pattern(/^\+\d{1,4}\d{6,14}$/)
-    .optional()
-    .messages({
-      'string.pattern.base': 'Guardian phone must include country code and be valid format (e.g., +911234567890)'
-    }),
-  guardianEmail: Joi.string()
-    .email()
-    .optional()
-    .allow('')
-    .messages({
-      'string.email': 'Please provide a valid guardian email address'
-    }),
+  fatherName: Joi.string().min(2).max(100).optional().trim(),
+  fatherPhone: Joi.string().pattern(/^\+\d{1,4}\d{6,14}$/).optional().allow(''),
+  fatherEmail: Joi.string().email().optional().allow(''),
+  fatherJobCompany: Joi.string().optional().allow('').trim(),
+  motherName: Joi.string().min(2).max(100).optional().allow('').trim(),
+  motherPhone: Joi.string().pattern(/^\+\d{1,4}\d{6,14}$/).optional().allow(''),
+  motherEmail: Joi.string().email().optional().allow(''),
+  motherJobCompany: Joi.string().optional().allow('').trim(),
+  guardianName: Joi.string().min(2).max(100).optional().allow('').trim(),
+  guardianPhone: Joi.string().pattern(/^\+\d{1,4}\d{6,14}$/).optional().allow(''),
+  guardianEmail: Joi.string().email().optional().allow(''),
   gender: Joi.string()
     .valid('male', 'female')
     .optional()
@@ -169,6 +148,7 @@ export const updateStudentSchema = Joi.object({
     .optional()
     .allow('')
     .trim(),
+  isStaffChild: Joi.boolean().optional(),
   status: Joi.string()
     .valid('active', 'inactive')
     .optional()
@@ -182,9 +162,11 @@ export const queryStudentsSchema = Joi.object({
   limit: Joi.number().integer().min(1).max(100).default(10),
   search: Joi.string().optional().allow(''),
   class: Joi.string().optional().allow(''),
+  classId: Joi.string().optional().allow(''),
   section: Joi.string().optional().allow(''),
   status: Joi.string().valid('active', 'inactive').optional(),
   transport: Joi.string().valid('school', 'own', 'none').optional(),
+  gender: Joi.string().valid('male', 'female').optional(),
   sortBy: Joi.string().valid('name', 'admissionNo', 'class', 'createdAt').default('createdAt'),
   sortOrder: Joi.string().valid('asc', 'desc').default('desc')
 });

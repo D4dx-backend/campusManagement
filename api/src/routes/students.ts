@@ -22,9 +22,11 @@ router.get('/', checkPermission('students', 'read'), validateQuery(queryStudents
       limit = 10,
       search = '',
       class: studentClass = '',
+      classId = '',
       section = '',
       status = '',
       transport = '',
+      gender = '',
       sortBy = 'createdAt',
       sortOrder = 'desc'
     } = req.query as QueryParams;
@@ -45,10 +47,12 @@ router.get('/', checkPermission('students', 'read'), validateQuery(queryStudents
       ];
     }
 
-    if (studentClass) filter.class = studentClass;
+    if (classId) filter.classId = classId;
+    else if (studentClass) filter.class = studentClass;
     if (section) filter.section = section;
     if (status) filter.status = status;
     if (transport) filter.transport = transport;
+    if (gender) filter.gender = gender;
 
     // Calculate pagination
     const skip = (page - 1) * limit;
@@ -84,6 +88,61 @@ router.get('/', checkPermission('students', 'read'), validateQuery(queryStudents
       success: false,
       message: 'Server error retrieving students'
     };
+    res.status(500).json(response);
+  }
+});
+
+// @desc    Get next admission number for a class+division
+// @route   GET /api/students/next-admission-no
+// @access  Private
+router.get('/next-admission-no', checkPermission('students', 'read'), async (req: AuthenticatedRequest, res) => {
+  try {
+    const { classId, divisionName = '' } = req.query as { classId: string; divisionName?: string };
+
+    if (!classId) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'classId is required'
+      };
+      return res.status(400).json(response);
+    }
+
+    const classDoc = await Class.findById(classId);
+    if (!classDoc) {
+      const response: ApiResponse = { success: false, message: 'Class not found' };
+      return res.status(404).json(response);
+    }
+
+    // Build prefix: className (no spaces) + divisionName (if any) + first 4 digits of academicYear
+    const classNamePart = classDoc.name.replace(/\s+/g, '').toUpperCase();
+    const divisionPart = divisionName && divisionName.trim() ? String(divisionName).toUpperCase() : '';
+    const yearPart = String(classDoc.academicYear).replace(/[^0-9]/g, '').substring(0, 4);
+    const prefix = `${classNamePart}${divisionPart}${yearPart}`;
+
+    // Find highest existing sequence number with this prefix
+    const existing = await Student.find(
+      { admissionNo: { $regex: `^${prefix}\\d+$` } },
+      { admissionNo: 1 }
+    ).lean();
+
+    let maxSeq = 0;
+    for (const s of existing) {
+      const numPart = s.admissionNo.slice(prefix.length);
+      const num = parseInt(numPart, 10);
+      if (!isNaN(num) && num > maxSeq) maxSeq = num;
+    }
+
+    const nextNo = `${prefix}${String(maxSeq + 1).padStart(4, '0')}`;
+
+    const response: ApiResponse = {
+      success: true,
+      message: 'Next admission number generated',
+      data: { admissionNo: nextNo, prefix }
+    };
+    res.json(response);
+  } catch (error) {
+    console.error('Next admission no error:', error);
+    const response: ApiResponse = { success: false, message: 'Server error generating admission number' };
     res.status(500).json(response);
   }
 });

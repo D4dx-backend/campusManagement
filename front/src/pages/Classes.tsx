@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,21 +22,18 @@ const Classes = () => {
   const [editingClass, setEditingClass] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [filterValues, setFilterValues] = useState({});
+  const [selectedBranchId, setSelectedBranchId] = useState('all');
   const { toast } = useToast();
   const { user } = useAuth();
   const { confirm, ConfirmationComponent } = useConfirmation();
 
-  // Get branches for super admins
-  const { data: branchesResponse, isLoading: branchesLoading } = useBranches(user?.role === 'super_admin');
+  const { data: branchesResponse } = useBranches(user?.role === 'super_admin');
   const branches = branchesResponse?.data || [];
+  const getBranchName = (branchId: string) => {
+    const branch = branches.find((b: any) => (b.id || b._id) === branchId);
+    return branch ? branch.name : '';
+  };
   
-  // Debug log
-  useEffect(() => {
-    if (user?.role === 'super_admin') {
-    }
-  }, [branches, user?.role]);
-
   // Check if user has classes read permission
   const hasClassesReadPermission = user?.permissions?.some(
     p => p.module === 'classes' && p.actions.includes('read')
@@ -52,7 +49,7 @@ const Classes = () => {
     page: currentPage,
     limit: itemsPerPage,
     search: searchTerm,
-    ...filterValues,
+    branchId: selectedBranchId !== 'all' ? selectedBranchId : undefined,
   });
 
 
@@ -83,17 +80,6 @@ const Classes = () => {
   const classes = classesResponse?.data || [];
   const pagination = classesResponse?.pagination;
 
-  // Filter handlers
-  const handleFilterChange = (values: any) => {
-    setFilterValues(values);
-    setCurrentPage(1);
-  };
-
-  const handleFilterReset = () => {
-    setFilterValues({});
-    setCurrentPage(1);
-  };
-
   const handleItemsPerPageChange = (newItemsPerPage: number) => {
     setItemsPerPage(newItemsPerPage);
     setCurrentPage(1);
@@ -114,10 +100,9 @@ const Classes = () => {
     
     try {
       if (editingClass) {
-        await updateClassMutation.mutateAsync({
-          id: editingClass._id,
-          ...formData,
-        });
+        const updateData: any = { id: editingClass._id, ...formData };
+        if (!updateData.branchId) delete updateData.branchId;
+        await updateClassMutation.mutateAsync(updateData);
       } else {
         // Only send branchId if it's provided (for super admins)
         const createData = { ...formData };
@@ -140,7 +125,7 @@ const Classes = () => {
       name: classItem.name,
       academicYear: classItem.academicYear,
       status: classItem.status,
-      branchId: '',
+      branchId: classItem.branchId || '',
     });
     setIsDialogOpen(true);
   };
@@ -232,24 +217,24 @@ const Classes = () => {
                     required
                   />
                 </div>
-                {user?.role === 'super_admin' && !editingClass && (
+                {user?.role === 'super_admin' && (
                   <div className="space-y-2">
-                    <Label htmlFor="branchId">Branch *</Label>
+                    <Label htmlFor="branchId">Branch {!editingClass && '*'}</Label>
                     <Select
                       value={formData.branchId}
                       onValueChange={(value) => setFormData({ ...formData, branchId: value })}
-                      required
+                      required={!editingClass}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select a branch" />
                       </SelectTrigger>
                       <SelectContent>
-                        {branches.filter(b => b.status === 'active').length === 0 ? (
+                        {branches.length === 0 ? (
                           <SelectItem value="no-branches" disabled>
-                            No active branches available
+                            No branches available
                           </SelectItem>
                         ) : (
-                          branches.filter(b => b.status === 'active').map(branch => (
+                          branches.map(branch => (
                             <SelectItem key={branch.id || branch._id} value={branch.id || branch._id}>
                               {branch.name} ({branch.code})
                             </SelectItem>
@@ -299,9 +284,37 @@ const Classes = () => {
                 <Input
                   placeholder="Search by class name or academic year..."
                   value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
+                  onChange={e => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="pl-10"
                 />
+              </div>
+              <div className="w-[220px]">
+                <Select
+                  value={selectedBranchId}
+                  onValueChange={(value) => {
+                    setSelectedBranchId(value);
+                    setCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filter by branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Branches</SelectItem>
+                    {user?.role === 'super_admin' ? (
+                      branches.map((branch) => (
+                        <SelectItem key={branch.id || branch._id} value={branch.id || branch._id}>
+                          {branch.name}
+                        </SelectItem>
+                      ))
+                    ) : user?.branchId ? (
+                      <SelectItem value={user.branchId}>My Branch</SelectItem>
+                    ) : null}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CardHeader>
@@ -339,6 +352,7 @@ const Classes = () => {
                           <tr className="border-b bg-muted/50">
                             <th className="text-left p-3 font-semibold">Class Name</th>
                             <th className="text-left p-3 font-semibold">Academic Year</th>
+                            <th className="text-left p-3 font-semibold">Branch</th>
                             <th className="text-left p-3 font-semibold">Status</th>
                             <th className="text-left p-3 font-semibold">Created Date</th>
                             <th className="text-right p-3 font-semibold">Actions</th>
@@ -352,6 +366,11 @@ const Classes = () => {
                               </td>
                               <td className="p-3">
                                 <span className="text-sm">{classItem.academicYear}</span>
+                              </td>
+                              <td className="p-3">
+                                <span className="text-sm text-muted-foreground">
+                                  {getBranchName(classItem.branchId) || '—'}
+                                </span>
                               </td>
                               <td className="p-3">
                                 <span className={`text-xs px-2 py-1 rounded-full ${

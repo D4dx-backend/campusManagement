@@ -10,6 +10,7 @@ import { useConfirmation } from '@/hooks/useConfirmation';
 import { useClasses } from '@/hooks/useClasses';
 import { useDivisions, useCreateDivision, useUpdateDivision, useDeleteDivision } from '@/hooks/useDivisions';
 import { useStaff } from '@/hooks/useStaff';
+import { useBranches } from '@/hooks/useBranches';
 import { Plus, Search, Edit, Trash2, Users, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatters } from '@/utils/exportUtils';
@@ -24,6 +25,13 @@ const Divisions = () => {
   const [filterValues, setFilterValues] = useState({});
   const { toast } = useToast();
   const { confirm, ConfirmationComponent } = useConfirmation();
+
+  const { data: branchesResponse } = useBranches();
+  const branches = branchesResponse?.data || [];
+  const getBranchName = (branchId: string) => {
+    const branch = branches.find((b: any) => (b.id || b._id) === branchId);
+    return branch ? branch.name : '';
+  };
 
   // API hooks - only pass basic parameters
   const { data: divisionsResponse, isLoading: divisionsLoading, error: divisionsError } = useDivisions({
@@ -229,11 +237,14 @@ const Divisions = () => {
                           {classesLoading ? 'Loading classes...' : 'No active classes available'}
                         </SelectItem>
                       ) : (
-                        activeClasses.map(classItem => (
-                          <SelectItem key={classItem._id} value={classItem._id}>
-                            {classItem.name} ({classItem.academicYear})
-                          </SelectItem>
-                        ))
+                        activeClasses.map(classItem => {
+                          const branchName = getBranchName(classItem.branchId);
+                          return (
+                            <SelectItem key={classItem._id} value={classItem._id}>
+                              {classItem.name} ({classItem.academicYear}){branchName ? ` — ${branchName}` : ''}
+                            </SelectItem>
+                          );
+                        })
                       )}
                     </SelectContent>
                   </Select>
@@ -356,6 +367,7 @@ const Divisions = () => {
                 <tr className="border-b bg-muted/50">
                   <th className="text-left p-4 font-semibold">Division</th>
                   <th className="text-left p-4 font-semibold">Class</th>
+                  <th className="text-left p-4 font-semibold">Branch</th>
                   <th className="text-left p-4 font-semibold">Capacity</th>
                   <th className="text-left p-4 font-semibold">Class Teacher</th>
                   <th className="text-left p-4 font-semibold">Status</th>
@@ -368,6 +380,11 @@ const Divisions = () => {
                   <tr key={division._id} className="border-b hover:bg-muted/50 transition-colors">
                     <td className="p-4 font-medium">{division.name}</td>
                     <td className="p-4">{division.className}</td>
+                    <td className="p-4">
+                      <span className="text-sm text-muted-foreground">
+                        {getBranchName(division.branchId) || '—'}
+                      </span>
+                    </td>
                     <td className="p-4">{division.capacity} students</td>
                     <td className="p-4">{division.classTeacherName || 'Not assigned'}</td>
                     <td className="p-4">

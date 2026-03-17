@@ -25,7 +25,8 @@ const StudentSchema = new Schema<IStudent>({
   },
   section: {
     type: String,
-    required: true,
+    required: false,
+    default: '',
     trim: true
   },
   dateOfBirth: {
@@ -36,14 +37,53 @@ const StudentSchema = new Schema<IStudent>({
     type: Date,
     required: true
   },
+  fatherName: {
+    type: String,
+    required: false,
+    trim: true
+  },
+  fatherPhone: {
+    type: String,
+    required: false,
+    trim: true
+  },
+  fatherEmail: {
+    type: String,
+    lowercase: true,
+    trim: true
+  },
+  fatherJobCompany: {
+    type: String,
+    trim: true
+  },
+  motherName: {
+    type: String,
+    required: false,
+    trim: true
+  },
+  motherPhone: {
+    type: String,
+    required: false,
+    trim: true
+  },
+  motherEmail: {
+    type: String,
+    lowercase: true,
+    trim: true
+  },
+  motherJobCompany: {
+    type: String,
+    trim: true
+  },
+  // legacy guardian fields
   guardianName: {
     type: String,
-    required: true,
+    required: false,
     trim: true
   },
   guardianPhone: {
     type: String,
-    required: true,
+    required: false,
     trim: true
   },
   guardianEmail: {
@@ -92,6 +132,6 @@ const StudentSchema = new Schema<IStudent>({
 StudentSchema.index({ branchId: 1 });
 StudentSchema.index({ class: 1, section: 1 });
 StudentSchema.index({ status: 1 });
-StudentSchema.index({ name: 'text', guardianName: 'text' });
+StudentSchema.index({ name: 'text', fatherName: 'text', motherName: 'text' });
 
 export const Student = mongoose.model<IStudent>('Student', StudentSchema);

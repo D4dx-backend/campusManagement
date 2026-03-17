@@ -1,4 +1,5 @@
 import express from 'express';
+import { Types } from 'mongoose';
 import { Class } from '../models/Class';
 import { Division } from '../models/Division';
 import { Student } from '../models/Student';
@@ -26,7 +27,8 @@ const updateClassSchema = Joi.object({
   name: Joi.string().optional().trim(),
   description: Joi.string().optional().allow('').trim(),
   academicYear: Joi.string().optional().trim(),
-  status: Joi.string().valid('active', 'inactive').optional()
+  status: Joi.string().valid('active', 'inactive').optional(),
+  branchId: Joi.string().optional().allow('')
 });
 
 const queryClassesSchema = Joi.object({
@@ -40,6 +42,7 @@ const queryClassesSchema = Joi.object({
   ).default(10),
   search: Joi.string().optional().allow(''),
   academicYear: Joi.string().optional().allow(''),
+  branchId: Joi.string().optional().allow(''),
   status: Joi.string().valid('active', 'inactive').optional(),
   sortBy: Joi.string().valid('name', 'academicYear', 'createdAt').default('name'),
   sortOrder: Joi.string().valid('asc', 'desc').default('asc')
@@ -55,6 +58,7 @@ router.get('/', checkPermission('classes', 'read'), validateQuery(queryClassesSc
       limit = 10,
       search = '',
       academicYear = '',
+      branchId = '',
       status = '',
       sortBy = 'name',
       sortOrder = 'asc'
@@ -66,6 +70,15 @@ router.get('/', checkPermission('classes', 'read'), validateQuery(queryClassesSc
     // Branch filter (non-super admins can only see their branch data)
     if (req.user!.role !== 'super_admin') {
       filter.branchId = req.user!.branchId;
+    } else if (branchId) {
+      if (!Types.ObjectId.isValid(branchId)) {
+        const response: ApiResponse = {
+          success: false,
+          message: 'Invalid branch ID format'
+        };
+        return res.status(400).json(response);
+      }
+      filter.branchId = new Types.ObjectId(branchId);
     }
 
     if (search) {
@@ -206,22 +219,6 @@ router.get('/:id', checkPermission('classes', 'read'), async (req: Authenticated
 // @access  Private
 router.post('/', checkPermission('classes', 'create'), validate(createClassSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    
-    // Check if class name already exists for the same academic year and branch
-    const existingClass = await Class.findOne({
-      name: req.body.name,
-      academicYear: req.body.academicYear,
-      branchId: req.user!.branchId || req.body.branchId
-    });
-
-    if (existingClass) {
-      const response: ApiResponse = {
-        success: false,
-        message: 'Class with this name already exists for the academic year'
-      };
-      return res.status(400).json(response);
-    }
-
     // Get the appropriate branchId
     const { getRequiredBranchId } = require('../utils/branchHelper');
     let branchId;
@@ -287,24 +284,6 @@ router.put('/:id', checkPermission('classes', 'update'), validate(updateClassSch
     // Branch filter for non-super admins
     if (req.user!.role !== 'super_admin') {
       filter.branchId = req.user!.branchId;
-    }
-
-    // Check if class name is being updated and already exists
-    if (req.body.name || req.body.academicYear) {
-      const existingClass = await Class.findOne({
-        name: req.body.name || undefined,
-        academicYear: req.body.academicYear || undefined,
-        branchId: req.user!.branchId,
-        _id: { $ne: req.params.id }
-      });
-
-      if (existingClass) {
-        const response: ApiResponse = {
-          success: false,
-          message: 'Another class with this name already exists for the academic year'
-        };
-        return res.status(400).json(response);
-      }
     }
 
     const updatedClass = await Class.findOneAndUpdate(

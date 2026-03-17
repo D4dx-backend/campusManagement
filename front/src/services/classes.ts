@@ -54,6 +54,7 @@ export const classesApi = {
     search?: string;
     status?: string;
     academicYear?: string;
+    branchId?: string;
   }): Promise<ClassesResponse> => {
     const response = await apiClient.get<Class[]>('/classes', params);
     // The API returns { success, message, data, pagination }

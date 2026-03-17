@@ -8,6 +8,7 @@ export const useClasses = (params?: {
   search?: string;
   status?: string;
   academicYear?: string;
+  branchId?: string;
 }) => {
   return useQuery({
     queryKey: ['classes', params],

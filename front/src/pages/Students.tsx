@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useStudents, useCreateStudent, useUpdateStudent, useDeleteStudent } from '@/hooks/useStudents';
 import { useClasses } from '@/hooks/useClasses';
 import { useDivisionsByClass } from '@/hooks/useDivisions';
+import { useBranches } from '@/hooks/useBranches';
 import { useTransportRoutes } from '@/hooks/useTransportRoutes';
+import { studentService } from '@/services/studentService';
 import { formatters } from '@/utils/exportUtils';
 import { createApiFilters, filterMappings, createExportDataFetcher } from '@/utils/apiFilters';
 
@@ -32,6 +34,10 @@ const Students = () => {
   const [isPromoteDialogOpen, setIsPromoteDialogOpen] = useState(false);
   const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
   const [transferStudent, setTransferStudent] = useState<any>(null);
+  const [viewingStudent, setViewingStudent] = useState<any>(null);
+  const [admissionNoLoading, setAdmissionNoLoading] = useState(false);
+  // Tracks which class+division combo we last generated for — prevents double-fire
+  const generatedForRef = useRef<{ class: string; section: string } | null>(null);
   const { toast } = useToast();
   const { confirm, ConfirmationComponent } = useConfirmation();
 
@@ -57,9 +63,14 @@ const Students = () => {
     section: '',
     dateOfBirth: '',
     dateOfAdmission: '',
-    guardianName: '',
-    guardianPhone: '',
-    guardianEmail: '',
+    fatherName: '',
+    fatherPhone: '',
+    fatherEmail: '',
+    fatherJobCompany: '',
+    motherName: '',
+    motherPhone: '',
+    motherEmail: '',
+    motherJobCompany: '',
     gender: '' as 'male' | 'female' | '',
     address: '',
     transport: 'none' as 'school' | 'own' | 'none',
@@ -68,13 +79,24 @@ const Students = () => {
   });
 
   // API hooks for classes and divisions
+  const { data: branchesResponse } = useBranches();
+  const branches = branchesResponse?.data || [];
+  const getBranchName = (branchId: string) => {
+    const branch = branches.find((b: any) => (b.id || b._id) === branchId);
+    return branch ? branch.name : '';
+  };
+
   const { data: classesResponse } = useClasses({ status: 'active', limit: 100 });
-  const { data: divisionsResponse, isLoading: divisionsLoading, error: divisionsError } = useDivisionsByClass(formData.class);
+  const { data: divisionsResponse, isLoading: divisionsLoading, isSuccess: divisionsLoaded, error: divisionsError } = useDivisionsByClass(formData.class);
   const { data: transportRoutesResponse } = useTransportRoutes({ status: 'active', limit: 100 });
 
   const classes = classesResponse?.data || [];
   const divisions = divisionsResponse?.data || [];
   const transportRoutes = transportRoutesResponse?.data || [];
+
+  // Derive branch name from selected class
+  const selectedClass = classes.find((cls: any) => cls._id === formData.class);
+  const selectedClassBranchName = selectedClass ? getBranchName(selectedClass.branchId) : '';
 
   // Filter configuration
   const filterOptions = [
@@ -82,10 +104,13 @@ const Students = () => {
       key: 'class',
       label: 'Class',
       type: 'select' as const,
-      options: classes.filter((cls: any) => cls._id && cls.name).map((cls: any) => ({ 
-        value: cls._id, 
-        label: `${cls.name} (${cls.academicYear})` 
-      }))
+      options: classes.filter((cls: any) => cls._id && cls.name).map((cls: any) => {
+        const branchName = getBranchName(cls.branchId);
+        return {
+          value: cls._id,
+          label: `${cls.name} (${cls.academicYear})${branchName ? ` — ${branchName}` : ''}`
+        };
+      })
     },
     {
       key: 'gender',
@@ -156,9 +181,14 @@ const Students = () => {
       section: '',
       dateOfBirth: '',
       dateOfAdmission: '',
-      guardianName: '',
-      guardianPhone: '',
-      guardianEmail: '',
+      fatherName: '',
+      fatherPhone: '',
+      fatherEmail: '',
+      fatherJobCompany: '',
+      motherName: '',
+      motherPhone: '',
+      motherEmail: '',
+      motherJobCompany: '',
       gender: '',
       address: '',
       transport: 'none',
@@ -171,13 +201,40 @@ const Students = () => {
   // Reset section when class changes
   useEffect(() => {
     if (formData.class && formData.section) {
-      // Check if current section is still valid for the selected class
       const validSections = divisions.map(d => d.name);
       if (!validSections.includes(formData.section)) {
         setFormData(prev => ({ ...prev, section: '' }));
       }
     }
   }, [formData.class, divisions]);
+
+  // Reset ref + clear admission no whenever class changes (new student only)
+  useEffect(() => {
+    if (editingStudent) return;
+    generatedForRef.current = null;
+    setFormData(prev => ({ ...prev, admissionNo: '' }));
+  }, [formData.class, editingStudent]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Generate admission number once divisions have actually loaded (isSuccess ensures real fetch completed)
+  useEffect(() => {
+    if (editingStudent || !formData.class || !divisionsLoaded) return;
+
+    const section = divisions.length === 0 ? '' : formData.section;
+
+    // For classes that have divisions, wait for a section to be picked
+    if (divisions.length > 0 && !formData.section) return;
+
+    // Skip if we already generated for this exact class+section combo
+    const prev = generatedForRef.current;
+    if (prev && prev.class === formData.class && prev.section === section) return;
+
+    generatedForRef.current = { class: formData.class, section };
+    setAdmissionNoLoading(true);
+    studentService.getNextAdmissionNo(formData.class, section)
+      .then(admissionNo => setFormData(p => ({ ...p, admissionNo })))
+      .catch(() => { generatedForRef.current = null; })
+      .finally(() => setAdmissionNoLoading(false));
+  }, [formData.class, formData.section, editingStudent, divisionsLoaded, divisions.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -203,13 +260,18 @@ const Students = () => {
     setFormData({
       admissionNo: student.admissionNo,
       name: student.name,
-      class: student.classId || student.class, // Use classId if available, fallback to class name
+      class: student.classId || student.class,
       section: student.section,
-      dateOfBirth: student.dateOfBirth.split('T')[0], // Format date for input
+      dateOfBirth: student.dateOfBirth.split('T')[0],
       dateOfAdmission: student.dateOfAdmission ? student.dateOfAdmission.split('T')[0] : '',
-      guardianName: student.guardianName,
-      guardianPhone: student.guardianPhone,
-      guardianEmail: student.guardianEmail || '',
+      fatherName: student.fatherName || student.guardianName || '',
+      fatherPhone: student.fatherPhone || student.guardianPhone || '',
+      fatherEmail: student.fatherEmail || student.guardianEmail || '',
+      fatherJobCompany: student.fatherJobCompany || '',
+      motherName: student.motherName || '',
+      motherPhone: student.motherPhone || '',
+      motherEmail: student.motherEmail || '',
+      motherJobCompany: student.motherJobCompany || '',
       gender: student.gender || '',
       address: student.address,
       transport: student.transport,
@@ -332,12 +394,19 @@ const Students = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="admissionNo">Admission No *</Label>
-                    <Input
-                      id="admissionNo"
-                      value={formData.admissionNo}
-                      onChange={e => setFormData({ ...formData, admissionNo: e.target.value })}
-                      required
-                    />
+                    <div className="relative">
+                      <Input
+                        id="admissionNo"
+                        value={formData.admissionNo}
+                        readOnly
+                        placeholder={!editingStudent ? 'Auto-generated after class selection' : ''}
+                        className="bg-muted cursor-not-allowed"
+                        required
+                      />
+                      {admissionNoLoading && (
+                        <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                      )}
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="name">Full Name *</Label>
@@ -358,13 +427,26 @@ const Students = () => {
                         <SelectValue placeholder="Select class" />
                       </SelectTrigger>
                       <SelectContent>
-                        {classes.map((cls: any) => (
-                          <SelectItem key={cls._id} value={cls._id}>
-                            {cls.name} ({cls.academicYear})
-                          </SelectItem>
-                        ))}
+                        {classes.map((cls: any) => {
+                          const branchName = getBranchName(cls.branchId);
+                          return (
+                            <SelectItem key={cls._id} value={cls._id}>
+                              {cls.name} ({cls.academicYear}){branchName ? ` — ${branchName}` : ''}
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="branch">Branch</Label>
+                    <Input
+                      id="branch"
+                      value={selectedClassBranchName}
+                      readOnly
+                      placeholder="Auto-filled from class"
+                      className="bg-muted cursor-not-allowed"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="section">Division/Section *</Label>
@@ -433,31 +515,75 @@ const Students = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="guardianName">Guardian Name *</Label>
+                    <Label htmlFor="fatherName">Father's Name *</Label>
                     <Input
-                      id="guardianName"
-                      value={formData.guardianName}
-                      onChange={e => setFormData({ ...formData, guardianName: e.target.value })}
+                      id="fatherName"
+                      value={formData.fatherName}
+                      onChange={e => setFormData({ ...formData, fatherName: e.target.value })}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="guardianPhone">Guardian Phone *</Label>
+                    <Label htmlFor="fatherPhone">Father's Phone *</Label>
                     <PhoneInput
-                      id="guardianPhone"
-                      value={formData.guardianPhone}
-                      onChange={(value) => setFormData({ ...formData, guardianPhone: value })}
+                      id="fatherPhone"
+                      value={formData.fatherPhone}
+                      onChange={(value) => setFormData({ ...formData, fatherPhone: value })}
                       placeholder="Enter phone number"
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="guardianEmail">Guardian Email</Label>
+                    <Label htmlFor="fatherEmail">Father's Email</Label>
                     <Input
-                      id="guardianEmail"
+                      id="fatherEmail"
                       type="email"
-                      value={formData.guardianEmail}
-                      onChange={e => setFormData({ ...formData, guardianEmail: e.target.value })}
+                      value={formData.fatherEmail}
+                      onChange={e => setFormData({ ...formData, fatherEmail: e.target.value })}
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label htmlFor="fatherJobCompany">Father's Job & Company</Label>
+                    <Input
+                      id="fatherJobCompany"
+                      placeholder="e.g., Software Engineer at ABC Corp"
+                      value={formData.fatherJobCompany}
+                      onChange={e => setFormData({ ...formData, fatherJobCompany: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="motherName">Mother's Name</Label>
+                    <Input
+                      id="motherName"
+                      value={formData.motherName}
+                      onChange={e => setFormData({ ...formData, motherName: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="motherPhone">Mother's Phone</Label>
+                    <PhoneInput
+                      id="motherPhone"
+                      value={formData.motherPhone}
+                      onChange={(value) => setFormData({ ...formData, motherPhone: value })}
+                      placeholder="Enter phone number"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="motherEmail">Mother's Email</Label>
+                    <Input
+                      id="motherEmail"
+                      type="email"
+                      value={formData.motherEmail}
+                      onChange={e => setFormData({ ...formData, motherEmail: e.target.value })}
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label htmlFor="motherJobCompany">Mother's Job & Company</Label>
+                    <Input
+                      id="motherJobCompany"
+                      placeholder="e.g., Teacher at XYZ School"
+                      value={formData.motherJobCompany}
+                      onChange={e => setFormData({ ...formData, motherJobCompany: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
@@ -603,8 +729,8 @@ const Students = () => {
                   <th className="text-left p-3 font-semibold">Admission No</th>
                   <th className="text-left p-3 font-semibold">Student Name</th>
                   <th className="text-left p-3 font-semibold">Class</th>
-                  <th className="text-left p-3 font-semibold">Guardian</th>
-                  <th className="text-left p-3 font-semibold">Phone</th>
+                  <th className="text-left p-3 font-semibold">Father's Name</th>
+                  <th className="text-left p-3 font-semibold">Father's Phone</th>
                   <th className="text-left p-3 font-semibold">Gender</th>
                   <th className="text-left p-3 font-semibold">Transport</th>
                   <th className="text-left p-3 font-semibold">Staff Child</th>
@@ -613,8 +739,12 @@ const Students = () => {
               </thead>
               <tbody>
                 {students.map((student: any) => (
-                  <tr key={student._id} className="border-b hover:bg-muted/30">
-                    <td className="p-3">
+                  <tr
+                    key={student._id}
+                    className="border-b hover:bg-muted/30 cursor-pointer"
+                    onClick={() => setViewingStudent(student)}
+                  >
+                    <td className="p-3" onClick={e => e.stopPropagation()}>
                       <Checkbox
                         checked={selectedStudents.some(s => s._id === student._id)}
                         onCheckedChange={(checked) => handleSelectStudent(student, checked as boolean)}
@@ -630,10 +760,10 @@ const Students = () => {
                       <span className="font-medium">{student.class}-{student.section}</span>
                     </td>
                     <td className="p-3">
-                      <span className="text-sm">{student.guardianName}</span>
+                      <span className="text-sm">{student.fatherName || student.guardianName || '—'}</span>
                     </td>
                     <td className="p-3">
-                      <span className="text-sm">{student.guardianPhone}</span>
+                      <span className="text-sm">{student.fatherPhone || student.guardianPhone || '—'}</span>
                     </td>
                     <td className="p-3">
                       <span className="text-sm capitalize">{student.gender}</span>
@@ -648,11 +778,11 @@ const Students = () => {
                         <span className="text-xs text-muted-foreground">No</span>
                       )}
                     </td>
-                    <td className="p-3">
+                    <td className="p-3" onClick={e => e.stopPropagation()}>
                       <div className="flex gap-2 justify-end">
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
+                        <Button
+                          size="sm"
+                          variant="outline"
                           onClick={() => handleTransferClick(student)}
                           title="Generate Transfer Certificate"
                         >
@@ -701,6 +831,68 @@ const Students = () => {
         student={transferStudent}
         onSuccess={refreshStudents}
       />
+
+      {/* Student Detail View */}
+      <Dialog open={!!viewingStudent} onOpenChange={(open) => { if (!open) setViewingStudent(null); }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Student Details</DialogTitle>
+            <DialogDescription>{viewingStudent?.admissionNo}</DialogDescription>
+          </DialogHeader>
+          {viewingStudent && (
+            <div className="space-y-4 text-sm">
+              {/* Basic Info */}
+              <div>
+                <h3 className="font-semibold text-base mb-2 border-b pb-1">Basic Information</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><span className="text-muted-foreground">Full Name</span><p className="font-medium">{viewingStudent.name}</p></div>
+                  <div><span className="text-muted-foreground">Admission No</span><p className="font-medium">{viewingStudent.admissionNo}</p></div>
+                  <div><span className="text-muted-foreground">Class</span><p className="font-medium">{viewingStudent.class}{viewingStudent.section ? ` — ${viewingStudent.section}` : ''}</p></div>
+                  <div><span className="text-muted-foreground">Branch</span><p className="font-medium">{(() => { const cls = classes.find((c: any) => c._id === (viewingStudent.classId || viewingStudent.class)); return cls ? getBranchName(cls.branchId) : '—'; })()}</p></div>
+                  <div><span className="text-muted-foreground">Gender</span><p className="font-medium capitalize">{viewingStudent.gender}</p></div>
+                  <div><span className="text-muted-foreground">Date of Birth</span><p className="font-medium">{new Date(viewingStudent.dateOfBirth).toLocaleDateString()}</p></div>
+                  <div><span className="text-muted-foreground">Date of Admission</span><p className="font-medium">{viewingStudent.dateOfAdmission ? new Date(viewingStudent.dateOfAdmission).toLocaleDateString() : '—'}</p></div>
+                  <div className="col-span-2"><span className="text-muted-foreground">Address</span><p className="font-medium">{viewingStudent.address}</p></div>
+                </div>
+              </div>
+              {/* Father's Info */}
+              <div>
+                <h3 className="font-semibold text-base mb-2 border-b pb-1">Father's Information</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><span className="text-muted-foreground">Name</span><p className="font-medium">{viewingStudent.fatherName || viewingStudent.guardianName || '—'}</p></div>
+                  <div><span className="text-muted-foreground">Phone</span><p className="font-medium">{viewingStudent.fatherPhone || viewingStudent.guardianPhone || '—'}</p></div>
+                  <div><span className="text-muted-foreground">Email</span><p className="font-medium">{viewingStudent.fatherEmail || viewingStudent.guardianEmail || '—'}</p></div>
+                  <div><span className="text-muted-foreground">Job & Company</span><p className="font-medium">{viewingStudent.fatherJobCompany || '—'}</p></div>
+                </div>
+              </div>
+              {/* Mother's Info */}
+              <div>
+                <h3 className="font-semibold text-base mb-2 border-b pb-1">Mother's Information</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><span className="text-muted-foreground">Name</span><p className="font-medium">{viewingStudent.motherName || '—'}</p></div>
+                  <div><span className="text-muted-foreground">Phone</span><p className="font-medium">{viewingStudent.motherPhone || '—'}</p></div>
+                  <div><span className="text-muted-foreground">Email</span><p className="font-medium">{viewingStudent.motherEmail || '—'}</p></div>
+                  <div><span className="text-muted-foreground">Job & Company</span><p className="font-medium">{viewingStudent.motherJobCompany || '—'}</p></div>
+                </div>
+              </div>
+              {/* Transport & Other */}
+              <div>
+                <h3 className="font-semibold text-base mb-2 border-b pb-1">Other Details</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><span className="text-muted-foreground">Transport</span><p className="font-medium capitalize">{viewingStudent.transport}</p></div>
+                  {viewingStudent.transportRoute && <div><span className="text-muted-foreground">Route</span><p className="font-medium">{viewingStudent.transportRoute}</p></div>}
+                  <div><span className="text-muted-foreground">Staff Child</span><p className="font-medium">{viewingStudent.isStaffChild ? 'Yes' : 'No'}</p></div>
+                  <div><span className="text-muted-foreground">Status</span><p className="font-medium capitalize">{viewingStudent.status}</p></div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => setViewingStudent(null)}>Close</Button>
+                <Button onClick={() => { setViewingStudent(null); handleEdit(viewingStudent); }}>Edit Student</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 };

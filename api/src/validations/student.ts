@@ -161,6 +161,7 @@ export const queryStudentsSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(10),
   search: Joi.string().optional().allow(''),
+  branchId: Joi.string().optional().allow(''),
   class: Joi.string().optional().allow(''),
   classId: Joi.string().optional().allow(''),
   section: Joi.string().optional().allow(''),

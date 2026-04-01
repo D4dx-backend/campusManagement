@@ -1,4 +1,5 @@
 import express from 'express';
+import { Types } from 'mongoose';
 import { Student } from '../models/Student';
 import { Class } from '../models/Class';
 import { ActivityLog } from '../models/ActivityLog';
@@ -21,6 +22,7 @@ router.get('/', checkPermission('students', 'read'), validateQuery(queryStudents
       page = 1,
       limit = 10,
       search = '',
+      branchId = '',
       class: studentClass = '',
       classId = '',
       section = '',
@@ -37,6 +39,15 @@ router.get('/', checkPermission('students', 'read'), validateQuery(queryStudents
     // Branch filter (non-super admins can only see their branch data)
     if (req.user!.role !== 'super_admin') {
       filter.branchId = req.user!.branchId;
+    } else if (branchId) {
+      if (!Types.ObjectId.isValid(branchId)) {
+        const response: ApiResponse = {
+          success: false,
+          message: 'Invalid branch ID format'
+        };
+        return res.status(400).json(response);
+      }
+      filter.branchId = new Types.ObjectId(branchId);
     }
 
     if (search) {

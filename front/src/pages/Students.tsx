@@ -22,6 +22,7 @@ import { useTransportRoutes } from '@/hooks/useTransportRoutes';
 import { studentService } from '@/services/studentService';
 import { formatters } from '@/utils/exportUtils';
 import { createApiFilters, filterMappings, createExportDataFetcher } from '@/utils/apiFilters';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Students = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -38,6 +39,7 @@ const Students = () => {
   const [admissionNoLoading, setAdmissionNoLoading] = useState(false);
   // Tracks which class+division combo we last generated for — prevents double-fire
   const generatedForRef = useRef<{ class: string; section: string } | null>(null);
+  const { user } = useAuth();
   const { toast } = useToast();
   const { confirm, ConfirmationComponent } = useConfirmation();
 
@@ -88,11 +90,29 @@ const Students = () => {
 
   const { data: classesResponse } = useClasses({ status: 'active', limit: 100 });
   const { data: divisionsResponse, isLoading: divisionsLoading, isSuccess: divisionsLoaded, error: divisionsError } = useDivisionsByClass(formData.class);
+  const selectedFilterClassId = (filterValues as any).class || '';
+  const { data: filterDivisionsResponse } = useDivisionsByClass(selectedFilterClassId);
   const { data: transportRoutesResponse } = useTransportRoutes({ status: 'active', limit: 100 });
 
   const classes = classesResponse?.data || [];
   const divisions = divisionsResponse?.data || [];
+  const filterDivisions = filterDivisionsResponse?.data || [];
   const transportRoutes = transportRoutesResponse?.data || [];
+  const selectedBranchId = (filterValues as any).branch;
+  const branchOptions = (branches.length > 0
+    ? branches
+        .filter((branch: any) => (branch.id || branch._id) && branch.name)
+        .map((branch: any) => ({
+          value: branch.id || branch._id,
+          label: branch.name
+        }))
+    : user?.branchId
+      ? [{ value: user.branchId, label: 'My Branch' }]
+      : []
+  );
+  const classFilterSource = selectedBranchId
+    ? classes.filter((cls: any) => cls.branchId === selectedBranchId)
+    : classes;
 
   // Derive branch name from selected class
   const selectedClass = classes.find((cls: any) => cls._id === formData.class);
@@ -101,16 +121,35 @@ const Students = () => {
   // Filter configuration
   const filterOptions = [
     {
+      key: 'branch',
+      label: 'Branch',
+      type: 'select' as const,
+      options: branchOptions
+    },
+    {
       key: 'class',
       label: 'Class',
       type: 'select' as const,
-      options: classes.filter((cls: any) => cls._id && cls.name).map((cls: any) => {
+      options: classFilterSource.filter((cls: any) => cls._id && cls.name).map((cls: any) => {
         const branchName = getBranchName(cls.branchId);
         return {
           value: cls._id,
           label: `${cls.name} (${cls.academicYear})${branchName ? ` — ${branchName}` : ''}`
         };
       })
+    },
+    {
+      key: 'section',
+      label: 'Division',
+      type: 'select' as const,
+      options: selectedFilterClassId
+        ? filterDivisions
+            .filter((division: any) => division.name)
+            .map((division: any) => ({
+              value: division.name,
+              label: `Division ${division.name}`
+            }))
+        : []
     },
     {
       key: 'gender',
@@ -301,7 +340,18 @@ const Students = () => {
 
   // Filter handlers
   const handleFilterChange = (values: any) => {
-    setFilterValues(values);
+    const nextValues = { ...values };
+    if (nextValues.branch && nextValues.class) {
+      const selectedClassForFilter = classes.find((cls: any) => cls._id === nextValues.class);
+      if (selectedClassForFilter && selectedClassForFilter.branchId !== nextValues.branch) {
+        nextValues.class = '';
+        nextValues.section = '';
+      }
+    }
+    if (nextValues.class !== (filterValues as any).class) {
+      nextValues.section = '';
+    }
+    setFilterValues(nextValues);
     setCurrentPage(1);
   };
 

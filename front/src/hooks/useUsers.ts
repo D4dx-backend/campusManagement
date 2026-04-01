@@ -5,6 +5,7 @@ export interface UserFilters {
   page?: number;
   limit?: number;
   search?: string;
+  branchId?: string;
   role?: string;
   status?: string;
 }
@@ -18,6 +19,7 @@ export const useUsers = (filters: UserFilters = {}) => {
       if (filters.page) params.append('page', filters.page.toString());
       if (filters.limit) params.append('limit', filters.limit.toString());
       if (filters.search) params.append('search', filters.search);
+      if (filters.branchId) params.append('branchId', filters.branchId);
       if (filters.role) params.append('role', filters.role);
       if (filters.status) params.append('status', filters.status);
 

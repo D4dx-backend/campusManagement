@@ -46,7 +46,9 @@ export const createApiFilters = (
 // Common filter mappings for different pages
 export const filterMappings = {
   students: {
+    branch: 'branchId',
     class: 'classId',
+    section: 'section',
     gender: 'gender',
     transport: 'transport',
     dateOfBirth_from: 'dateOfBirthFrom',
@@ -135,6 +137,7 @@ export const filterMappings = {
   },
   
   userAccess: {
+    branch: 'branchId',
     role: 'role',
     status: 'status',
     lastLogin_from: 'lastLoginFrom',

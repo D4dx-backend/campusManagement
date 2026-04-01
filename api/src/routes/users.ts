@@ -1,5 +1,6 @@
 import express from 'express';
 import Joi from 'joi';
+import { Types } from 'mongoose';
 import { User } from '../models/User';
 import { authenticate, authorize } from '../middleware/auth';
 import { validate } from '../middleware/validation';
@@ -54,6 +55,7 @@ router.get('/', authorize('super_admin', 'branch_admin'), async (req: Authentica
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const search = req.query.search as string || '';
+    const branchId = req.query.branchId as string || '';
     const role = req.query.role as string;
     const status = req.query.status as string;
 
@@ -70,6 +72,15 @@ router.get('/', authorize('super_admin', 'branch_admin'), async (req: Authentica
 
     if (req.user!.role !== 'super_admin') {
       filter.branchId = req.user!.branchId;
+    } else if (branchId) {
+      if (!Types.ObjectId.isValid(branchId)) {
+        const response: ApiResponse = {
+          success: false,
+          message: 'Invalid branch ID format'
+        };
+        return res.status(400).json(response);
+      }
+      filter.branchId = branchId;
     }
 
     if (role) {

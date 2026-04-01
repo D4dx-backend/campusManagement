@@ -38,6 +38,7 @@ const UserAccess = () => {
     page: currentPage,
     limit: itemsPerPage,
     search: searchTerm,
+    branchId: filterValues.branch,
     role: filterValues.role,
     status: filterValues.status,
   });
@@ -99,6 +100,26 @@ const UserAccess = () => {
 
   // Get configuration from templates
   const config = pageConfigurations.userAccess;
+  const branchOptions = (branches.length > 0
+    ? branches
+        .filter((branch: any) => (branch.id || branch._id) && branch.name)
+        .map((branch: any) => ({
+          value: branch.id || branch._id,
+          label: branch.name
+        }))
+    : currentUser?.branchId
+      ? [{ value: currentUser.branchId, label: 'My Branch' }]
+      : []
+  );
+  const userFilters = [
+    {
+      key: 'branch',
+      label: 'Branch',
+      type: 'select' as const,
+      options: branchOptions
+    },
+    ...config.filters
+  ];
 
   // Filter handlers
   const handleFilterChange = (values: any) => {
@@ -493,7 +514,7 @@ const UserAccess = () => {
           searchPlaceholder="Search by name, email, mobile, or role..."
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
-          filters={config.filters}
+          filters={userFilters}
           filterValues={filterValues}
           onFilterChange={handleFilterChange}
           onFilterReset={handleFilterReset}

@@ -5,6 +5,7 @@ export interface StudentQueryParams {
   page?: number;
   limit?: number;
   search?: string;
+  branchId?: string;
   class?: string;
   section?: string;
   status?: 'active' | 'inactive';

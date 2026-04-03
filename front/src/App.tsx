@@ -11,6 +11,7 @@ import Students from "./pages/Students";
 import Staff from "./pages/Staff";
 import Fees from "./pages/Fees";
 import FeeStructures from "./pages/FeeStructures";
+import FeeTypeConfigs from "./pages/FeeTypeConfigs";
 import Payroll from "./pages/Payroll";
 import Expenses from "./pages/Expenses";
 import TextBooks from "./pages/TextBooks";
@@ -108,6 +109,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <FeeStructures />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/fee-type-configs"
+              element={
+                <ProtectedRoute>
+                  <FeeTypeConfigs />
                 </ProtectedRoute>
               }
             />

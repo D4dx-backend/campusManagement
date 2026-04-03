@@ -72,15 +72,30 @@ export interface Staff {
   createdAt: string;
 }
 
-export type FeeType = 'tuition' | 'transport' | 'cocurricular' | 'maintenance' | 'exam' | 'textbook';
+export interface FeeTypeConfig {
+  _id: string;
+  name: string;
+  isCommon: boolean;
+  isActive: boolean;
+  branchId: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface FeeStructure {
   id: string;
-  class: string;
-  feeType: FeeType;
+  title: string;
+  feeTypeId: string;
+  feeTypeName: string;
+  isCommon: boolean;
+  classId?: string;
+  className?: string;
   amount: number;
-  frequency: 'monthly' | 'quarterly' | 'annually' | 'one-time';
+  staffDiscountPercent?: number;
   academicYear: string;
+  isActive: boolean;
+  branchId: string;
+  createdAt: string;
 }
 
 export interface FeePayment {
@@ -89,8 +104,8 @@ export interface FeePayment {
   studentId: string;
   studentName: string;
   class: string;
-  feeType: FeeType;
-  amount: number;
+  feeItems?: Array<{ feeStructureId?: string; title: string; feeType: string; amount: number }>;
+  totalAmount: number;
   paymentDate: string;
   paymentMethod: 'cash' | 'bank' | 'online';
   status: 'paid' | 'partial' | 'pending';

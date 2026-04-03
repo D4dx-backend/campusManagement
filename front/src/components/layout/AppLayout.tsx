@@ -30,6 +30,7 @@ import {
   Book,
   BarChart,
   MapPin,
+  Tags,
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import type { LucideIcon } from 'lucide-react';
@@ -119,6 +120,7 @@ const masterDataItems: MenuItem[] = [
   { icon: Briefcase, label: 'Designations', path: '/designations', permission: { module: 'designations' } },
   { icon: BookOpen, label: 'Text Books', path: '/textbooks', permission: { module: 'textbooks' } },
   { icon: MapPin, label: 'Transport Routes', path: '/transport-routes', permission: { module: 'classes' } },
+  { icon: Tags, label: 'Fee Types', path: '/fee-type-configs', permission: { module: 'fees' } },
   { icon: Receipt, label: 'Expense Categories', path: '/expense-categories', permission: { module: 'expenses' } },
   { icon: TrendingUp, label: 'Income Categories', path: '/income-categories', permission: { module: 'fees' } },
   { icon: FileText, label: 'Receipt Config', path: '/receipt-config', permission: { roles: ['super_admin', 'branch_admin'] } },

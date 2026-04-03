@@ -402,10 +402,10 @@ router.get(
       }
 
       // Fetch fee payments with detailed breakdown
+      // Note: divisionId is not in the FeePayment schema — do not populate it
       const feePayments = await FeePayment.find(query)
         .populate('studentId', 'name rollNumber phoneNumber')
         .populate('classId', 'name')
-        .populate('divisionId', 'name')
         .populate('branchId', 'name')
         .sort({ paymentDate: -1 })
         .skip(skip)
@@ -414,56 +414,59 @@ router.get(
 
       const total = await FeePayment.countDocuments(query);
 
-      // Calculate detailed breakdown
-      const breakdown = await FeePayment.aggregate([
-        { $match: query },
-        {
-          $group: {
-            _id: null,
-            totalTuitionFee: { $sum: { $ifNull: ['$tuitionFee', 0] } },
-            totalTransportFee: { $sum: { $ifNull: ['$transportFee', 0] } },
-            totalCocurricularFee: { $sum: { $ifNull: ['$cocurricularFee', 0] } },
-            totalMaintenanceFee: { $sum: { $ifNull: ['$maintenanceFee', 0] } },
-            totalExamFee: { $sum: { $ifNull: ['$examFee', 0] } },
-            totalTextbookFee: { $sum: { $ifNull: ['$textbookFee', 0] } },
-            totalPaid: {
-              $sum: {
-                $add: [
-                  { $ifNull: ['$tuitionFee', 0] },
-                  { $ifNull: ['$transportFee', 0] },
-                  { $ifNull: ['$cocurricularFee', 0] },
-                  { $ifNull: ['$maintenanceFee', 0] },
-                  { $ifNull: ['$examFee', 0] },
-                  { $ifNull: ['$textbookFee', 0] },
-                ],
-              },
+      // Calculate detailed breakdown using totalAmount (stored on document) and feeItems array
+      const [breakdownSummary, feeTypeBreakdown] = await Promise.all([
+        FeePayment.aggregate([
+          { $match: query },
+          {
+            $group: {
+              _id: null,
+              totalPaid: { $sum: { $ifNull: ['$totalAmount', 0] } },
+              paidCount: { $sum: { $cond: [{ $eq: ['$status', 'paid'] }, 1, 0] } },
+              pendingCount: { $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] } },
+              partialCount: { $sum: { $cond: [{ $eq: ['$status', 'partial'] }, 1, 0] } },
             },
-            paidCount: { $sum: { $cond: [{ $eq: ['$status', 'paid'] }, 1, 0] } },
-            pendingCount: { $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] } },
-            partialCount: { $sum: { $cond: [{ $eq: ['$status', 'partial'] }, 1, 0] } },
           },
-        },
+        ]),
+        // Derive per-type totals from the feeItems sub-array
+        FeePayment.aggregate([
+          { $match: query },
+          { $unwind: { path: '$feeItems', preserveNullAndEmptyArrays: false } },
+          {
+            $group: {
+              _id: { $toLower: '$feeItems.feeType' },
+              total: { $sum: { $ifNull: ['$feeItems.amount', 0] } },
+            },
+          },
+        ]),
       ]);
 
-      // Payment method breakdown
+      // Map per-type totals to the keys the frontend expects
+      const feeTypeMap: Record<string, number> = {};
+      feeTypeBreakdown.forEach((item: any) => {
+        feeTypeMap[item._id] = item.total;
+      });
+
+      const breakdown = breakdownSummary[0]
+        ? {
+            ...breakdownSummary[0],
+            totalTuitionFee: feeTypeMap['tuition'] || 0,
+            totalTransportFee: feeTypeMap['transport'] || 0,
+            totalCocurricularFee: feeTypeMap['cocurricular'] || feeTypeMap['co-curricular'] || 0,
+            totalMaintenanceFee: feeTypeMap['maintenance'] || 0,
+            totalExamFee: feeTypeMap['exam'] || 0,
+            totalTextbookFee: feeTypeMap['textbook'] || 0,
+          }
+        : null;
+
+      // Payment method breakdown using stored totalAmount
       const paymentMethodBreakdown = await FeePayment.aggregate([
         { $match: query },
         {
           $group: {
             _id: '$paymentMethod',
             count: { $sum: 1 },
-            totalAmount: {
-              $sum: {
-                $add: [
-                  { $ifNull: ['$tuitionFee', 0] },
-                  { $ifNull: ['$transportFee', 0] },
-                  { $ifNull: ['$cocurricularFee', 0] },
-                  { $ifNull: ['$maintenanceFee', 0] },
-                  { $ifNull: ['$examFee', 0] },
-                  { $ifNull: ['$textbookFee', 0] },
-                ],
-              },
-            },
+            totalAmount: { $sum: { $ifNull: ['$totalAmount', 0] } },
           },
         },
       ]);
@@ -473,13 +476,9 @@ router.get(
         data: {
           feePayments: feePayments.map((payment: any) => ({
             ...payment,
-            totalAmount:
-              (payment.tuitionFee || 0) +
-              (payment.transportFee || 0) +
-              (payment.cocurricularFee || 0) +
-              (payment.maintenanceFee || 0) +
-              (payment.examFee || 0) +
-              (payment.textbookFee || 0),
+            // Expose receiptNo as receiptNumber for frontend compatibility
+            receiptNumber: payment.receiptNo,
+            // totalAmount is already stored correctly in the model; don't override it
           })),
           pagination: {
             currentPage: Number(page),
@@ -487,7 +486,7 @@ router.get(
             totalItems: total,
             itemsPerPage: Number(limit),
           },
-          breakdown: breakdown[0] || {},
+          breakdown,
           paymentMethodBreakdown,
         },
       });

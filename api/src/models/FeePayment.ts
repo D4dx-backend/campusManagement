@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { IFeePayment, FeeType } from '../types';
+import { IFeePayment } from '../types';
 
 // Sub-schema for individual fee items
 const FeeItemSchema = new Schema({
@@ -14,7 +14,6 @@ const FeeItemSchema = new Schema({
   },
   feeType: {
     type: String,
-    enum: ['tuition', 'transport', 'cocurricular', 'maintenance', 'exam', 'textbook', 'other'],
     required: true
   },
   amount: {

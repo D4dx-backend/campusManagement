@@ -141,17 +141,26 @@ export interface IStaff {
   createdAt: Date;
 }
 
-export type FeeType = 'tuition' | 'transport' | 'cocurricular' | 'maintenance' | 'exam' | 'textbook';
+export interface IFeeTypeConfig {
+  _id: string;
+  name: string;
+  isCommon: boolean;
+  isActive: boolean;
+  branchId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export interface IFeeStructure {
   _id: string;
-  title?: string;
-  class: string;
+  title: string;
+  feeTypeId: string;
+  feeTypeName: string;
+  isCommon: boolean;
+  class?: string;
   className?: string;
   classId?: string;
-  feeType: FeeType;
   amount: number;
-  frequency: 'monthly' | 'quarterly' | 'annually' | 'one-time';
   academicYear: string;
   branchId: string;
   isActive?: boolean;
@@ -164,7 +173,7 @@ export interface IFeeStructure {
 export interface IFeeItem {
   feeStructureId?: string;
   title: string;
-  feeType: FeeType;
+  feeType: string;
   amount: number;
   transportDistanceGroup?: 'group1' | 'group2' | 'group3' | 'group4';
 }
@@ -178,10 +187,6 @@ export interface IFeePayment {
   class: string;
   classId?: string;
   className?: string;
-  // Old single fee fields (for backward compatibility)
-  feeType?: FeeType;
-  amount?: number;
-  // New multi-fee fields
   feeItems?: IFeeItem[];
   totalAmount?: number;
   paymentDate: Date;

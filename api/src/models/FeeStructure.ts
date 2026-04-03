@@ -2,13 +2,15 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IFeeStructure extends Document {
   title: string;
-  feeType: 'tuition' | 'transport' | 'cocurricular' | 'maintenance' | 'exam' | 'textbook' | 'other';
-  classId: mongoose.Types.ObjectId;
-  className: string;
+  feeTypeId: mongoose.Types.ObjectId;
+  feeTypeName: string;
+  isCommon: boolean;
+  classId?: mongoose.Types.ObjectId;
+  className?: string;
   amount: number;
   staffDiscountPercent?: number;
-  transportDistanceGroup?: 'group1' | 'group2' | 'group3' | 'group4'; // For transport fees
-  distanceRange?: string; // e.g., "0-5 KM", "5-10 KM"
+  transportDistanceGroup?: 'group1' | 'group2' | 'group3' | 'group4';
+  distanceRange?: string;
   isActive: boolean;
   branchId: mongoose.Types.ObjectId;
   academicYear: string;
@@ -22,19 +24,26 @@ const FeeStructureSchema = new Schema<IFeeStructure>({
     required: true,
     trim: true
   },
-  feeType: {
-    type: String,
-    enum: ['tuition', 'transport', 'cocurricular', 'maintenance', 'exam', 'textbook', 'other'],
+  feeTypeId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'FeeTypeConfig',
     required: true
+  },
+  feeTypeName: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  isCommon: {
+    type: Boolean,
+    default: false
   },
   classId: {
     type: Schema.Types.ObjectId as any,
-    ref: 'Class',
-    required: true
+    ref: 'Class'
   },
   className: {
     type: String,
-    required: true,
     trim: true
   },
   amount: {
@@ -50,10 +59,7 @@ const FeeStructureSchema = new Schema<IFeeStructure>({
   },
   transportDistanceGroup: {
     type: String,
-    enum: ['group1', 'group2', 'group3', 'group4'],
-    required: function(this: IFeeStructure) {
-      return this.feeType === 'transport';
-    }
+    enum: ['group1', 'group2', 'group3', 'group4']
   },
   distanceRange: {
     type: String,
@@ -77,9 +83,9 @@ const FeeStructureSchema = new Schema<IFeeStructure>({
   timestamps: true
 });
 
-// Indexes
 FeeStructureSchema.index({ branchId: 1, academicYear: 1 });
-FeeStructureSchema.index({ classId: 1, feeType: 1 });
+FeeStructureSchema.index({ classId: 1, feeTypeId: 1 });
 FeeStructureSchema.index({ isActive: 1 });
+FeeStructureSchema.index({ isCommon: 1 });
 
 export const FeeStructure = mongoose.model<IFeeStructure>('FeeStructure', FeeStructureSchema);

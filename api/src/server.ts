@@ -23,6 +23,7 @@ import departmentRoutes from './routes/departments';
 import designationRoutes from './routes/designations';
 import feeRoutes from './routes/fees';
 import feeStructureRoutes from './routes/feeStructures';
+import feeTypeConfigRoutes from './routes/feeTypeConfigs';
 import payrollRoutes from './routes/payroll';
 import expenseRoutes from './routes/expenses';
 import expenseCategoryRoutes from './routes/expenseCategories';
@@ -54,13 +55,15 @@ app.use(cors({
   credentials: true
 }));
 
-// Rate limiting
+// Rate limiting — higher ceiling in development, configurable via .env in production
+const isDev = (process.env.NODE_ENV || 'development') === 'development';
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || (isDev ? '5000' : '500')),
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => isDev, // disable rate limiting entirely in development
 });
 app.use('/api/', limiter);
 
@@ -113,6 +116,7 @@ app.use('/api/departments', departmentRoutes);
 app.use('/api/designations', designationRoutes);
 app.use('/api/fees', feeRoutes);
 app.use('/api/fee-structures', feeStructureRoutes);
+app.use('/api/fee-type-configs', feeTypeConfigRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/expense-categories', expenseCategoryRoutes);

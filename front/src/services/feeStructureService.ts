@@ -3,9 +3,11 @@ import api from '@/lib/api';
 export interface FeeStructure {
   _id: string;
   title: string;
-  feeType: 'tuition' | 'transport' | 'cocurricular' | 'maintenance' | 'exam' | 'textbook' | 'other';
-  classId: string;
-  className: string;
+  feeTypeId: string;
+  feeTypeName: string;
+  isCommon: boolean;
+  classId?: string;
+  className?: string;
   amount: number;
   staffDiscountPercent?: number;
   transportDistanceGroup?: 'group1' | 'group2' | 'group3' | 'group4';
@@ -17,24 +19,34 @@ export interface FeeStructure {
   updatedAt: string;
 }
 
+export interface FeeStructureInput {
+  title: string;
+  feeTypeId: string;
+  feeTypeName: string;
+  isCommon?: boolean;
+  classId?: string;
+  className?: string;
+  amount: number;
+  staffDiscountPercent?: number;
+  transportDistanceGroup?: string;
+  distanceRange?: string;
+  isActive?: boolean;
+  academicYear: string;
+  branchId?: string;
+}
+
 export interface FeeStructureQuery {
   page?: number;
   limit?: number;
   search?: string;
-  feeType?: string;
+  feeTypeId?: string;
   classId?: string;
   isActive?: boolean;
   branchId?: string;
 }
 
 export interface GroupedFees {
-  tuition?: FeeStructure[];
-  transport?: FeeStructure[];
-  cocurricular?: FeeStructure[];
-  maintenance?: FeeStructure[];
-  exam?: FeeStructure[];
-  textbook?: FeeStructure[];
-  other?: FeeStructure[];
+  [feeTypeName: string]: FeeStructure[];
 }
 
 class FeeStructureService {
@@ -50,12 +62,12 @@ class FeeStructureService {
     return data;
   }
 
-  async createFeeStructure(feeStructure: Omit<FeeStructure, '_id' | 'createdAt' | 'updatedAt'>) {
+  async createFeeStructure(feeStructure: FeeStructureInput) {
     const { data } = await api.post('/fee-structures', feeStructure);
     return data;
   }
 
-  async updateFeeStructure(id: string, feeStructure: Partial<FeeStructure>) {
+  async updateFeeStructure(id: string, feeStructure: Partial<FeeStructureInput>) {
     const { data } = await api.put(`/fee-structures/${id}`, feeStructure);
     return data;
   }

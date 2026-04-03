@@ -746,9 +746,9 @@ router.get('/fee-dues', checkPermission('reports', 'read'), async (req: Authenti
         student: fee.studentId,
         class: fee.classId,
         className: fee.className,
-        amount: fee.amount || fee.totalAmount || 0,
+        amount: fee.totalAmount || 0,
         paymentDate: fee.paymentDate,
-        feeType: fee.feeType,
+        feeType: (fee.feeItems?.[0]?.feeType) || '',
         remarks: fee.remarks,
         daysDue,
         agingBucket,
@@ -774,7 +774,7 @@ router.get('/fee-dues', checkPermission('reports', 'read'), async (req: Authenti
       }
 
       return {
-        amount: fee.amount || fee.totalAmount || 0,
+        amount: fee.totalAmount || 0,
         daysDue,
         agingBucket,
         isOverdue: daysDue > 0,

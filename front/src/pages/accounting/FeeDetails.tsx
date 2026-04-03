@@ -46,8 +46,17 @@ export const FeeDetails = () => {
   const data = response?.data;
   const feePayments = data?.feePayments || [];
   const pagination = data?.pagination;
-  const breakdown = data?.breakdown;
+  // Only treat breakdown as available when it has actual summary data (not an empty object)
+  const breakdown = data?.breakdown && data.breakdown.paidCount !== undefined ? data.breakdown : null;
   const paymentMethodBreakdown = data?.paymentMethodBreakdown || [];
+
+  // Helper: sum fee items of a given type from a payment record
+  const getFeeItemTotal = (payment: any, feeType: string): number => {
+    const items: any[] = payment.feeItems || [];
+    return items
+      .filter((item) => item.feeType?.toLowerCase() === feeType.toLowerCase())
+      .reduce((sum: number, item: any) => sum + (item.amount || 0), 0);
+  };
 
   const handleExportCSV = () => {
     const exportColumns = [
@@ -66,9 +75,12 @@ export const FeeDetails = () => {
     exportToCSV({
       data: feePayments.map((payment: any) => ({
         ...payment,
-        'studentId.name': payment.studentId?.name,
+        receiptNumber: payment.receiptNumber || payment.receiptNo,
+        'studentId.name': payment.studentName || payment.studentId?.name,
         'studentId.rollNumber': payment.studentId?.rollNumber,
-        'classId.name': payment.classId?.name,
+        'classId.name': payment.className || payment.classId?.name,
+        tuitionFee: getFeeItemTotal(payment, 'tuition'),
+        transportFee: getFeeItemTotal(payment, 'transport'),
       })),
       columns: exportColumns,
       filename: `fee_details_${startDate}_to_${endDate}.csv`,
@@ -96,9 +108,16 @@ export const FeeDetails = () => {
     exportToExcel({
       data: feePayments.map((payment: any) => ({
         ...payment,
-        'studentId.name': payment.studentId?.name,
+        receiptNumber: payment.receiptNumber || payment.receiptNo,
+        'studentId.name': payment.studentName || payment.studentId?.name,
         'studentId.rollNumber': payment.studentId?.rollNumber,
-        'classId.name': payment.classId?.name,
+        'classId.name': payment.className || payment.classId?.name,
+        tuitionFee: getFeeItemTotal(payment, 'tuition'),
+        transportFee: getFeeItemTotal(payment, 'transport'),
+        cocurricularFee: getFeeItemTotal(payment, 'cocurricular'),
+        maintenanceFee: getFeeItemTotal(payment, 'maintenance'),
+        examFee: getFeeItemTotal(payment, 'exam'),
+        textbookFee: getFeeItemTotal(payment, 'textbook'),
       })),
       columns: exportColumns,
       filename: `fee_details_${startDate}_to_${endDate}.xlsx`,
@@ -176,13 +195,13 @@ export const FeeDetails = () => {
                 .map(
                   (payment: any) => `
                 <tr>
-                  <td>${payment.receiptNumber}</td>
-                  <td>${payment.studentId?.name || 'N/A'}</td>
-                  <td>${payment.classId?.name || 'N/A'}</td>
+                  <td>${payment.receiptNumber || payment.receiptNo}</td>
+                  <td>${payment.studentName || payment.studentId?.name || 'N/A'}</td>
+                  <td>${payment.className || payment.classId?.name || 'N/A'}</td>
                   <td>${format(new Date(payment.paymentDate), 'dd MMM yyyy')}</td>
-                  <td>₹${payment.totalAmount.toLocaleString()}</td>
-                  <td>${payment.paymentMethod.toUpperCase()}</td>
-                  <td>${payment.status.toUpperCase()}</td>
+                  <td>₹${(payment.totalAmount || 0).toLocaleString()}</td>
+                  <td>${(payment.paymentMethod || '').toUpperCase()}</td>
+                  <td>${(payment.status || '').toUpperCase()}</td>
                 </tr>
               `
                 )
@@ -411,8 +430,7 @@ export const FeeDetails = () => {
                         <TableHead>Student</TableHead>
                         <TableHead>Class</TableHead>
                         <TableHead>Payment Date</TableHead>
-                        <TableHead>Tuition</TableHead>
-                        <TableHead>Transport</TableHead>
+                        <TableHead>Fee Items</TableHead>
                         <TableHead>Total</TableHead>
                         <TableHead>Method</TableHead>
                         <TableHead>Status</TableHead>
@@ -421,21 +439,30 @@ export const FeeDetails = () => {
                     <TableBody>
                       {feePayments.map((payment: any) => (
                         <TableRow key={payment._id}>
-                          <TableCell className="font-medium">{payment.receiptNumber}</TableCell>
+                          <TableCell className="font-medium">
+                            {payment.receiptNumber || payment.receiptNo}
+                          </TableCell>
                           <TableCell>
                             <div className="space-y-1">
-                              <div>{payment.studentId?.name || 'N/A'}</div>
+                              <div>{payment.studentName || payment.studentId?.name || 'N/A'}</div>
                               <div className="text-xs text-muted-foreground">
                                 {payment.studentId?.rollNumber}
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell>{payment.classId?.name || 'N/A'}</TableCell>
+                          <TableCell>{payment.className || payment.classId?.name || 'N/A'}</TableCell>
                           <TableCell>{format(new Date(payment.paymentDate), 'dd MMM yyyy')}</TableCell>
-                          <TableCell>₹{payment.tuitionFee.toLocaleString()}</TableCell>
-                          <TableCell>₹{payment.transportFee.toLocaleString()}</TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              {(payment.feeItems || []).map((item: any, idx: number) => (
+                                <div key={idx} className="text-xs text-muted-foreground">
+                                  {item.title}: ₹{(item.amount || 0).toLocaleString()}
+                                </div>
+                              ))}
+                            </div>
+                          </TableCell>
                           <TableCell className="font-semibold text-green-600">
-                            ₹{payment.totalAmount.toLocaleString()}
+                            ₹{(payment.totalAmount || 0).toLocaleString()}
                           </TableCell>
                           <TableCell className="capitalize">{payment.paymentMethod}</TableCell>
                           <TableCell>

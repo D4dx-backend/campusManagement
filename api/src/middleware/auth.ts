@@ -3,6 +3,30 @@ import jwt from 'jsonwebtoken';
 import { User } from '../models/User';
 import { AuthenticatedRequest, UserRole } from '../types';
 
+const toComparableId = (value: unknown): string | null => {
+  if (!value) return null;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed || null;
+  }
+  if (typeof value === 'object' && value !== null) {
+    const maybeId = (value as any)._id || (value as any).id;
+    if (typeof maybeId === 'string') {
+      const trimmed = maybeId.trim();
+      return trimmed || null;
+    }
+    if (maybeId && typeof maybeId.toString === 'function') {
+      const stringified = maybeId.toString().trim();
+      return stringified || null;
+    }
+  }
+  if (typeof (value as any).toString === 'function') {
+    const stringified = (value as any).toString().trim();
+    return stringified || null;
+  }
+  return null;
+};
+
 export const authenticate = async (
   req: AuthenticatedRequest,
   res: Response,
@@ -39,6 +63,24 @@ export const authenticate = async (
     }
 
     req.user = user;
+
+    // Enforce branch-level isolation for non-super-admin users whenever a branchId is provided.
+    if (req.user.role !== 'super_admin') {
+      const userBranchId = toComparableId(req.user.branchId);
+      const requestedBranchId =
+        toComparableId(req.params?.branchId) ||
+        toComparableId(req.query?.branchId) ||
+        toComparableId(req.body?.branchId);
+
+      if (requestedBranchId && userBranchId && requestedBranchId !== userBranchId) {
+        res.status(403).json({
+          success: false,
+          message: 'Access denied. You can only access your assigned branch data.'
+        });
+        return;
+      }
+    }
+
     next();
   } catch (error) {
     res.status(401).json({

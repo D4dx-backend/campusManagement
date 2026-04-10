@@ -4,8 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Filter, X, Calendar } from 'lucide-react';
+import { Filter, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { DatePicker, DateRangePicker } from '@/components/ui/date-picker';
 
 export interface FilterOption {
   key: string;
@@ -71,29 +72,21 @@ export const DataFilters = ({ filters, values, onChange, onReset, className }: D
 
       case 'date':
         return (
-          <Input
-            type="date"
+          <DatePicker
             value={value}
-            onChange={(e) => handleFilterChange(filter.key, e.target.value)}
+            onChange={(val) => handleFilterChange(filter.key, val)}
+            placeholder={filter.placeholder || `Select ${filter.label}`}
           />
         );
 
       case 'dateRange':
         return (
-          <div className="grid grid-cols-2 gap-2">
-            <Input
-              type="date"
-              placeholder="From"
-              value={values[`${filter.key}_from`] || ''}
-              onChange={(e) => handleFilterChange(`${filter.key}_from`, e.target.value)}
-            />
-            <Input
-              type="date"
-              placeholder="To"
-              value={values[`${filter.key}_to`] || ''}
-              onChange={(e) => handleFilterChange(`${filter.key}_to`, e.target.value)}
-            />
-          </div>
+          <DateRangePicker
+            fromValue={values[`${filter.key}_from`] || ''}
+            toValue={values[`${filter.key}_to`] || ''}
+            onFromChange={(val) => handleFilterChange(`${filter.key}_from`, val)}
+            onToChange={(val) => handleFilterChange(`${filter.key}_to`, val)}
+          />
         );
 
       case 'number':

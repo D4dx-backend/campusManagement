@@ -125,15 +125,15 @@ export const AnnualReport = () => {
           <div class="summary">
             <div class="summary-card">
               <label>Total Income</label>
-              <value class="income">₹${summary?.totalIncome.toLocaleString()}</value>
+              <value class="income">BHD \$\{summary?.totalIncome.toFixed(3)}</value>
             </div>
             <div class="summary-card">
               <label>Total Expenses</label>
-              <value class="expense">₹${summary?.totalExpenses.toLocaleString()}</value>
+              <value class="expense">BHD \$\{summary?.totalExpenses.toFixed(3)}</value>
             </div>
             <div class="summary-card">
               <label>Net Profit</label>
-              <value class="profit">₹${summary?.netProfit.toLocaleString()}</value>
+              <value class="profit">BHD \$\{summary?.netProfit.toFixed(3)}</value>
             </div>
           </div>
 
@@ -154,9 +154,9 @@ export const AnnualReport = () => {
                     (month) => `
                   <tr>
                     <td>${month.month}</td>
-                    <td class="income">₹${month.income.toLocaleString()}</td>
-                    <td class="expense">₹${month.expenses.toLocaleString()}</td>
-                    <td class="profit">₹${month.netProfit.toLocaleString()}</td>
+                    <td class="income">BHD \$\{month.income.toFixed(3)}</td>
+                    <td class="expense">BHD \$\{month.expenses.toFixed(3)}</td>
+                    <td class="profit">BHD \$\{month.netProfit.toFixed(3)}</td>
                   </tr>
                 `
                   )
@@ -181,7 +181,7 @@ export const AnnualReport = () => {
                     (cat) => `
                   <tr>
                     <td>${cat.categoryName || 'Uncategorized'}</td>
-                    <td class="expense">₹${cat.totalAmount.toLocaleString()}</td>
+                    <td class="expense">BHD \$\{cat.totalAmount.toFixed(3)}</td>
                     <td>${cat.transactionCount}</td>
                   </tr>
                 `
@@ -279,7 +279,7 @@ export const AnnualReport = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-green-600">
-                      ₹{summary.totalIncome.toLocaleString()}
+                      BHD {summary.totalIncome.toFixed(3)}
                     </div>
                   </CardContent>
                 </Card>
@@ -291,7 +291,7 @@ export const AnnualReport = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-red-600">
-                      ₹{summary.totalExpenses.toLocaleString()}
+                      BHD {summary.totalExpenses.toFixed(3)}
                     </div>
                   </CardContent>
                 </Card>
@@ -307,7 +307,7 @@ export const AnnualReport = () => {
                         summary.netProfit >= 0 ? 'text-blue-600' : 'text-red-600'
                       }`}
                     >
-                      ₹{summary.netProfit.toLocaleString()}
+                      BHD {summary.netProfit.toFixed(3)}
                     </div>
                   </CardContent>
                 </Card>
@@ -335,7 +335,7 @@ export const AnnualReport = () => {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
-                    <Tooltip formatter={(value: number) => `₹${value.toLocaleString()}`} />
+                    <Tooltip formatter={(value: number) => `BHD \$\{value.toFixed(3)}`} />
                     <Legend />
                     <Bar dataKey="income" fill="#16a34a" name="Income" />
                     <Bar dataKey="expenses" fill="#dc2626" name="Expenses" />
@@ -355,7 +355,7 @@ export const AnnualReport = () => {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
-                    <Tooltip formatter={(value: number) => `₹${value.toLocaleString()}`} />
+                    <Tooltip formatter={(value: number) => `BHD \$\{value.toFixed(3)}`} />
                     <Legend />
                     <Line
                       type="monotone"
@@ -392,7 +392,7 @@ export const AnnualReport = () => {
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip formatter={(value: number) => `₹${value.toLocaleString()}`} />
+                        <Tooltip formatter={(value: number) => `BHD \$\{value.toFixed(3)}`} />
                       </RechartPieChart>
                     </ResponsiveContainer>
                   </CardContent>
@@ -421,7 +421,7 @@ export const AnnualReport = () => {
                               {category.categoryName || 'Uncategorized'}
                             </TableCell>
                             <TableCell className="font-semibold text-red-600">
-                              ₹{category.totalAmount.toLocaleString()}
+                              BHD {category.totalAmount.toFixed(3)}
                             </TableCell>
                             <TableCell>{category.transactionCount}</TableCell>
                           </TableRow>
@@ -454,17 +454,17 @@ export const AnnualReport = () => {
                         <TableRow key={index}>
                           <TableCell className="font-medium">{month.month}</TableCell>
                           <TableCell className="font-semibold text-green-600">
-                            ₹{month.income.toLocaleString()}
+                            BHD {month.income.toFixed(3)}
                           </TableCell>
                           <TableCell className="font-semibold text-red-600">
-                            ₹{month.expenses.toLocaleString()}
+                            BHD {month.expenses.toFixed(3)}
                           </TableCell>
                           <TableCell
                             className={`font-semibold ${
                               month.netProfit >= 0 ? 'text-blue-600' : 'text-red-600'
                             }`}
                           >
-                            ₹{month.netProfit.toLocaleString()}
+                            BHD {month.netProfit.toFixed(3)}
                           </TableCell>
                         </TableRow>
                       ))}

@@ -19,14 +19,16 @@ router.use(authenticate);
 // @access  Private
 router.get('/', checkPermission('classes', 'read'), validateQuery(queryTransportRoutesSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const { page = 1, limit = 10, search = '', status, sortBy = 'routeName', sortOrder = 'asc' } = req.query;
+    const { page = 1, limit = 10, search = '', status, sortBy = 'routeName', sortOrder = 'asc', branchId } = req.query;
 
     // Build query
     const query: any = {};
     
-    // Branch filter - super_admin sees all, others see only their branch
+    // Branch filter - super_admin sees all (or filtered by branchId param), others see only their branch
     if (req.user!.role !== 'super_admin') {
       query.branchId = req.user!.branchId;
+    } else if (branchId) {
+      query.branchId = branchId;
     }
 
     // Status filter
@@ -120,12 +122,22 @@ router.get('/:id', checkPermission('classes', 'read'), async (req: Authenticated
 // @access  Private (admin/super_admin)
 router.post('/', checkPermission('classes', 'create'), validate(createTransportRouteSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const { routeName, routeCode, description, classFees, useDistanceGroups, vehicles, status } = req.body;
+    const { routeName, routeCode, description, classFees, useDistanceGroups, vehicles, status, branchId: bodyBranchId } = req.body;
+
+    const resolvedBranchId = req.user!.role === 'super_admin' ? bodyBranchId : req.user!.branchId;
+
+    if (!resolvedBranchId) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'Branch is required'
+      };
+      return res.status(400).json(response);
+    }
 
     // Check if route code already exists in this branch
     const existingRoute = await TransportRoute.findOne({ 
       routeCode: routeCode.toUpperCase(),
-      branchId: req.user!.branchId 
+      branchId: resolvedBranchId 
     });
 
     if (existingRoute) {
@@ -140,11 +152,11 @@ router.post('/', checkPermission('classes', 'create'), validate(createTransportR
       routeName,
       routeCode: routeCode.toUpperCase(),
       description,
-      classFees,
+      classFees: classFees || [],
       useDistanceGroups: useDistanceGroups || false,
       vehicles: vehicles || [],
       status,
-      branchId: req.user!.branchId
+      branchId: resolvedBranchId
     });
 
     await route.save();
@@ -180,9 +192,10 @@ router.put('/:id', checkPermission('classes', 'update'), validate(updateTranspor
 
     // If route code is being updated, check for duplicates
     if (req.body.routeCode) {
+      const dupBranchId = req.user!.role === 'super_admin' ? req.body.branchId : req.user!.branchId;
       const existingRoute = await TransportRoute.findOne({
         routeCode: req.body.routeCode.toUpperCase(),
-        branchId: req.user!.branchId,
+        branchId: dupBranchId,
         _id: { $ne: req.params.id }
       });
 

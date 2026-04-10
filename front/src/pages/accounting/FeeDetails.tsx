@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Badge } from '@/components/ui/badge';
 import {
   Select,
@@ -163,7 +164,7 @@ export const FeeDetails = () => {
           <div class="summary">
             <div class="summary-card">
               <label>Total Collected</label>
-              <value>₹${breakdown.totalPaid?.toLocaleString()}</value>
+              <value>BHD \$\{breakdown.totalPaid?.toFixed(3)}</value>
             </div>
             <div class="summary-card">
               <label>Paid Payments</label>
@@ -199,7 +200,7 @@ export const FeeDetails = () => {
                   <td>${payment.studentName || payment.studentId?.name || 'N/A'}</td>
                   <td>${payment.className || payment.classId?.name || 'N/A'}</td>
                   <td>${format(new Date(payment.paymentDate), 'dd MMM yyyy')}</td>
-                  <td>₹${(payment.totalAmount || 0).toLocaleString()}</td>
+                  <td>BHD \$\{(payment.totalAmount || 0).toFixed(3)}</td>
                   <td>${(payment.paymentMethod || '').toUpperCase()}</td>
                   <td>${(payment.status || '').toUpperCase()}</td>
                 </tr>
@@ -262,7 +263,7 @@ export const FeeDetails = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
-                  ₹{breakdown.totalPaid?.toLocaleString()}
+                  BHD {breakdown.totalPaid?.toFixed(3)}
                 </div>
               </CardContent>
             </Card>
@@ -309,27 +310,27 @@ export const FeeDetails = () => {
               <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground">Tuition Fee</div>
-                  <div className="text-lg font-semibold">₹{breakdown.totalTuitionFee?.toLocaleString()}</div>
+                  <div className="text-lg font-semibold">BHD {breakdown.totalTuitionFee?.toFixed(3)}</div>
                 </div>
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground">Transport Fee</div>
-                  <div className="text-lg font-semibold">₹{breakdown.totalTransportFee?.toLocaleString()}</div>
+                  <div className="text-lg font-semibold">BHD {breakdown.totalTransportFee?.toFixed(3)}</div>
                 </div>
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground">Co-curricular</div>
-                  <div className="text-lg font-semibold">₹{breakdown.totalCocurricularFee?.toLocaleString()}</div>
+                  <div className="text-lg font-semibold">BHD {breakdown.totalCocurricularFee?.toFixed(3)}</div>
                 </div>
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground">Maintenance</div>
-                  <div className="text-lg font-semibold">₹{breakdown.totalMaintenanceFee?.toLocaleString()}</div>
+                  <div className="text-lg font-semibold">BHD {breakdown.totalMaintenanceFee?.toFixed(3)}</div>
                 </div>
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground">Exam Fee</div>
-                  <div className="text-lg font-semibold">₹{breakdown.totalExamFee?.toLocaleString()}</div>
+                  <div className="text-lg font-semibold">BHD {breakdown.totalExamFee?.toFixed(3)}</div>
                 </div>
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground">Textbook Fee</div>
-                  <div className="text-lg font-semibold">₹{breakdown.totalTextbookFee?.toLocaleString()}</div>
+                  <div className="text-lg font-semibold">BHD {breakdown.totalTextbookFee?.toFixed(3)}</div>
                 </div>
               </div>
             </CardContent>
@@ -347,7 +348,7 @@ export const FeeDetails = () => {
                 {paymentMethodBreakdown.map((method: any) => (
                   <div key={method._id} className="space-y-1">
                     <div className="text-sm text-muted-foreground capitalize">{method._id}</div>
-                    <div className="text-lg font-semibold">₹{method.totalAmount.toLocaleString()}</div>
+                    <div className="text-lg font-semibold">BHD {method.totalAmount.toFixed(3)}</div>
                     <div className="text-xs text-muted-foreground">{method.count} payments</div>
                   </div>
                 ))}
@@ -364,21 +365,19 @@ export const FeeDetails = () => {
           <CardContent>
             <div className="grid gap-4 md:grid-cols-4">
               <div className="space-y-2">
-                <Label htmlFor="startDate">Start Date</Label>
-                <Input
-                  id="startDate"
-                  type="date"
+                <Label>Start Date</Label>
+                <DatePicker
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={setStartDate}
+                  placeholder="Select start date"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="endDate">End Date</Label>
-                <Input
-                  id="endDate"
-                  type="date"
+                <Label>End Date</Label>
+                <DatePicker
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  onChange={setEndDate}
+                  placeholder="Select end date"
                 />
               </div>
               <div className="space-y-2">
@@ -456,13 +455,13 @@ export const FeeDetails = () => {
                             <div className="space-y-1">
                               {(payment.feeItems || []).map((item: any, idx: number) => (
                                 <div key={idx} className="text-xs text-muted-foreground">
-                                  {item.title}: ₹{(item.amount || 0).toLocaleString()}
+                                  {item.title}: BHD {(item.amount || 0).toFixed(3)}
                                 </div>
                               ))}
                             </div>
                           </TableCell>
                           <TableCell className="font-semibold text-green-600">
-                            ₹{(payment.totalAmount || 0).toLocaleString()}
+                            BHD {(payment.totalAmount || 0).toFixed(3)}
                           </TableCell>
                           <TableCell className="capitalize">{payment.paymentMethod}</TableCell>
                           <TableCell>

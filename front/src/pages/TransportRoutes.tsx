@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { DataTable } from '@/components/ui/data-table';
 import { useConfirmation } from '@/hooks/useConfirmation';
-import { Plus, Edit, Trash2, Loader2, MapPin, ChevronDown, ChevronUp, DollarSign, Users, Car, Route, Info, AlertCircle, Check } from 'lucide-react';
+import { Plus, Edit, Trash2, Loader2, MapPin, Users, Car, Route, Info, AlertCircle, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { 
   useTransportRoutes, 
@@ -16,47 +16,48 @@ import {
   useUpdateTransportRoute, 
   useDeleteTransportRoute 
 } from '@/hooks/useTransportRoutes';
-import { useClasses } from '@/hooks/useClasses';
-import { ClassFee, Vehicle, DistanceGroupFee } from '@/services/transportRouteService';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Vehicle } from '@/services/transportRouteService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
+import { useBranches } from '@/hooks/useBranches';
 
 const TransportRoutes = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterBranchId, setFilterBranchId] = useState<string>('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRoute, setEditingRoute] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const { toast } = useToast();
   const { confirm, ConfirmationComponent } = useConfirmation();
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'super_admin';
+
+  const { data: branchesResponse } = useBranches();
+  const branches = branchesResponse?.data || [];
 
   const { data: routesResponse, isLoading, error } = useTransportRoutes({
     page: currentPage,
     limit: itemsPerPage,
     search: searchTerm,
-    status: 'active'
+    ...(isSuperAdmin && filterBranchId !== 'all' ? { branchId: filterBranchId } : {})
   });
 
   const createRouteMutation = useCreateTransportRoute();
   const updateRouteMutation = useUpdateTransportRoute();
   const deleteRouteMutation = useDeleteTransportRoute();
 
-  const { data: classesResponse } = useClasses({ status: 'active', limit: 100 });
-  const classes = classesResponse?.data || [];
-
   const [formData, setFormData] = useState({
     routeName: '',
     routeCode: '',
     description: '',
-    classFees: [] as ClassFee[],
-    useDistanceGroups: false,
     vehicles: [] as Vehicle[],
-    status: 'active' as 'active' | 'inactive'
+    status: 'active' as 'active' | 'inactive',
+    branchId: ''
   });
 
-  const [expandedClass, setExpandedClass] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   const resetForm = () => {
@@ -64,12 +65,10 @@ const TransportRoutes = () => {
       routeName: '',
       routeCode: '',
       description: '',
-      classFees: [],
-      useDistanceGroups: false,
       vehicles: [],
-      status: 'active'
+      status: 'active',
+      branchId: ''
     });
-    setExpandedClass(null);
     setEditingRoute(null);
   };
 
@@ -77,9 +76,9 @@ const TransportRoutes = () => {
     e.preventDefault();
     
     const errors: string[] = [];
-    
-    if (formData.classFees.length === 0) {
-      errors.push('Please add at least one class fee');
+
+    if (isSuperAdmin && !formData.branchId) {
+      errors.push('Branch is required for super admin');
     }
     
     // Validate vehicles have all required fields (if any vehicles added)
@@ -88,21 +87,6 @@ const TransportRoutes = () => {
       if (!vehicle.driverName) errors.push(`Vehicle ${index + 1}: Driver name is required`);
       if (!vehicle.driverPhone) errors.push(`Vehicle ${index + 1}: Driver phone is required`);
     });
-    
-    // Validate distance groups if enabled
-    if (formData.useDistanceGroups) {
-      formData.classFees.forEach(fee => {
-        if (!fee.distanceGroupFees || fee.distanceGroupFees.length === 0) {
-          errors.push(`${fee.className}: Please add distance groups or disable distance-based pricing`);
-        } else {
-          fee.distanceGroupFees?.forEach((group, idx) => {
-            if (!group.groupName) errors.push(`${fee.className} - Group ${idx + 1}: Name is required`);
-            if (!group.distanceRange) errors.push(`${fee.className} - Group ${idx + 1}: Distance range is required`);
-            if (group.amount <= 0) errors.push(`${fee.className} - Group ${idx + 1}: Amount must be greater than 0`);
-          });
-        }
-      });
-    }
     
     if (errors.length > 0) {
       setValidationErrors(errors);
@@ -116,14 +100,19 @@ const TransportRoutes = () => {
     
     setValidationErrors([]);
 
+    const payload = {
+      ...formData,
+      ...(isSuperAdmin && formData.branchId ? { branchId: formData.branchId } : {})
+    };
+
     try {
       if (editingRoute) {
         await updateRouteMutation.mutateAsync({
           id: editingRoute._id,
-          data: formData
+          data: payload
         });
       } else {
-        await createRouteMutation.mutateAsync(formData);
+        await createRouteMutation.mutateAsync(payload);
       }
       
       setIsDialogOpen(false);
@@ -139,10 +128,9 @@ const TransportRoutes = () => {
       routeName: route.routeName,
       routeCode: route.routeCode,
       description: route.description || '',
-      classFees: route.classFees || [],
-      useDistanceGroups: route.useDistanceGroups || false,
       vehicles: route.vehicles || [],
-      status: route.status
+      status: route.status,
+      branchId: route.branchId || ''
     });
     setIsDialogOpen(true);
   };
@@ -191,7 +179,7 @@ const TransportRoutes = () => {
               <MapPin className="w-8 h-8 text-blue-500" />
               Transport Routes
             </h1>
-            <p className="text-muted-foreground mt-1">Manage transport routes with class-wise fees, distance groups, and vehicle information</p>
+            <p className="text-muted-foreground mt-1">Manage transport routes and vehicle information. Transport fees are configured in Fee Structures.</p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
@@ -210,7 +198,7 @@ const TransportRoutes = () => {
                   {editingRoute ? 'Edit Transport Route' : 'Add New Transport Route'}
                 </DialogTitle>
                 <DialogDescription>
-                  {editingRoute ? 'Update transport route information, fees, and vehicle details' : 'Create a comprehensive transport route with class-wise fees, distance groups, and vehicle information'}
+                  {editingRoute ? 'Update transport route information and vehicle details' : 'Create a transport route with basic information and vehicle details'}
                 </DialogDescription>
               </DialogHeader>
               
@@ -243,6 +231,27 @@ const TransportRoutes = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
+                {isSuperAdmin && (
+                  <div className="space-y-2 mb-4">
+                    <Label htmlFor="branchId">Branch *</Label>
+                    <Select
+                      value={formData.branchId}
+                      onValueChange={value => setFormData({ ...formData, branchId: value })}
+                      required
+                    >
+                      <SelectTrigger id="branchId">
+                        <SelectValue placeholder="Select branch" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {branches.map((branch: any) => (
+                          <SelectItem key={branch._id} value={branch._id}>
+                            {branch.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="routeName">Route Name *</Label>
@@ -275,332 +284,6 @@ const TransportRoutes = () => {
                     onChange={e => setFormData({ ...formData, description: e.target.value })}
                     rows={3}
                   />
-                </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <DollarSign className="w-4 h-4 text-green-500" />
-                      Fee Structure
-                    </CardTitle>
-                    <CardDescription className="text-sm">
-                      Configure class-wise transport fees and optional distance-based pricing
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <Checkbox 
-                      id="useDistanceGroups"
-                      checked={formData.useDistanceGroups}
-                      onCheckedChange={(checked) => {
-                        setFormData({ ...formData, useDistanceGroups: checked as boolean });
-                        if (!checked) {
-                          // Clear distance group fees when disabled
-                          const updatedFees = formData.classFees.map(fee => ({
-                            ...fee,
-                            distanceGroupFees: []
-                          }));
-                          setFormData({ ...formData, useDistanceGroups: false, classFees: updatedFees });
-                        }
-                      }}
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <Label htmlFor="useDistanceGroups" className="font-semibold cursor-pointer">
-                        Enable Distance-based Fee Groups
-                      </Label>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Allow different fees based on travel distance for each class (e.g., 0-5km, 5-10km)
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <Label>Class-wise Fees and Staff Discount *</Label>
-                  <div className="border rounded-lg p-4 max-h-[400px] overflow-y-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="border-b bg-muted/50">
-                          <th className="text-left p-3 font-semibold">Class</th>
-                          <th className="text-left p-3 font-semibold">Amount (BHD) *</th>
-                          <th className="text-left p-3 font-semibold">Staff Discount (%)</th>
-                          <th className="text-left p-3 font-semibold">Discounted Amount</th>
-                          {formData.useDistanceGroups && (
-                            <th className="text-left p-3 font-semibold">Distance Groups</th>
-                          )}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {classes.map((cls: any) => {
-                          const existingFee = formData.classFees.find(cf => cf.classId === cls._id);
-                          const amount = existingFee?.amount || 0;
-                          const discount = existingFee?.staffDiscount || 0;
-                          const discountedAmount = amount > 0 && discount > 0 
-                            ? amount - (amount * discount / 100)
-                            : null;
-                          
-                          return (
-                            <>
-                            <tr key={cls._id} className="border-b hover:bg-muted/30">
-                              <td className="p-3">
-                                <Label className="font-medium">{cls.name} ({cls.academicYear})</Label>
-                              </td>
-                              <td className="p-3">
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  placeholder="0.00"
-                                  className="max-w-[150px]"
-                                  value={amount || ''}
-                                  onChange={(e) => {
-                                    const newAmount = parseFloat(e.target.value) || 0;
-                                    const existingIndex = formData.classFees.findIndex(cf => cf.classId === cls._id);
-                                    const newClassFees = [...formData.classFees];
-                                    
-                                    if (newAmount > 0) {
-                                      if (existingIndex >= 0) {
-                                        newClassFees[existingIndex] = { 
-                                          ...newClassFees[existingIndex],
-                                          amount: newAmount 
-                                        };
-                                      } else {
-                                        newClassFees.push({ 
-                                          classId: cls._id, 
-                                          className: cls.name, 
-                                          amount: newAmount,
-                                          staffDiscount: 0
-                                        });
-                                      }
-                                    } else {
-                                      if (existingIndex >= 0) {
-                                        newClassFees.splice(existingIndex, 1);
-                                      }
-                                    }
-                                    
-                                    setFormData({ ...formData, classFees: newClassFees });
-                                  }}
-                                />
-                              </td>
-                              <td className="p-3">
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  max="100"
-                                  placeholder="0"
-                                  className="max-w-[100px]"
-                                  value={discount || ''}
-                                  onChange={(e) => {
-                                    const newDiscount = parseFloat(e.target.value) || 0;
-                                    const existingIndex = formData.classFees.findIndex(cf => cf.classId === cls._id);
-                                    const newClassFees = [...formData.classFees];
-                                    
-                                    if (existingIndex >= 0) {
-                                      newClassFees[existingIndex] = { 
-                                        ...newClassFees[existingIndex],
-                                        staffDiscount: newDiscount 
-                                      };
-                                      setFormData({ ...formData, classFees: newClassFees });
-                                    } else if (newDiscount > 0) {
-                                      // Only create entry if there's a discount value
-                                      newClassFees.push({ 
-                                        classId: cls._id, 
-                                        className: cls.name, 
-                                        amount: 0,
-                                        staffDiscount: newDiscount
-                                      });
-                                      setFormData({ ...formData, classFees: newClassFees });
-                                    }
-                                  }}
-                                  disabled={!existingFee || amount === 0}
-                                />
-                              </td>
-                              <td className="p-3">
-                                {discountedAmount !== null ? (
-                                  <span className="text-sm font-medium text-green-600">
-                                    BHD {discountedAmount.toFixed(3)}
-                                  </span>
-                                ) : (
-                                  <span className="text-sm text-muted-foreground">-</span>
-                                )}
-                              </td>
-                              {formData.useDistanceGroups && (
-                                <td className="p-3">
-                                  {existingFee && amount > 0 ? (
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => setExpandedClass(expandedClass === cls._id ? null : cls._id)}
-                                    >
-                                      {expandedClass === cls._id ? (
-                                        <>
-                                          <ChevronUp className="w-4 h-4 mr-1" />
-                                          Hide Groups
-                                        </>
-                                      ) : (
-                                        <>
-                                          <ChevronDown className="w-4 h-4 mr-1" />
-                                          {existingFee.distanceGroupFees?.length || 0} Groups
-                                        </>
-                                      )}
-                                    </Button>
-                                  ) : (
-                                    <span className="text-sm text-muted-foreground">-</span>
-                                  )}
-                                </td>
-                              )}
-                            </tr>
-                            {formData.useDistanceGroups && expandedClass === cls._id && existingFee && (
-                              <tr>
-                                <td colSpan={5} className="p-4 bg-muted/20">
-                                  <div className="space-y-3">
-                                    <div className="flex items-center justify-between">
-                                      <Label className="text-sm font-semibold">Distance Groups for {cls.name}</Label>
-                                      <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => {
-                                          const classIndex = formData.classFees.findIndex(cf => cf.classId === cls._id);
-                                          if (classIndex >= 0) {
-                                            const newClassFees = [...formData.classFees];
-                                            const distanceGroupFees = newClassFees[classIndex].distanceGroupFees || [];
-                                            distanceGroupFees.push({
-                                              groupName: `Group ${distanceGroupFees.length + 1}`,
-                                              distanceRange: '',
-                                              amount: 0
-                                            });
-                                            newClassFees[classIndex] = {
-                                              ...newClassFees[classIndex],
-                                              distanceGroupFees
-                                            };
-                                            setFormData({ ...formData, classFees: newClassFees });
-                                          }
-                                        }}
-                                      >
-                                        <Plus className="w-3 h-3 mr-1" />
-                                        Add Group
-                                      </Button>
-                                    </div>
-                                    
-                                    <div className="space-y-2">
-                                      {(existingFee.distanceGroupFees || []).map((group, groupIndex) => (
-                                        <div key={groupIndex} className="grid grid-cols-4 gap-2 items-end">
-                                          <div>
-                                            <Label className="text-xs">Group Name</Label>
-                                            <Input
-                                              placeholder="e.g., Group 1"
-                                              value={group.groupName}
-                                              onChange={(e) => {
-                                                const classIndex = formData.classFees.findIndex(cf => cf.classId === cls._id);
-                                                if (classIndex >= 0) {
-                                                  const newClassFees = [...formData.classFees];
-                                                  const distanceGroupFees = [...(newClassFees[classIndex].distanceGroupFees || [])];
-                                                  distanceGroupFees[groupIndex] = {
-                                                    ...distanceGroupFees[groupIndex],
-                                                    groupName: e.target.value
-                                                  };
-                                                  newClassFees[classIndex] = {
-                                                    ...newClassFees[classIndex],
-                                                    distanceGroupFees
-                                                  };
-                                                  setFormData({ ...formData, classFees: newClassFees });
-                                                }
-                                              }}
-                                            />
-                                          </div>
-                                          <div>
-                                            <Label className="text-xs">Distance Range</Label>
-                                            <Input
-                                              placeholder="e.g., 0-5 km"
-                                              value={group.distanceRange}
-                                              onChange={(e) => {
-                                                const classIndex = formData.classFees.findIndex(cf => cf.classId === cls._id);
-                                                if (classIndex >= 0) {
-                                                  const newClassFees = [...formData.classFees];
-                                                  const distanceGroupFees = [...(newClassFees[classIndex].distanceGroupFees || [])];
-                                                  distanceGroupFees[groupIndex] = {
-                                                    ...distanceGroupFees[groupIndex],
-                                                    distanceRange: e.target.value
-                                                  };
-                                                  newClassFees[classIndex] = {
-                                                    ...newClassFees[classIndex],
-                                                    distanceGroupFees
-                                                  };
-                                                  setFormData({ ...formData, classFees: newClassFees });
-                                                }
-                                              }}
-                                            />
-                                          </div>
-                                          <div>
-                                            <Label className="text-xs">Amount (BHD)</Label>
-                                            <Input
-                                              type="number"
-                                              step="0.001"
-                                              min="0"
-                                              placeholder="0.000"
-                                              value={group.amount || ''}
-                                              onChange={(e) => {
-                                                const classIndex = formData.classFees.findIndex(cf => cf.classId === cls._id);
-                                                if (classIndex >= 0) {
-                                                  const newClassFees = [...formData.classFees];
-                                                  const distanceGroupFees = [...(newClassFees[classIndex].distanceGroupFees || [])];
-                                                  distanceGroupFees[groupIndex] = {
-                                                    ...distanceGroupFees[groupIndex],
-                                                    amount: parseFloat(e.target.value) || 0
-                                                  };
-                                                  newClassFees[classIndex] = {
-                                                    ...newClassFees[classIndex],
-                                                    distanceGroupFees
-                                                  };
-                                                  setFormData({ ...formData, classFees: newClassFees });
-                                                }
-                                              }}
-                                            />
-                                          </div>
-                                          <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => {
-                                              const classIndex = formData.classFees.findIndex(cf => cf.classId === cls._id);
-                                              if (classIndex >= 0) {
-                                                const newClassFees = [...formData.classFees];
-                                                const distanceGroupFees = [...(newClassFees[classIndex].distanceGroupFees || [])];
-                                                distanceGroupFees.splice(groupIndex, 1);
-                                                newClassFees[classIndex] = {
-                                                  ...newClassFees[classIndex],
-                                                  distanceGroupFees
-                                                };
-                                                setFormData({ ...formData, classFees: newClassFees });
-                                              }
-                                            }}
-                                          >
-                                            <Trash2 className="w-3 h-3" />
-                                          </Button>
-                                        </div>
-                                      ))}
-                                      
-                                      {(!existingFee.distanceGroupFees || existingFee.distanceGroupFees.length === 0) && (
-                                        <p className="text-sm text-muted-foreground text-center py-2">
-                                          No distance groups added yet
-                                        </p>
-                                      )}
-                                    </div>
-                                  </div>
-                                </td>
-                              </tr>
-                            )}
-                            </>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
                 </div>
                   </CardContent>
                 </Card>
@@ -769,7 +452,7 @@ const TransportRoutes = () => {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -809,21 +492,24 @@ const TransportRoutes = () => {
               </div>
             </CardContent>
           </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Distance-Based</p>
-                  <h3 className="text-2xl font-bold mt-1">
-                    {routes.filter((r: any) => r.useDistanceGroups).length}
-                  </h3>
-                </div>
-                <MapPin className="w-8 h-8 text-orange-500 opacity-75" />
-              </div>
-            </CardContent>
-          </Card>
         </div>
+
+        {isSuperAdmin && branches.length > 0 && (
+          <div className="flex items-center gap-3">
+            <Label className="text-sm font-medium shrink-0">Filter by Branch:</Label>
+            <Select value={filterBranchId} onValueChange={(val) => { setFilterBranchId(val); setCurrentPage(1); }}>
+              <SelectTrigger className="w-56">
+                <SelectValue placeholder="All Branches" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Branches</SelectItem>
+                {branches.map((branch: any) => (
+                  <SelectItem key={branch._id} value={branch._id}>{branch.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         <DataTable
           searchPlaceholder="Search by route name or code..."
@@ -851,7 +537,8 @@ const TransportRoutes = () => {
                 <tr className="border-b bg-muted/50">
                   <th className="text-left p-3 font-semibold">Route Code</th>
                   <th className="text-left p-3 font-semibold">Route Name</th>
-                  <th className="text-left p-3 font-semibold">Classes</th>
+                  {isSuperAdmin && <th className="text-left p-3 font-semibold">Branch</th>}
+                  <th className="text-left p-3 font-semibold">Vehicles</th>
                   <th className="text-left p-3 font-semibold">Status</th>
                   <th className="text-right p-3 font-semibold">Actions</th>
                 </tr>
@@ -870,24 +557,27 @@ const TransportRoutes = () => {
                         )}
                       </div>
                     </td>
+                    {isSuperAdmin && (
+                      <td className="p-3">
+                        <span className="text-sm">
+                          {branches.find((b: any) => b._id === route.branchId)?.name || <span className="text-muted-foreground text-xs">—</span>}
+                        </span>
+                      </td>
+                    )}
                     <td className="p-3">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1 text-sm">
-                          <DollarSign className="w-3 h-3" />
-                          {route.classFees?.length || 0} classes
+                      {route.vehicles?.length > 0 ? (
+                        <div className="space-y-1">
+                          {route.vehicles.map((v: any, idx: number) => (
+                            <div key={idx} className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Car className="w-3 h-3" />
+                              <span className="font-medium">{v.vehicleNumber}</span>
+                              {v.driverName && <span>— {v.driverName}</span>}
+                            </div>
+                          ))}
                         </div>
-                        {route.useDistanceGroups && (
-                          <Badge variant="secondary" className="text-xs">
-                            Distance-based
-                          </Badge>
-                        )}
-                        {route.vehicles?.length > 0 && (
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Car className="w-3 h-3" />
-                            {route.vehicles.length} vehicle(s)
-                          </div>
-                        )}
-                      </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">No vehicles</span>
+                      )}
                     </td>
                     <td className="p-3">
                       <Badge 

@@ -239,7 +239,7 @@ export const CreateTextbookIndent = ({ onSuccess, onCancel }: CreateTextbookInde
                     <div className="flex-1">
                       <div className="font-medium">{textbook.title}</div>
                       <div className="text-sm text-gray-600">
-                        {textbook.bookCode} • {textbook.subject} • ₹{textbook.price}
+                        {textbook.bookCode} • {textbook.subject} • BHD {textbook.price.toFixed(3)}
                       </div>
                       <div className="text-xs text-gray-500">
                         Available: {textbook.available} • Publisher: {textbook.publisher}
@@ -269,7 +269,7 @@ export const CreateTextbookIndent = ({ onSuccess, onCancel }: CreateTextbookInde
                     <div className="flex-1">
                       <div className="font-medium">{book.title}</div>
                       <div className="text-sm text-gray-600">
-                        {book.bookCode} • {book.subject} • ₹{book.price} each
+                        {book.bookCode} • {book.subject} • BHD {book.price.toFixed(3)} each
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -375,17 +375,17 @@ export const CreateTextbookIndent = ({ onSuccess, onCancel }: CreateTextbookInde
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span>Total Amount:</span>
-                  <span className="font-medium">₹{totalAmount.toLocaleString()}</span>
+                  <span className="font-medium">BHD {totalAmount.toFixed(3)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Paid Amount:</span>
-                  <span className="font-medium text-green-600">₹{paidAmountNum.toLocaleString()}</span>
+                  <span className="font-medium text-green-600">BHD {paidAmountNum.toFixed(3)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-medium">
                   <span>Balance Amount:</span>
                   <span className={balanceAmount > 0 ? 'text-red-600' : 'text-green-600'}>
-                    ₹{balanceAmount.toLocaleString()}
+                    BHD {balanceAmount.toFixed(3)}
                   </span>
                 </div>
               </div>

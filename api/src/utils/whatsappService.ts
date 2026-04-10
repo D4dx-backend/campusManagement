@@ -98,7 +98,7 @@ Your payment has been received successfully.
 *Student Name:* ${studentName}
 *Receipt Number:* ${receiptNumber}
 *Date:* ${date}
-*Amount Paid:* ₹${amount.toFixed(2)}
+*Amount Paid:* BHD ${amount.toFixed(3)}
 
 Thank you for your payment.
 
@@ -123,7 +123,7 @@ Dear Parent/Guardian,
 This is a reminder that fees are due for payment.
 
 *Student Name:* ${studentName}
-*Due Amount:* ₹${dueAmount.toFixed(2)}
+*Due Amount:* BHD ${dueAmount.toFixed(3)}
 *Due Date:* ${dueDate}
 
 Please make the payment at your earliest convenience.
@@ -149,9 +149,9 @@ Dear Parent/Guardian,
 Your payment has been processed successfully.
 
 *Student Name:* ${studentName}
-*Amount:* ₹${amount.toFixed(2)}
+*Amount:* BHD ${amount.toFixed(3)}
 *Payment Method:* ${paymentMethod}
-*Date:* ${new Date().toLocaleDateString('en-IN')}
+*Date:* ${new Date().toLocaleDateString('en-GB')}
 
 Thank you!
 

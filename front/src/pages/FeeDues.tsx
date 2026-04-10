@@ -201,7 +201,7 @@ const FeeDues = () => {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">₹{data?.summary.totalDueAmount.toLocaleString('en-IN')}</div>
+              <div className="text-2xl font-bold">BHD {data?.summary.totalDueAmount.toFixed(3)}</div>
               <p className="text-xs text-muted-foreground mt-1">
                 {data?.summary.totalRecords} pending payments
               </p>
@@ -214,7 +214,7 @@ const FeeDues = () => {
               <AlertCircle className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">₹{data?.summary.overdueAmount.toLocaleString('en-IN')}</div>
+              <div className="text-2xl font-bold text-red-600">BHD {data?.summary.overdueAmount.toFixed(3)}</div>
               <p className="text-xs text-muted-foreground mt-1">
                 {data?.summary.overdueRecords} overdue payments
               </p>
@@ -262,7 +262,7 @@ const FeeDues = () => {
               {data && Object.entries(data.agingAnalysis).map(([bucket, stats]) => (
                 <div key={bucket} className="border rounded-lg p-4">
                   <div className="text-sm font-medium text-muted-foreground mb-2">{bucket}</div>
-                  <div className="text-xl font-bold">₹{stats.amount.toLocaleString('en-IN')}</div>
+                  <div className="text-xl font-bold">BHD {stats.amount.toFixed(3)}</div>
                   <div className="text-xs text-muted-foreground mt-1">{stats.count} records</div>
                 </div>
               ))}
@@ -344,9 +344,9 @@ const FeeDues = () => {
                         <TableCell>
                           {due.class?.name} - {due.division?.name}
                         </TableCell>
-                        <TableCell className="font-semibold">₹{due.amount.toLocaleString('en-IN')}</TableCell>
+                        <TableCell className="font-semibold">BHD {due.amount.toFixed(3)}</TableCell>
                         <TableCell>
-                          {new Date(due.dueDate).toLocaleDateString('en-IN')}
+                          {new Date(due.dueDate).toLocaleDateString('en-GB')}
                           {due.isOverdue && (
                             <div className="text-xs text-red-600">{due.daysDue} days overdue</div>
                           )}

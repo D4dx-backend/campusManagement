@@ -286,7 +286,7 @@ router.post('/', checkPermission('expenses', 'create'), validate(createExpenseSc
       userRole: req.user!.role,
       action: 'CREATE',
       module: 'Expenses',
-      details: `Created expense: ${expense.description} - ₹${expense.amount} (${expense.voucherNo})`,
+      details: `Created expense: ${expense.description} - BHD ${expense.amount} (${expense.voucherNo})`,
       ipAddress: req.ip,
       branchId: expense.branchId
     });
@@ -362,7 +362,7 @@ router.put('/:id', checkPermission('expenses', 'update'), validate(updateExpense
       userRole: req.user!.role,
       action: 'UPDATE',
       module: 'Expenses',
-      details: `Updated expense: ${expense.description} - ₹${expense.amount} (${expense.voucherNo})`,
+      details: `Updated expense: ${expense.description} - BHD ${expense.amount} (${expense.voucherNo})`,
       ipAddress: req.ip,
       branchId: expense.branchId
     });
@@ -413,7 +413,7 @@ router.delete('/:id', checkPermission('expenses', 'delete'), async (req: Authent
       userRole: req.user!.role,
       action: 'DELETE',
       module: 'Expenses',
-      details: `Deleted expense: ${expense.description} - ₹${expense.amount} (${expense.voucherNo})`,
+      details: `Deleted expense: ${expense.description} - BHD ${expense.amount} (${expense.voucherNo})`,
       ipAddress: req.ip,
       branchId: expense.branchId
     });

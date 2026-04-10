@@ -84,7 +84,7 @@ export class EmailService {
               <p><strong>Student Name:</strong> ${data.studentName}</p>
               <p><strong>Receipt Number:</strong> ${data.receiptNumber}</p>
               <p><strong>Date:</strong> ${data.date}</p>
-              <p><strong>Amount Paid:</strong> <span class="amount">₹${data.amount.toFixed(2)}</span></p>
+              <p><strong>Amount Paid:</strong> <span class="amount">BHD ${data.amount.toFixed(2)}</span></p>
             </div>
             <p>A detailed receipt is attached to this email.</p>
             <p>If you have any questions, please contact the school office.</p>
@@ -146,7 +146,7 @@ export class EmailService {
             <p>Dear Parent/Guardian,</p>
             <p>This is a friendly reminder that the following fees are due for payment:</p>
             <p><strong>Student Name:</strong> ${studentName}</p>
-            <p><strong>Due Amount:</strong> <span class="amount">₹${dueAmount.toFixed(2)}</span></p>
+            <p><strong>Due Amount:</strong> <span class="amount">BHD ${dueAmount.toFixed(3)}</span></p>
             <p><strong>Due Date:</strong> ${dueDate}</p>
             <p>Please make the payment at your earliest convenience to avoid any late fees.</p>
             <p>Thank you for your cooperation.</p>
@@ -194,9 +194,9 @@ export class EmailService {
             <p>Please find attached the monthly income and expenditure report for ${month} ${year}.</p>
             <p><strong>Summary:</strong></p>
             <ul>
-              <li>Total Income: ₹${reportData.totalIncome?.toFixed(2) || '0.00'}</li>
-              <li>Total Expenses: ₹${reportData.totalExpenses?.toFixed(2) || '0.00'}</li>
-              <li>Net Income: ₹${reportData.netIncome?.toFixed(2) || '0.00'}</li>
+              <li>Total Income: BHD ${reportData.totalIncome?.toFixed(2) || '0.00'}</li>
+              <li>Total Expenses: BHD ${reportData.totalExpenses?.toFixed(2) || '0.00'}</li>
+              <li>Net Income: BHD ${reportData.netIncome?.toFixed(2) || '0.00'}</li>
             </ul>
           </div>
         </div>

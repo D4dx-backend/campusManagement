@@ -49,7 +49,7 @@ export const generateReceiptPDF = async (receiptData: ReceiptData): Promise<Blob
           <div style="font-size: 14px; line-height: 1.6;">
             <div><span style="color: #666;">Fee Type:</span> <strong style="text-transform: capitalize;">${receiptData.feeType}</strong></div>
             <div><span style="color: #666;">Payment Method:</span> <strong style="text-transform: capitalize;">${receiptData.paymentMethod}</strong></div>
-            <div><span style="color: #666;">Amount:</span> <strong style="color: #16a34a;">₹${receiptData.amount.toLocaleString()}</strong></div>
+            <div><span style="color: #666;">Amount:</span> <strong style="color: #16a34a;">BHD ${receiptData.amount.toFixed(3)}</strong></div>
           </div>
         </div>
       </div>
@@ -59,7 +59,7 @@ export const generateReceiptPDF = async (receiptData: ReceiptData): Promise<Blob
         <div style="font-size: 14px;">
           <span style="color: #666;">Amount in Words:</span>
           <div style="margin-top: 4px; font-weight: 500; color: #333;">
-            Rupees ${receiptData.amount.toLocaleString()} Only
+            BHD ${receiptData.amount.toLocaleString()} Only
           </div>
         </div>
       </div>

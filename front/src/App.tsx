@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { PermissionAction, userHasAccess } from "@/utils/accessControl";
+import { UserRole } from "@/types";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -39,7 +41,19 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+type RouteAccess = {
+  module?: string;
+  action?: PermissionAction;
+  roles?: UserRole[];
+};
+
+const ProtectedRoute = ({
+  children,
+  access,
+}: {
+  children: React.ReactNode;
+  access?: RouteAccess;
+}) => {
   const { user, isLoading } = useAuth();
   
   if (isLoading) {
@@ -52,6 +66,10 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (access && !userHasAccess(user, access)) {
+    return <Navigate to="/dashboard" replace />;
   }
   
   return <>{children}</>;
@@ -243,7 +261,7 @@ const App = () => (
             <Route
               path="/user-access"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ roles: ['super_admin'] }}>
                   <UserAccess />
                 </ProtectedRoute>
               }
@@ -251,7 +269,7 @@ const App = () => (
             <Route
               path="/branch-management"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ roles: ['super_admin'] }}>
                   <BranchManagement />
                 </ProtectedRoute>
               }

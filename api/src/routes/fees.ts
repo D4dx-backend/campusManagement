@@ -174,7 +174,7 @@ router.post('/', checkPermission('fees', 'create'), async (req: AuthenticatedReq
     });
 
     // Create detailed log message
-    const feeDetails = feeItems.map((item: any) => `${item.title}: ₹${item.amount}`).join(', ');
+    const feeDetails = feeItems.map((item: any) => `${item.title}: BHD ${item.amount}`).join(', ');
     
     // Log activity
     await ActivityLog.create({
@@ -183,7 +183,7 @@ router.post('/', checkPermission('fees', 'create'), async (req: AuthenticatedReq
       userRole: req.user!.role,
       action: 'CREATE',
       module: 'Fees',
-      details: `Recorded fee payment: ${receiptNo} - ${student.name} - Total: ₹${totalAmount} (${feeDetails})`,
+      details: `Recorded fee payment: ${receiptNo} - ${student.name} - Total: BHD ${totalAmount} (${feeDetails})`,
       ipAddress: req.ip,
       branchId: feePayment.branchId
     });

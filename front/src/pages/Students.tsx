@@ -92,7 +92,17 @@ const Students = () => {
   const { data: divisionsResponse, isLoading: divisionsLoading, isSuccess: divisionsLoaded, error: divisionsError } = useDivisionsByClass(formData.class);
   const selectedFilterClassId = (filterValues as any).class || '';
   const { data: filterDivisionsResponse } = useDivisionsByClass(selectedFilterClassId);
-  const { data: transportRoutesResponse } = useTransportRoutes({ status: 'active', limit: 100 });
+  // Determine the relevant branchId for filtering transport routes in the form:
+  // - Editing: use the student's own branchId
+  // - Creating (non-super_admin): use the logged-in user's branchId
+  // - Creating (super_admin): no branch restriction — show all routes
+  const formBranchId = editingStudent?.branchId || (user?.role !== 'super_admin' ? user?.branchId : undefined);
+
+  const { data: transportRoutesResponse } = useTransportRoutes({
+    status: 'active',
+    limit: 100,
+    ...(formBranchId ? { branchId: formBranchId } : {})
+  });
 
   const classes = classesResponse?.data || [];
   const divisions = divisionsResponse?.data || [];

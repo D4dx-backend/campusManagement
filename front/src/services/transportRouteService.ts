@@ -41,16 +41,18 @@ export interface TransportRouteQueryParams {
   status?: 'active' | 'inactive';
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+  branchId?: string;
 }
 
 export interface CreateTransportRouteData {
   routeName: string;
   routeCode: string;
   description?: string;
-  classFees: ClassFee[];
+  classFees?: ClassFee[];
   useDistanceGroups?: boolean;
   vehicles?: Vehicle[];
   status?: 'active' | 'inactive';
+  branchId?: string;
 }
 
 export const transportRouteService = {

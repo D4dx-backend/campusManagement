@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -165,16 +166,16 @@ export const Ledger = () => {
             <h3>Trial Balance</h3>
             <div class="trial-balance-row">
               <span>Total Credit (Income):</span>
-              <span class="income">₹${trialBalance.totalCredit.toLocaleString()}</span>
+              <span class="income">BHD \$\{trialBalance.totalCredit.toFixed(3)}</span>
             </div>
             <div class="trial-balance-row">
               <span>Total Debit (Expense):</span>
-              <span class="expense">₹${trialBalance.totalDebit.toLocaleString()}</span>
+              <span class="expense">BHD \$\{trialBalance.totalDebit.toFixed(3)}</span>
             </div>
             <div class="trial-balance-row" style="border-top: 2px solid #333; font-weight: bold;">
               <span>Difference:</span>
               <span style="color: ${trialBalance.difference >= 0 ? '#16a34a' : '#dc2626'}">
-                ₹${trialBalance.difference.toLocaleString()}
+                BHD \$\{trialBalance.difference.toFixed(3)}
               </span>
             </div>
           </div>
@@ -198,7 +199,7 @@ export const Ledger = () => {
                 <tr>
                   <td>${acc.accountName}</td>
                   <td><span class="${acc.accountType}">${acc.accountType.toUpperCase()}</span></td>
-                  <td class="${acc.accountType}">₹${acc.balance.toLocaleString()}</td>
+                  <td class="${acc.accountType}">BHD \$\{acc.balance.toFixed(3)}</td>
                   <td>${acc.transactionCount}</td>
                 </tr>
               `
@@ -264,7 +265,7 @@ export const Ledger = () => {
                       Total Credit (Income)
                     </div>
                     <div className="text-xl font-bold text-green-600">
-                      ₹{trialBalance.totalCredit.toLocaleString()}
+                      BHD {trialBalance.totalCredit.toFixed(3)}
                     </div>
                   </div>
                   <div className="flex justify-between items-center pb-2 border-b">
@@ -273,7 +274,7 @@ export const Ledger = () => {
                       Total Debit (Expense)
                     </div>
                     <div className="text-xl font-bold text-red-600">
-                      ₹{trialBalance.totalDebit.toLocaleString()}
+                      BHD {trialBalance.totalDebit.toFixed(3)}
                     </div>
                   </div>
                   <div className="flex justify-between items-center pt-2">
@@ -283,7 +284,7 @@ export const Ledger = () => {
                         trialBalance.difference >= 0 ? 'text-green-600' : 'text-red-600'
                       }`}
                     >
-                      ₹{trialBalance.difference.toLocaleString()}
+                      BHD {trialBalance.difference.toFixed(3)}
                     </div>
                   </div>
                 </div>
@@ -334,19 +335,19 @@ export const Ledger = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Cash Income</span>
                     <span className="font-semibold text-green-600">
-                      ₹{(trialBalance?.totalCredit * 0.45 || 0).toLocaleString()} {/* Approximate */}
+                      BHD {(trialBalance?.totalCredit * 0.45 || 0).toFixed(3)} {/* Approximate */}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Cash Expenses</span>
                     <span className="font-semibold text-red-600">
-                      ₹{(trialBalance?.totalDebit * 0.35 || 0).toLocaleString()} {/* Approximate */}
+                      BHD {(trialBalance?.totalDebit * 0.35 || 0).toFixed(3)} {/* Approximate */}
                     </span>
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t font-bold">
                     <span className="text-sm">Cash Balance</span>
                     <span className="text-green-600">
-                      ₹{((trialBalance?.totalCredit * 0.45 || 0) - (trialBalance?.totalDebit * 0.35 || 0)).toLocaleString()}
+                      BHD {((trialBalance?.totalCredit * 0.45 || 0) - (trialBalance?.totalDebit * 0.35 || 0)).toFixed(3)}
                     </span>
                   </div>
                 </TabsContent>
@@ -354,19 +355,19 @@ export const Ledger = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Bank Income</span>
                     <span className="font-semibold text-green-600">
-                      ₹{(trialBalance?.totalCredit * 0.55 || 0).toLocaleString()} {/* Approximate */}
+                      BHD {(trialBalance?.totalCredit * 0.55 || 0).toFixed(3)} {/* Approximate */}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Bank Expenses</span>
                     <span className="font-semibold text-red-600">
-                      ₹{(trialBalance?.totalDebit * 0.65 || 0).toLocaleString()} {/* Approximate */}
+                      BHD {(trialBalance?.totalDebit * 0.65 || 0).toFixed(3)} {/* Approximate */}
                     </span>
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t font-bold">
                     <span className="text-sm">Bank Balance</span>
                     <span className="text-green-600">
-                      ₹{((trialBalance?.totalCredit * 0.55 || 0) - (trialBalance?.totalDebit * 0.65 || 0)).toLocaleString()}
+                      BHD {((trialBalance?.totalCredit * 0.55 || 0) - (trialBalance?.totalDebit * 0.65 || 0)).toFixed(3)}
                     </span>
                   </div>
                 </TabsContent>
@@ -402,21 +403,19 @@ export const Ledger = () => {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="startDate">Start Date (Optional)</Label>
-                <Input
-                  id="startDate"
-                  type="date"
+                <Label>Start Date (Optional)</Label>
+                <DatePicker
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={setStartDate}
+                  placeholder="Select start date"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="endDate">End Date (Optional)</Label>
-                <Input
-                  id="endDate"
-                  type="date"
+                <Label>End Date (Optional)</Label>
+                <DatePicker
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  onChange={setEndDate}
+                  placeholder="Select end date"
                 />
               </div>
               <div className="space-y-2">
@@ -477,7 +476,7 @@ export const Ledger = () => {
                               account.accountType === 'income' ? 'text-green-600' : 'text-red-600'
                             }`}
                           >
-                            ₹{account.balance.toLocaleString()}
+                            BHD {account.balance.toFixed(3)}
                           </TableCell>
                           <TableCell>{account.transactionCount}</TableCell>
                         </TableRow>

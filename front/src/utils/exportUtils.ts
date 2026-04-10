@@ -95,7 +95,7 @@ const getNestedValue = (obj: any, path: string): any => {
 // Common formatters
 export const formatters = {
   date: (value: any) => value ? new Date(value).toLocaleDateString() : '',
-  currency: (value: any) => value ? `₹${Number(value).toLocaleString()}` : '₹0',
+  currency: (value: any) => value ? `BHD ${Number(value).toFixed(3)}` : 'BHD 0.000',
   phone: (value: any) => value || '',
   capitalize: (value: any) => value ? String(value).charAt(0).toUpperCase() + String(value).slice(1) : '',
   boolean: (value: any) => value ? 'Yes' : 'No',

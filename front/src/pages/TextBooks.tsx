@@ -393,7 +393,7 @@ const TextBooks = () => {
                         </div>
                         <div>
                           <span className="text-muted-foreground">Price:</span>
-                          <span className="ml-2 font-medium">₹{book.price}</span>
+                          <span className="ml-2 font-medium">BHD {book.price.toFixed(3)}</span>
                         </div>
                         <div>
                           <span className="text-muted-foreground">Stock:</span>

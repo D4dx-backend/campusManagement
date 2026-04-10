@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Badge } from '@/components/ui/badge';
 import {
   Select,
@@ -191,16 +192,16 @@ export const DayBook = () => {
           <div class="summary">
             <div class="summary-item">
               <label>Total Income</label>
-              <value class="income">₹${summary?.totalIncome.toLocaleString()}</value>
+              <value class="income">BHD \$\{summary?.totalIncome.toFixed(3)}</value>
             </div>
             <div class="summary-item">
               <label>Total Expense</label>
-              <value class="expense">₹${summary?.totalExpense.toLocaleString()}</value>
+              <value class="expense">BHD \$\{summary?.totalExpense.toFixed(3)}</value>
             </div>
             <div class="summary-item">
               <label>Net Balance</label>
               <value style="color: ${(summary?.netBalance || 0) >= 0 ? '#16a34a' : '#dc2626'}">
-                ₹${summary?.netBalance.toLocaleString()}
+                BHD \$\{summary?.netBalance.toFixed(3)}
               </value>
             </div>
           </div>
@@ -226,7 +227,7 @@ export const DayBook = () => {
                   <td><span class="${t.type}">${t.type.toUpperCase()}</span></td>
                   <td>${t.category}</td>
                   <td>${t.description}</td>
-                  <td class="${t.type}">₹${t.amount.toLocaleString()}</td>
+                  <td class="${t.type}">BHD \$\{t.amount.toFixed(3)}</td>
                   <td>${t.paymentMethod.toUpperCase()}</td>
                   <td>${t.referenceNumber}</td>
                 </tr>
@@ -289,7 +290,7 @@ export const DayBook = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
-                  ₹{summary.totalIncome.toLocaleString()}
+                  BHD {summary.totalIncome.toFixed(3)}
                 </div>
               </CardContent>
             </Card>
@@ -301,7 +302,7 @@ export const DayBook = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-red-600">
-                  ₹{summary.totalExpense.toLocaleString()}
+                  BHD {summary.totalExpense.toFixed(3)}
                 </div>
               </CardContent>
             </Card>
@@ -317,7 +318,7 @@ export const DayBook = () => {
                     summary.netBalance >= 0 ? 'text-green-600' : 'text-red-600'
                   }`}
                 >
-                  ₹{summary.netBalance.toLocaleString()}
+                  BHD {summary.netBalance.toFixed(3)}
                 </div>
               </CardContent>
             </Card>
@@ -332,21 +333,19 @@ export const DayBook = () => {
           <CardContent>
             <div className="grid gap-4 md:grid-cols-5">
               <div className="space-y-2">
-                <Label htmlFor="startDate">Start Date</Label>
-                <Input
-                  id="startDate"
-                  type="date"
+                <Label>Start Date</Label>
+                <DatePicker
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={setStartDate}
+                  placeholder="Select start date"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="endDate">End Date</Label>
-                <Input
-                  id="endDate"
-                  type="date"
+                <Label>End Date</Label>
+                <DatePicker
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  onChange={setEndDate}
+                  placeholder="Select end date"
                 />
               </div>
               <div className="space-y-2">
@@ -434,7 +433,7 @@ export const DayBook = () => {
                               transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
                             }`}
                           >
-                            ₹{transaction.amount.toLocaleString()}
+                            BHD {transaction.amount.toFixed(3)}
                           </TableCell>
                           <TableCell className="capitalize">{transaction.paymentMethod}</TableCell>
                           <TableCell>{transaction.referenceNumber}</TableCell>

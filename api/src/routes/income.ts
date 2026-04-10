@@ -169,7 +169,7 @@ router.post('/', checkPermission('accounting', 'create'), async (req: Authentica
       userRole: req.user!.role,
       action: 'CREATE',
       module: 'Income',
-      details: `Recorded income: ${receiptNo} - ${category} - ₹${amount}`,
+      details: `Recorded income: ${receiptNo} - ${category} - BHD ${amount}`,
       ipAddress: req.ip,
       branchId: income.branchId
     });

@@ -75,24 +75,24 @@ export const generateTextbookReceiptPDF = async (receiptData: TextbookIndentRece
                 <td style="padding: 8px; font-size: 14px; color: #333;">${item.title}</td>
                 <td style="padding: 8px; font-size: 14px; color: #333;">${item.subject}</td>
                 <td style="padding: 8px; font-size: 14px; color: #333; text-align: center;">${item.quantity}</td>
-                <td style="padding: 8px; font-size: 14px; color: #333; text-align: right;">₹${item.price.toLocaleString()}</td>
-                <td style="padding: 8px; font-size: 14px; color: #333; text-align: right; font-weight: 500;">₹${item.total.toLocaleString()}</td>
+                <td style="padding: 8px; font-size: 14px; color: #333; text-align: right;">BHD ${item.price.toFixed(3)}</td>
+                <td style="padding: 8px; font-size: 14px; color: #333; text-align: right; font-weight: 500;">BHD ${item.total.toFixed(3)}</td>
               </tr>
             `).join('')}
           </tbody>
           <tfoot style="background: #f9f9f9;">
             <tr>
               <td colspan="5" style="padding: 8px; font-size: 14px; font-weight: 500; color: #333; text-align: right; border-top: 1px solid #ccc;">Total Amount:</td>
-              <td style="padding: 8px; font-size: 14px; font-weight: bold; color: #333; text-align: right; border-top: 1px solid #ccc;">₹${receiptData.totalAmount.toLocaleString()}</td>
+              <td style="padding: 8px; font-size: 14px; font-weight: bold; color: #333; text-align: right; border-top: 1px solid #ccc;">BHD ${receiptData.totalAmount.toFixed(3)}</td>
             </tr>
             <tr>
               <td colspan="5" style="padding: 8px; font-size: 14px; font-weight: 500; color: #333; text-align: right;">Paid Amount:</td>
-              <td style="padding: 8px; font-size: 14px; font-weight: 500; color: #16a34a; text-align: right;">₹${receiptData.paidAmount.toLocaleString()}</td>
+              <td style="padding: 8px; font-size: 14px; font-weight: 500; color: #16a34a; text-align: right;">BHD ${receiptData.paidAmount.toFixed(3)}</td>
             </tr>
             ${receiptData.balanceAmount > 0 ? `
             <tr>
               <td colspan="5" style="padding: 8px; font-size: 14px; font-weight: 500; color: #333; text-align: right;">Balance Amount:</td>
-              <td style="padding: 8px; font-size: 14px; font-weight: 500; color: #dc2626; text-align: right;">₹${receiptData.balanceAmount.toLocaleString()}</td>
+              <td style="padding: 8px; font-size: 14px; font-weight: 500; color: #dc2626; text-align: right;">BHD ${receiptData.balanceAmount.toFixed(3)}</td>
             </tr>
             ` : ''}
           </tfoot>
@@ -104,7 +104,7 @@ export const generateTextbookReceiptPDF = async (receiptData: TextbookIndentRece
         <div style="font-size: 14px;">
           <span style="color: #666;">Total Amount in Words:</span>
           <div style="margin-top: 4px; font-weight: 500; color: #333;">
-            Rupees ${receiptData.totalAmount.toLocaleString()} Only
+            BHD ${receiptData.totalAmount.toLocaleString()} Only
           </div>
         </div>
       </div>

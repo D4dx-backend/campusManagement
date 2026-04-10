@@ -413,7 +413,7 @@ const ExpensesContent = () => {
               <p className="text-sm font-medium text-muted-foreground">Total Expenses</p>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">₹{(stats.totalExpenses?.total || 0).toLocaleString()}</div>
+              <div className="text-3xl font-bold">BHD {(stats.totalExpenses?.total || 0).toFixed(3)}</div>
               <p className="text-xs text-muted-foreground mt-2">{stats.totalExpenses?.count || 0} transactions</p>
             </CardContent>
           </Card>
@@ -423,7 +423,7 @@ const ExpensesContent = () => {
               <p className="text-sm font-medium text-muted-foreground">This Month</p>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">₹{(stats.monthlyExpenses?.total || 0).toLocaleString()}</div>
+              <div className="text-3xl font-bold">BHD {(stats.monthlyExpenses?.total || 0).toFixed(3)}</div>
               <p className="text-xs text-muted-foreground mt-2">{stats.monthlyExpenses?.count || 0} expenses</p>
             </CardContent>
           </Card>
@@ -433,7 +433,7 @@ const ExpensesContent = () => {
               <p className="text-sm font-medium text-muted-foreground">Average Expense</p>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">₹{stats.totalExpenses?.count > 0 ? Math.round((stats.totalExpenses?.total || 0) / stats.totalExpenses?.count).toLocaleString() : '0'}</div>
+              <div className="text-3xl font-bold">BHD {stats.totalExpenses?.count > 0 ? (((stats.totalExpenses?.total || 0) / stats.totalExpenses?.count)).toFixed(3) : '0.000'}</div>
               <p className="text-xs text-muted-foreground mt-2">per transaction</p>
             </CardContent>
           </Card>
@@ -486,7 +486,7 @@ const ExpensesContent = () => {
                         </div>
                         <div>
                           <span className="text-muted-foreground">Amount:</span>
-                          <span className="ml-2 font-medium text-destructive">₹{(expense.amount || 0).toLocaleString()}</span>
+                          <span className="ml-2 font-medium text-destructive">BHD {(expense.amount || 0).toFixed(3)}</span>
                         </div>
                         <div>
                           <span className="text-muted-foreground">Method:</span>

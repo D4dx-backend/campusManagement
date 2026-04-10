@@ -224,7 +224,7 @@ router.post('/', checkPermission('payroll', 'create'), validate(createPayrollSch
       userRole: req.user!.role,
       action: 'CREATE',
       module: 'Payroll',
-      details: `Created payroll entry: ${staff.name} - ${month} ${year} - ₹${netSalary}`,
+      details: `Created payroll entry: ${staff.name} - ${month} ${year} - BHD ${netSalary}`,
       ipAddress: req.ip,
       branchId: payrollEntry.branchId
     });

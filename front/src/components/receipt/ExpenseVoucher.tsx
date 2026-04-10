@@ -31,7 +31,7 @@ export const ExpenseVoucher = forwardRef<HTMLDivElement, ExpenseVoucherProps>(
     logo
   }, ref) => {
     const formatDate = (date: Date) => {
-      return new Date(date).toLocaleDateString('en-IN', {
+      return new Date(date).toLocaleDateString('en-BH', {
         day: '2-digit',
         month: 'short',
         year: 'numeric'
@@ -39,9 +39,9 @@ export const ExpenseVoucher = forwardRef<HTMLDivElement, ExpenseVoucherProps>(
     };
 
     const formatCurrency = (amount: number) => {
-      return new Intl.NumberFormat('en-IN', {
+      return new Intl.NumberFormat('en-BH', {
         style: 'currency',
-        currency: 'INR',
+        currency: 'BHD',
         minimumFractionDigits: 2
       }).format(amount);
     };
@@ -59,16 +59,16 @@ export const ExpenseVoucher = forwardRef<HTMLDivElement, ExpenseVoucherProps>(
         if (n < 100) return tens[Math.floor(n / 10)] + ' ' + ones[n % 10];
         if (n < 1000) return ones[Math.floor(n / 100)] + ' Hundred ' + convert(n % 100);
         if (n < 100000) return convert(Math.floor(n / 1000)) + ' Thousand ' + convert(n % 1000);
-        if (n < 10000000) return convert(Math.floor(n / 100000)) + ' Lakh ' + convert(n % 100000);
-        return convert(Math.floor(n / 10000000)) + ' Crore ' + convert(n % 10000000);
+        if (n < 10000000) return convert(Math.floor(n / 100000)) + ' Thousand ' + convert(n % 100000);
+        return convert(Math.floor(n / 10000000)) + ' Million ' + convert(n % 10000000);
       };
 
-      const rupees = Math.floor(num);
-      const paise = Math.round((num - rupees) * 100);
+      const dinars = Math.floor(num);
+      const fils = Math.round((num - dinars) * 1000);
 
-      let words = convert(rupees).trim() + ' Rupees';
-      if (paise > 0) {
-        words += ' and ' + convert(paise).trim() + ' Paise';
+      let words = convert(dinars).trim() + ' BHD';
+      if (fils > 0) {
+        words += ' and ' + convert(paise).trim() + ' Fils';
       }
       return words + ' Only';
     };
@@ -174,7 +174,7 @@ export const ExpenseVoucher = forwardRef<HTMLDivElement, ExpenseVoucherProps>(
             This is a computer-generated voucher and does not require a physical signature
           </p>
           <p className="text-xs text-gray-600 text-center mt-1">
-            Generated on: {new Date().toLocaleString('en-IN')}
+            Generated on: {new Date().toLocaleString('en-BH')}
           </p>
         </div>
 

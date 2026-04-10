@@ -82,24 +82,24 @@ export const TextbookReceiptTemplate = ({ data }: TextbookReceiptTemplateProps) 
                   <td className="px-4 py-2 text-sm text-gray-800">{item.title}</td>
                   <td className="px-4 py-2 text-sm text-gray-800">{item.subject}</td>
                   <td className="px-4 py-2 text-sm text-gray-800 text-center">{item.quantity}</td>
-                  <td className="px-4 py-2 text-sm text-gray-800 text-right">₹{item.price.toLocaleString()}</td>
-                  <td className="px-4 py-2 text-sm text-gray-800 text-right font-medium">₹{item.total.toLocaleString()}</td>
+                  <td className="px-4 py-2 text-sm text-gray-800 text-right">BHD {item.price.toFixed(3)}</td>
+                  <td className="px-4 py-2 text-sm text-gray-800 text-right font-medium">BHD {item.total.toFixed(3)}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot className="bg-gray-50">
               <tr>
                 <td colSpan={5} className="px-4 py-2 text-sm font-medium text-gray-800 text-right">Total Amount:</td>
-                <td className="px-4 py-2 text-sm font-bold text-gray-800 text-right">₹{data.totalAmount.toLocaleString()}</td>
+                <td className="px-4 py-2 text-sm font-bold text-gray-800 text-right">BHD {data.totalAmount.toFixed(3)}</td>
               </tr>
               <tr>
                 <td colSpan={5} className="px-4 py-2 text-sm font-medium text-gray-800 text-right">Paid Amount:</td>
-                <td className="px-4 py-2 text-sm font-medium text-green-600 text-right">₹{data.paidAmount.toLocaleString()}</td>
+                <td className="px-4 py-2 text-sm font-medium text-green-600 text-right">BHD {data.paidAmount.toFixed(3)}</td>
               </tr>
               {data.balanceAmount > 0 && (
                 <tr>
                   <td colSpan={5} className="px-4 py-2 text-sm font-medium text-gray-800 text-right">Balance Amount:</td>
-                  <td className="px-4 py-2 text-sm font-medium text-red-600 text-right">₹{data.balanceAmount.toLocaleString()}</td>
+                  <td className="px-4 py-2 text-sm font-medium text-red-600 text-right">BHD {data.balanceAmount.toFixed(3)}</td>
                 </tr>
               )}
             </tfoot>
@@ -112,7 +112,7 @@ export const TextbookReceiptTemplate = ({ data }: TextbookReceiptTemplateProps) 
         <div className="text-sm">
           <span className="text-gray-600">Total Amount in Words:</span>
           <div className="mt-1 font-medium text-gray-800">
-            Rupees {data.totalAmount.toLocaleString()} Only
+            BHD {data.totalAmount.toFixed(3)} Only
           </div>
         </div>
       </div>

@@ -29,49 +29,25 @@ export const createTransportRouteSchema = Joi.object({
   classFees: Joi.array()
     .items(
       Joi.object({
-        classId: Joi.string().required().messages({
-          'any.required': 'Class ID is required for each fee'
-        }),
-        className: Joi.string().required().messages({
-          'any.required': 'Class name is required for each fee'
-        }),
-        amount: Joi.number().min(0).required().messages({
-          'any.required': 'Amount is required for each class',
-          'number.min': 'Amount must be a positive number'
-        }),
-        staffDiscount: Joi.number().min(0).max(100).default(0).messages({
-          'number.min': 'Staff discount must be at least 0',
-          'number.max': 'Staff discount must not exceed 100'
-        }),
+        classId: Joi.string().required(),
+        className: Joi.string().required(),
+        amount: Joi.number().min(0).required(),
+        staffDiscount: Joi.number().min(0).max(100).default(0),
         distanceGroupFees: Joi.array()
           .items(
             Joi.object({
-              groupName: Joi.string().required().messages({
-                'any.required': 'Distance group name is required'
-              }),
-              distanceRange: Joi.string().required().messages({
-                'any.required': 'Distance range is required'
-              }),
-              amount: Joi.number().min(0).required().messages({
-                'any.required': 'Amount is required for distance group',
-                'number.min': 'Amount must be a positive number'
-              })
+              groupName: Joi.string().required(),
+              distanceRange: Joi.string().required(),
+              amount: Joi.number().min(0).required()
             })
           )
           .optional()
       })
     )
-    .min(1)
-    .required()
-    .messages({
-      'any.required': 'At least one class fee is required',
-      'array.min': 'At least one class fee is required'
-    }),
+    .optional()
+    .default([]),
   useDistanceGroups: Joi.boolean()
-    .default(false)
-    .messages({
-      'boolean.base': 'Use distance groups must be a boolean'
-    }),
+    .default(false),
   vehicles: Joi.array()
     .items(
       Joi.object({
@@ -95,7 +71,8 @@ export const createTransportRouteSchema = Joi.object({
     .default('active')
     .messages({
       'any.only': 'Status must be either active or inactive'
-    })
+    }),
+  branchId: Joi.string().optional().allow('')
 });
 
 export const updateTransportRouteSchema = Joi.object({
@@ -156,7 +133,8 @@ export const updateTransportRouteSchema = Joi.object({
     .optional()
     .messages({
       'any.only': 'Status must be either active or inactive'
-    })
+    }),
+  branchId: Joi.string().optional().allow('')
 });
 
 export const queryTransportRoutesSchema = Joi.object({
@@ -165,5 +143,6 @@ export const queryTransportRoutesSchema = Joi.object({
   search: Joi.string().optional().allow(''),
   status: Joi.string().valid('active', 'inactive').optional(),
   sortBy: Joi.string().valid('routeName', 'routeCode', 'createdAt').default('routeName'),
-  sortOrder: Joi.string().valid('asc', 'desc').default('asc')
+  sortOrder: Joi.string().valid('asc', 'desc').default('asc'),
+  branchId: Joi.string().optional().allow('')
 });

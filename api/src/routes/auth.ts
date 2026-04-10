@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { User } from '../models/User';
 import { ActivityLog } from '../models/ActivityLog';
 import { validate } from '../middleware/validation';
-import { authenticate } from '../middleware/auth';
+import { authenticate, authorize } from '../middleware/auth';
 import { loginSchema, registerSchema, changePasswordSchema } from '../validations/auth';
 import { AuthenticatedRequest, ApiResponse } from '../types';
 
@@ -106,7 +106,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
 // @desc    Register new user
 // @route   POST /api/auth/register
 // @access  Private (Super Admin only)
-router.post('/register', authenticate, validate(registerSchema), async (req: AuthenticatedRequest, res) => {
+router.post('/register', authenticate, authorize('super_admin'), validate(registerSchema), async (req: AuthenticatedRequest, res) => {
   try {
     const { email, mobile, pin, name, role, branchId, permissions, status } = req.body;
 

@@ -94,7 +94,7 @@ const Reports = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-secondary">₹{monthlyIncome.toLocaleString()}</div>
+                <div className="text-3xl font-bold text-secondary">BHD {monthlyIncome.toFixed(3)}</div>
               </CardContent>
             </Card>
 
@@ -106,10 +106,10 @@ const Reports = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-orange-600">₹{monthlyExpenses.toLocaleString()}</div>
+                <div className="text-3xl font-bold text-orange-600">BHD {monthlyExpenses.toFixed(3)}</div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Operations: ₹{(financialData?.expenses.generalExpenses.totalAmount || 0).toLocaleString()}<br />
-                  Payroll: ₹{(financialData?.expenses.payrollExpenses.totalAmount || 0).toLocaleString()}
+                  Operations: BHD {(financialData?.expenses.generalExpenses.totalAmount || 0).toFixed(3)}<br />
+                  Payroll: BHD {(financialData?.expenses.payrollExpenses.totalAmount || 0).toFixed(3)}
                 </p>
               </CardContent>
             </Card>
@@ -123,7 +123,7 @@ const Reports = () => {
               </CardHeader>
               <CardContent>
                 <div className={`text-3xl font-bold ${netIncome >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                  ₹{netIncome.toLocaleString()}
+                  BHD {netIncome.toFixed(3)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   {netIncome >= 0 ? 'Profit' : 'Loss'} for the month
@@ -167,7 +167,7 @@ const Reports = () => {
                           style={{ width: `${monthlyIncome > 0 ? (item.totalAmount / monthlyIncome) * 100 : 0}%` }}
                         />
                       </div>
-                      <span className="font-bold text-secondary w-24 text-right">₹{item.totalAmount.toLocaleString()}</span>
+                      <span className="font-bold text-secondary w-24 text-right">BHD {item.totalAmount.toFixed(3)}</span>
                     </div>
                   </div>
                 )) || (
@@ -195,7 +195,7 @@ const Reports = () => {
                       />
                     </div>
                     <span className="font-bold text-orange-600 w-24 text-right">
-                      ₹{(financialData?.expenses.payrollExpenses.totalAmount || 0).toLocaleString()}
+                      BHD {(financialData?.expenses.payrollExpenses.totalAmount || 0).toFixed(3)}
                     </span>
                   </div>
                 </div>
@@ -209,7 +209,7 @@ const Reports = () => {
                           style={{ width: `${monthlyExpenses > 0 ? (item.totalAmount / monthlyExpenses) * 100 : 0}%` }}
                         />
                       </div>
-                      <span className="font-bold text-orange-600 w-24 text-right">₹{item.totalAmount.toLocaleString()}</span>
+                      <span className="font-bold text-orange-600 w-24 text-right">BHD {item.totalAmount.toFixed(3)}</span>
                     </div>
                   </div>
                 )) || (
@@ -294,7 +294,7 @@ const Reports = () => {
               </div>
               <div>
                 <p className="text-muted-foreground mb-2">Total Collection</p>
-                <div className="text-3xl font-bold">₹{(dashboardData?.fees.totalCollection || 0).toLocaleString()}</div>
+                <div className="text-3xl font-bold">BHD {(dashboardData?.fees.totalCollection || 0).toFixed(3)}</div>
                 <p className="text-sm text-muted-foreground mt-1">
                   All time fee collection
                 </p>

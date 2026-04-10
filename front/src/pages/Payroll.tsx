@@ -161,7 +161,7 @@ const PayrollContent = () => {
                     <SelectContent>
                       {staff?.map(s => (
                         <SelectItem key={s._id} value={s._id}>
-                          {s.name} - {s.designation} (₹{s.salary?.toLocaleString() || 0})
+                          {s.name} - {s.designation} (BHD {(s.salary || 0).toFixed(3)})
                         </SelectItem>
                       )) || []}
                     </SelectContent>
@@ -245,19 +245,19 @@ const PayrollContent = () => {
                     <div className="space-y-1 text-sm">
                       <div className="flex justify-between">
                         <span>Basic Salary:</span>
-                        <span>₹{staff?.find(s => s._id === formData.staffId)?.salary?.toLocaleString() || 0}</span>
+                        <span>BHD {(staff?.find(s => s._id === formData.staffId)?.salary || 0).toFixed(3)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Allowances:</span>
-                        <span className="text-green-600">+₹{(Number(formData.allowances) || 0).toLocaleString()}</span>
+                        <span className="text-green-600">+BHD {(Number(formData.allowances) || 0).toFixed(3)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Deductions:</span>
-                        <span className="text-destructive">-₹{(Number(formData.deductions) || 0).toLocaleString()}</span>
+                        <span className="text-destructive">-BHD {(Number(formData.deductions) || 0).toFixed(3)}</span>
                       </div>
                       <div className="flex justify-between font-bold pt-2 border-t">
                         <span>Net Salary:</span>
-                        <span>₹{((staff?.find(s => s._id === formData.staffId)?.salary || 0) + (Number(formData.allowances) || 0) - (Number(formData.deductions) || 0)).toLocaleString()}</span>
+                        <span>BHD {((staff?.find(s => s._id === formData.staffId)?.salary || 0) + (Number(formData.allowances) || 0) - (Number(formData.deductions) || 0)).toFixed(3)}</span>
                       </div>
                     </div>
                   </div>
@@ -283,7 +283,7 @@ const PayrollContent = () => {
               <p className="text-sm font-medium text-muted-foreground">Total Paid</p>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">₹{(stats.totalPaid || stats.totalAmountPaid || 0).toLocaleString()}</div>
+              <div className="text-3xl font-bold">BHD {(stats.totalPaid || stats.totalAmountPaid || 0).toFixed(3)}</div>
               <p className="text-xs text-muted-foreground mt-2">{stats.totalEntries || 0} entries</p>
             </CardContent>
           </Card>
@@ -293,7 +293,7 @@ const PayrollContent = () => {
               <p className="text-sm font-medium text-muted-foreground">This Month</p>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">₹{(stats.thisMonthTotal || 0).toLocaleString()}</div>
+              <div className="text-3xl font-bold">BHD {(stats.thisMonthTotal || 0).toFixed(3)}</div>
               <p className="text-xs text-muted-foreground mt-2">{stats.thisMonthEntries || 0} staff paid</p>
             </CardContent>
           </Card>
@@ -355,19 +355,19 @@ const PayrollContent = () => {
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                         <div>
                           <span className="text-muted-foreground">Basic:</span>
-                          <span className="ml-2 font-medium">₹{(entry.basicSalary || 0).toLocaleString()}</span>
+                          <span className="ml-2 font-medium">BHD {(entry.basicSalary || 0).toFixed(3)}</span>
                         </div>
                         <div>
                           <span className="text-muted-foreground">Allowances:</span>
-                          <span className="ml-2 font-medium text-green-600">+₹{(entry.allowances || 0).toLocaleString()}</span>
+                          <span className="ml-2 font-medium text-green-600">+BHD {(entry.allowances || 0).toFixed(3)}</span>
                         </div>
                         <div>
                           <span className="text-muted-foreground">Deductions:</span>
-                          <span className="ml-2 font-medium text-destructive">-₹{(entry.deductions || 0).toLocaleString()}</span>
+                          <span className="ml-2 font-medium text-destructive">-BHD {(entry.deductions || 0).toFixed(3)}</span>
                         </div>
                         <div>
                           <span className="text-muted-foreground">Net Salary:</span>
-                          <span className="ml-2 font-bold text-primary">₹{(entry.netSalary || 0).toLocaleString()}</span>
+                          <span className="ml-2 font-bold text-primary">BHD {(entry.netSalary || 0).toFixed(3)}</span>
                         </div>
                         <div>
                           <span className="text-muted-foreground">Paid:</span>

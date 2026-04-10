@@ -51,7 +51,7 @@ export const sendFeeReceiptEmail = async (data: FeeReceiptData): Promise<boolean
     }
 
     const feeItemsList = data.feeItems
-      .map(item => `<li>${item.title}: ₹${item.amount.toLocaleString()}</li>`)
+      .map(item => `<li>${item.title}: BHD ${item.amount.toLocaleString()}</li>`)
       .join('');
 
     const mailOptions = {
@@ -116,7 +116,7 @@ export const sendFeeReceiptEmail = async (data: FeeReceiptData): Promise<boolean
               </div>
 
               <div class="total">
-                Total Amount Paid: ₹${data.totalAmount.toLocaleString()}
+                Total Amount Paid: BHD ${data.totalAmount.toLocaleString()}
               </div>
 
               <div class="footer">
@@ -163,7 +163,7 @@ export const sendFeeReceiptWhatsApp = async (data: FeeReceiptData): Promise<bool
     }
 
     const feeItemsList = data.feeItems
-      .map(item => `• ${item.title}: ₹${item.amount.toLocaleString()}`)
+      .map(item => `• ${item.title}: BHD ${item.amount.toLocaleString()}`)
       .join('\n');
 
     const message = `✅ *Fee Payment Receipt*
@@ -171,13 +171,13 @@ export const sendFeeReceiptWhatsApp = async (data: FeeReceiptData): Promise<bool
 📋 Receipt No: ${data.receiptNo}
 👤 Student: ${data.studentName}
 🎓 Class: ${data.class}
-📅 Date: ${new Date(data.paymentDate).toLocaleDateString('en-IN')}
+📅 Date: ${new Date(data.paymentDate).toLocaleDateString('en-GB')}
 💳 Method: ${data.paymentMethod.toUpperCase()}
 
 📝 *Fee Details:*
 ${feeItemsList}
 
-💰 *Total Paid: ₹${data.totalAmount.toLocaleString('en-IN')}*
+💰 *Total Paid: BHD ${data.totalAmount.toLocaleString()}*
 
 Thank you for your payment!
 - ${data.institutionName || 'Campus Management'}`;
@@ -245,7 +245,7 @@ export const sendPaymentReminderEmail = async (
               <p>This is a reminder that the fee payment for <strong>${studentName}</strong> (Class: ${className}) is due.</p>
               
               <div style="background-color: white; padding: 20px; margin: 20px 0; border-left: 4px solid #ff9800;">
-                <p><strong>Due Amount:</strong> ₹${dueAmount.toLocaleString()}</p>
+                <p><strong>Due Amount:</strong> BHD ${dueAmount.toLocaleString()}</p>
                 <p><strong>Due Date:</strong> ${new Date(dueDate).toLocaleDateString()}</p>
               </div>
 

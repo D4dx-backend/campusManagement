@@ -104,16 +104,16 @@ const Dashboard = () => {
     },
     {
       title: 'Fee Collection',
-      value: `₹${(dashboardData.data?.fees?.totalCollection / 100000 || 0).toFixed(1)}L`,
+      value: `BHD ${(dashboardData.data?.fees?.totalCollection || 0).toFixed(3)}`,
       icon: DollarSign,
-      trend: `₹${(dashboardData.data?.fees?.monthlyCollection / 1000 || 0).toFixed(0)}K this month`,
+      trend: `BHD ${(dashboardData.data?.fees?.monthlyCollection || 0).toFixed(3)} this month`,
       color: 'text-green-600',
     },
     {
       title: 'Monthly Expenses',
-      value: `₹${((dashboardData.data?.expenses?.monthlyExpenses || 0) / 100000).toFixed(1)}L`,
+      value: `BHD ${(dashboardData.data?.expenses?.monthlyExpenses || 0).toFixed(3)}`,
       icon: Receipt,
-      trend: `₹${((dashboardData.data?.expenses?.totalExpenses || 0) / 100000).toFixed(1)}L total`,
+      trend: `BHD ${(dashboardData.data?.expenses?.totalExpenses || 0).toFixed(3)} total`,
       color: 'text-orange-600',
     },
     {
@@ -125,7 +125,7 @@ const Dashboard = () => {
     },
     {
       title: 'Net Income',
-      value: `₹${(((dashboardData.data?.fees?.totalCollection || 0) - (dashboardData.data?.expenses?.totalExpenses || 0)) / 100000).toFixed(1)}L`,
+      value: `BHD ${((dashboardData.data?.fees?.totalCollection || 0) - (dashboardData.data?.expenses?.totalExpenses || 0)).toFixed(3)}`,
       icon: TrendingUp,
       trend: 'Total profit/loss',
       color: 'text-purple-600',

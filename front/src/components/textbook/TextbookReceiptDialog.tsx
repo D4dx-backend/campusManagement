@@ -256,17 +256,17 @@ export const TextbookReceiptDialog = ({
                   <td>${item.subject}</td>
                   <td>${item.quantity}</td>
                   ${receiptData.status !== 'pending' ? `<td>${item.returnedQuantity || 0}</td>` : ''}
-                  <td>₹${item.price.toLocaleString()}</td>
-                  <td>₹${item.total.toLocaleString()}</td>
+                  <td>BHD ${item.price.toFixed(3)}</td>
+                  <td>BHD ${item.total.toFixed(3)}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
 
             <div class="totals">
-              <p><strong>Total Amount: ₹${receiptData.totalAmount.toLocaleString()}</strong></p>
-              <p><strong>Paid Amount: ₹${receiptData.paidAmount.toLocaleString()}</strong></p>
-              <p><strong>Balance Amount: ₹${receiptData.balanceAmount.toLocaleString()}</strong></p>
+              <p><strong>Total Amount: BHD ${receiptData.totalAmount.toFixed(3)}</strong></p>
+              <p><strong>Paid Amount: BHD ${receiptData.paidAmount.toFixed(3)}</strong></p>
+              <p><strong>Balance Amount: BHD ${receiptData.balanceAmount.toFixed(3)}</strong></p>
               <p><strong>Payment Method:</strong> ${receiptData.paymentMethod.toUpperCase()}</p>
             </div>
 
@@ -440,8 +440,8 @@ export const TextbookReceiptDialog = ({
                         {receiptData.status !== 'pending' && (
                           <td className="p-2 text-center">{item.returnedQuantity || 0}</td>
                         )}
-                        <td className="p-2 text-right">₹{item.price.toLocaleString()}</td>
-                        <td className="p-2 text-right">₹{item.total.toLocaleString()}</td>
+                        <td className="p-2 text-right">BHD {item.price.toFixed(3)}</td>
+                        <td className="p-2 text-right">BHD {item.total.toFixed(3)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -462,17 +462,17 @@ export const TextbookReceiptDialog = ({
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span>Total Amount:</span>
-                  <span className="font-semibold">₹{receiptData.totalAmount.toLocaleString()}</span>
+                  <span className="font-semibold">BHD {receiptData.totalAmount.toFixed(3)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Paid Amount:</span>
-                  <span className="font-semibold text-green-600">₹{receiptData.paidAmount.toLocaleString()}</span>
+                  <span className="font-semibold text-green-600">BHD {receiptData.paidAmount.toFixed(3)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between text-lg">
                   <span>Balance Amount:</span>
                   <span className={`font-bold ${receiptData.balanceAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    ₹{receiptData.balanceAmount.toLocaleString()}
+                    BHD {receiptData.balanceAmount.toFixed(3)}
                   </span>
                 </div>
                 <div className="flex justify-between">

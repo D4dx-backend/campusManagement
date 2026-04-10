@@ -123,7 +123,7 @@ export const TransferCertificateDialog = ({
                   <span className="font-semibold">TC No:</span> {tcData.admissionNo}/TC/{new Date().getFullYear()}
                 </div>
                 <div className="text-right">
-                  <span className="font-semibold">Date:</span> {new Date(tcData.generatedDate).toLocaleDateString('en-IN')}
+                  <span className="font-semibold">Date:</span> {new Date(tcData.generatedDate).toLocaleDateString('en-GB')}
                 </div>
               </div>
 
@@ -145,17 +145,17 @@ export const TransferCertificateDialog = ({
 
                 <div className="grid grid-cols-3">
                   <span className="font-semibold">Date of Birth:</span>
-                  <span className="col-span-2">{new Date(tcData.dateOfBirth).toLocaleDateString('en-IN')}</span>
+                  <span className="col-span-2">{new Date(tcData.dateOfBirth).toLocaleDateString('en-GB')}</span>
                 </div>
 
                 <div className="grid grid-cols-3">
                   <span className="font-semibold">Date of Admission:</span>
-                  <span className="col-span-2">{new Date(tcData.admissionDate).toLocaleDateString('en-IN')}</span>
+                  <span className="col-span-2">{new Date(tcData.admissionDate).toLocaleDateString('en-GB')}</span>
                 </div>
 
                 <div className="grid grid-cols-3">
                   <span className="font-semibold">Date of Leaving:</span>
-                  <span className="col-span-2">{new Date(tcData.transferDate).toLocaleDateString('en-IN')}</span>
+                  <span className="col-span-2">{new Date(tcData.transferDate).toLocaleDateString('en-GB')}</span>
                 </div>
 
                 <div className="grid grid-cols-3">

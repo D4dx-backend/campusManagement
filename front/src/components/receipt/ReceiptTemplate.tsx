@@ -53,7 +53,7 @@ export const ReceiptTemplate = ({ data }: ReceiptTemplateProps) => {
           <div className="space-y-2 text-sm">
             <div><span className="text-gray-600">Fee Type:</span> <strong className="capitalize">{data.feeType}</strong></div>
             <div><span className="text-gray-600">Payment Method:</span> <strong className="capitalize">{data.paymentMethod}</strong></div>
-            <div><span className="text-gray-600">Amount:</span> <strong className="text-green-600">₹{data.amount.toLocaleString()}</strong></div>
+            <div><span className="text-gray-600">Amount:</span> <strong className="text-green-600">BHD {data.amount.toFixed(3)}</strong></div>
           </div>
         </div>
       </div>
@@ -64,7 +64,7 @@ export const ReceiptTemplate = ({ data }: ReceiptTemplateProps) => {
           <span className="text-gray-600">Amount in Words:</span>
           <div className="mt-1 font-medium text-gray-800">
             {/* This would need a number-to-words converter function */}
-            Rupees {data.amount.toLocaleString()} Only
+            BHD {data.amount.toFixed(3)} Only
           </div>
         </div>
       </div>

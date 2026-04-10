@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DatePicker } from '@/components/ui/date-picker';
 import { useBalanceSheet } from '@/hooks/useAccounting';
 import { Download, Printer, TrendingUp, TrendingDown, Scale } from 'lucide-react';
 import { exportToCSV, exportToExcel } from '@/utils/exportUtils';
@@ -38,7 +38,7 @@ export const BalanceSheet = () => {
       columns: [
         { key: 'category', label: 'Category' },
         { key: 'item', label: 'Item' },
-        { key: 'amount', label: 'Amount (₹)' },
+        { key: 'amount', label: 'Amount (BHD)' },
       ],
       filename: `balance_sheet_${asOfDate}.csv`,
     });
@@ -64,7 +64,7 @@ export const BalanceSheet = () => {
       columns: [
         { key: 'category', label: 'Category' },
         { key: 'item', label: 'Item' },
-        { key: 'amount', label: 'Amount (₹)' },
+        { key: 'amount', label: 'Amount (BHD)' },
       ],
       filename: `balance_sheet_${asOfDate}.xlsx`,
       sheetName: 'Balance Sheet',
@@ -109,15 +109,15 @@ export const BalanceSheet = () => {
             <h2>Assets</h2>
             <div class="row">
               <label>Cash and Bank</label>
-              <value>₹${data.assets.cashAndBank.toLocaleString()}</value>
+              <value>BHD \$\{data.assets.cashAndBank.toFixed(3)}</value>
             </div>
             <div class="row">
               <label>Accounts Receivable</label>
-              <value>₹${data.assets.accountsReceivable.toLocaleString()}</value>
+              <value>BHD \$\{data.assets.accountsReceivable.toFixed(3)}</value>
             </div>
             <div class="row total">
               <label>Total Assets</label>
-              <value>₹${data.assets.totalAssets.toLocaleString()}</value>
+              <value>BHD \$\{data.assets.totalAssets.toFixed(3)}</value>
             </div>
           </div>
 
@@ -125,11 +125,11 @@ export const BalanceSheet = () => {
             <h2>Liabilities</h2>
             <div class="row">
               <label>Accounts Payable</label>
-              <value>₹${data.liabilities.accountsPayable.toLocaleString()}</value>
+              <value>BHD \$\{data.liabilities.accountsPayable.toFixed(3)}</value>
             </div>
             <div class="row total">
               <label>Total Liabilities</label>
-              <value>₹${data.liabilities.totalLiabilities.toLocaleString()}</value>
+              <value>BHD \$\{data.liabilities.totalLiabilities.toFixed(3)}</value>
             </div>
           </div>
 
@@ -137,11 +137,11 @@ export const BalanceSheet = () => {
             <h2>Equity</h2>
             <div class="row">
               <label>Retained Earnings</label>
-              <value>₹${data.equity.retainedEarnings.toLocaleString()}</value>
+              <value>BHD \$\{data.equity.retainedEarnings.toFixed(3)}</value>
             </div>
             <div class="row total">
               <label>Total Equity</label>
-              <value>₹${data.equity.totalEquity.toLocaleString()}</value>
+              <value>BHD \$\{data.equity.totalEquity.toFixed(3)}</value>
             </div>
           </div>
 
@@ -203,12 +203,11 @@ export const BalanceSheet = () => {
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="asOfDate">As of Date</Label>
-                <Input
-                  id="asOfDate"
-                  type="date"
+                <Label>As of Date</Label>
+                <DatePicker
                   value={asOfDate}
-                  onChange={(e) => setAsOfDate(e.target.value)}
+                  onChange={setAsOfDate}
+                  placeholder="Select date"
                 />
               </div>
             </div>
@@ -253,18 +252,18 @@ export const BalanceSheet = () => {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center py-2 border-b">
                       <span className="text-muted-foreground">Cash and Bank</span>
-                      <span className="font-semibold">₹{data.assets.cashAndBank.toLocaleString()}</span>
+                      <span className="font-semibold">BHD {data.assets.cashAndBank.toFixed(3)}</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b">
                       <span className="text-muted-foreground">Accounts Receivable</span>
                       <span className="font-semibold">
-                        ₹{data.assets.accountsReceivable.toLocaleString()}
+                        BHD {data.assets.accountsReceivable.toFixed(3)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-3 border-t-2 border-primary">
                       <span className="font-bold text-lg">Total Assets</span>
                       <span className="font-bold text-2xl text-green-600">
-                        ₹{data.assets.totalAssets.toLocaleString()}
+                        BHD {data.assets.totalAssets.toFixed(3)}
                       </span>
                     </div>
                   </div>
@@ -286,13 +285,13 @@ export const BalanceSheet = () => {
                       <div className="flex justify-between items-center py-2 border-b">
                         <span className="text-muted-foreground">Accounts Payable</span>
                         <span className="font-semibold">
-                          ₹{data.liabilities.accountsPayable.toLocaleString()}
+                          BHD {data.liabilities.accountsPayable.toFixed(3)}
                         </span>
                       </div>
                       <div className="flex justify-between items-center py-3 border-t-2 border-primary">
                         <span className="font-bold">Total Liabilities</span>
                         <span className="font-bold text-xl text-red-600">
-                          ₹{data.liabilities.totalLiabilities.toLocaleString()}
+                          BHD {data.liabilities.totalLiabilities.toFixed(3)}
                         </span>
                       </div>
                     </div>
@@ -309,13 +308,13 @@ export const BalanceSheet = () => {
                       <div className="flex justify-between items-center py-2 border-b">
                         <span className="text-muted-foreground">Retained Earnings</span>
                         <span className="font-semibold">
-                          ₹{data.equity.retainedEarnings.toLocaleString()}
+                          BHD {data.equity.retainedEarnings.toFixed(3)}
                         </span>
                       </div>
                       <div className="flex justify-between items-center py-3 border-t-2 border-primary">
                         <span className="font-bold">Total Equity</span>
                         <span className="font-bold text-xl text-blue-600">
-                          ₹{data.equity.totalEquity.toLocaleString()}
+                          BHD {data.equity.totalEquity.toFixed(3)}
                         </span>
                       </div>
                     </div>
@@ -337,12 +336,12 @@ export const BalanceSheet = () => {
                     <span className="font-semibold">Equity</span>
                   </div>
                   <div className="text-2xl font-bold">
-                    <span className="text-green-600">₹{data.totalAssetsAndEquity.toLocaleString()}</span> ={' '}
+                    <span className="text-green-600">BHD {data.totalAssetsAndEquity.toFixed(3)}</span> ={' '}
                     <span className="text-red-600">
-                      ₹{data.liabilities.totalLiabilities.toLocaleString()}
+                      BHD {data.liabilities.totalLiabilities.toFixed(3)}
                     </span>{' '}
                     +{' '}
-                    <span className="text-blue-600">₹{data.equity.totalEquity.toLocaleString()}</span>
+                    <span className="text-blue-600">BHD {data.equity.totalEquity.toFixed(3)}</span>
                   </div>
                 </div>
               </CardContent>

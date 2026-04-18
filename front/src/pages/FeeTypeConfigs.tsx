@@ -33,7 +33,7 @@ const FeeTypeConfigs = () => {
   const { data: branchesResponse } = useBranches();
   const branches = branchesResponse?.data || [];
 
-  const isSuperAdmin = user?.role === 'super_admin';
+  const isSuperAdmin = (user?.role === 'platform_admin' || user?.role === 'org_admin');
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['feeTypeConfigs', filterBranchId],

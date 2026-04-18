@@ -12,8 +12,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { PromoteStudentsDialog } from '@/components/students/PromoteStudentsDialog';
 import { TransferCertificateDialog } from '@/components/students/TransferCertificateDialog';
 import { useConfirmation } from '@/hooks/useConfirmation';
-import { Plus, Search, Edit, Trash2, UserCircle, Loader2, ArrowUpCircle, FileText } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, UserCircle, Loader2, ArrowUpCircle, FileText, MoreHorizontal, Ban, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useStudents, useCreateStudent, useUpdateStudent, useDeleteStudent } from '@/hooks/useStudents';
 import { useClasses } from '@/hooks/useClasses';
 import { useDivisionsByClass } from '@/hooks/useDivisions';
@@ -37,6 +38,9 @@ const Students = () => {
   const [transferStudent, setTransferStudent] = useState<any>(null);
   const [viewingStudent, setViewingStudent] = useState<any>(null);
   const [admissionNoLoading, setAdmissionNoLoading] = useState(false);
+  const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
+  const [suspendTarget, setSuspendTarget] = useState<any>(null);
+  const [suspendForm, setSuspendForm] = useState({ suspensionReason: '', suspensionDate: new Date().toISOString().split('T')[0], suspensionEndDate: '' });
   // Tracks which class+division combo we last generated for — prevents double-fire
   const generatedForRef = useRef<{ class: string; section: string } | null>(null);
   const { user } = useAuth();
@@ -96,7 +100,7 @@ const Students = () => {
   // - Editing: use the student's own branchId
   // - Creating (non-super_admin): use the logged-in user's branchId
   // - Creating (super_admin): no branch restriction — show all routes
-  const formBranchId = editingStudent?.branchId || (user?.role !== 'super_admin' ? user?.branchId : undefined);
+  const formBranchId = editingStudent?.branchId || ((user?.role !== 'platform_admin' && user?.role !== 'org_admin') ? user?.branchId : undefined);
 
   const { data: transportRoutesResponse } = useTransportRoutes({
     status: 'active',
@@ -394,6 +398,59 @@ const Students = () => {
   const handleTransferClick = (student: any) => {
     setTransferStudent(student);
     setIsTransferDialogOpen(true);
+  };
+
+  const handleSuspend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!suspendTarget) return;
+    try {
+      await studentService.suspendStudent(suspendTarget._id, suspendForm);
+      toast({ title: 'Success', description: `${suspendTarget.name} has been suspended` });
+      setSuspendDialogOpen(false);
+      setSuspendForm({ suspensionReason: '', suspensionDate: new Date().toISOString().split('T')[0], suspensionEndDate: '' });
+      window.location.reload();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.response?.data?.message || 'Failed to suspend student', variant: 'destructive' });
+    }
+  };
+
+  const handleRevokeSuspension = async (student: any) => {
+    confirm(
+      {
+        title: 'Revoke Suspension',
+        description: `Are you sure you want to revoke suspension for "${student.name}"?`,
+        confirmText: 'Revoke',
+      },
+      async () => {
+        try {
+          await studentService.revokeSuspension(student._id);
+          toast({ title: 'Success', description: `Suspension revoked for ${student.name}` });
+          window.location.reload();
+        } catch (error: any) {
+          toast({ title: 'Error', description: error.response?.data?.message || 'Failed to revoke suspension', variant: 'destructive' });
+        }
+      }
+    );
+  };
+
+  const getStudentStatusBadge = (status: string) => {
+    const colors: Record<string, string> = {
+      active: 'bg-green-100 text-green-800',
+      inactive: 'bg-gray-100 text-gray-800',
+      suspended: 'bg-red-100 text-red-800',
+      tc_issued: 'bg-orange-100 text-orange-800',
+    };
+    const labels: Record<string, string> = {
+      active: 'Active',
+      inactive: 'Inactive',
+      suspended: 'Suspended',
+      tc_issued: 'TC Issued',
+    };
+    return (
+      <span className={`text-xs px-2 py-1 rounded-full ${colors[status] || 'bg-gray-100 text-gray-800'}`}>
+        {labels[status] || status}
+      </span>
+    );
   };
 
   const refreshStudents = () => {
@@ -793,7 +850,7 @@ const Students = () => {
                   <th className="text-left p-3 font-semibold">Father's Phone</th>
                   <th className="text-left p-3 font-semibold">Gender</th>
                   <th className="text-left p-3 font-semibold">Transport</th>
-                  <th className="text-left p-3 font-semibold">Staff Child</th>
+                  <th className="text-left p-3 font-semibold">Status</th>
                   <th className="text-right p-3 font-semibold">Actions</th>
                 </tr>
               </thead>
@@ -832,37 +889,45 @@ const Students = () => {
                       <span className="text-sm capitalize">{student.transport}</span>
                     </td>
                     <td className="p-3">
-                      {student.isStaffChild ? (
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Yes</span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">No</span>
-                      )}
+                      {getStudentStatusBadge(student.status)}
                     </td>
                     <td className="p-3" onClick={e => e.stopPropagation()}>
-                      <div className="flex gap-2 justify-end">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleTransferClick(student)}
-                          title="Generate Transfer Certificate"
-                        >
-                          <FileText className="w-4 h-4" />
-                        </Button>
+                      <div className="flex gap-1 justify-end">
                         <Button size="sm" variant="outline" onClick={() => handleEdit(student)}>
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          onClick={() => handleDelete(student._id, student.name)}
-                          disabled={deleteStudentMutation.isPending}
-                        >
-                          {deleteStudentMutation.isPending ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )}
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="sm" variant="outline">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleTransferClick(student)}>
+                              <FileText className="w-4 h-4 mr-2" /> Issue TC
+                            </DropdownMenuItem>
+                            {student.status === 'active' && (
+                              <DropdownMenuItem onClick={() => {
+                                setSuspendTarget(student);
+                                setSuspendForm({ suspensionReason: '', suspensionDate: new Date().toISOString().split('T')[0], suspensionEndDate: '' });
+                                setSuspendDialogOpen(true);
+                              }}>
+                                <Ban className="w-4 h-4 mr-2" /> Suspend
+                              </DropdownMenuItem>
+                            )}
+                            {student.status === 'suspended' && (
+                              <DropdownMenuItem onClick={() => handleRevokeSuspension(student)}>
+                                <CheckCircle className="w-4 h-4 mr-2" /> Revoke Suspension
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() => handleDelete(student._id, student.name)}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </td>
                   </tr>
@@ -891,6 +956,50 @@ const Students = () => {
         student={transferStudent}
         onSuccess={refreshStudents}
       />
+
+      {/* Suspend Student Dialog */}
+      <Dialog open={suspendDialogOpen} onOpenChange={setSuspendDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Suspend Student</DialogTitle>
+            <DialogDescription>
+              Suspend {suspendTarget?.name} ({suspendTarget?.admissionNo})
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSuspend} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Suspension Reason *</Label>
+              <Textarea
+                value={suspendForm.suspensionReason}
+                onChange={(e) => setSuspendForm({ ...suspendForm, suspensionReason: e.target.value })}
+                placeholder="Reason for suspension"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Suspension Date *</Label>
+              <Input
+                type="date"
+                value={suspendForm.suspensionDate}
+                onChange={(e) => setSuspendForm({ ...suspendForm, suspensionDate: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>End Date (Optional)</Label>
+              <Input
+                type="date"
+                value={suspendForm.suspensionEndDate}
+                onChange={(e) => setSuspendForm({ ...suspendForm, suspensionEndDate: e.target.value })}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setSuspendDialogOpen(false)}>Cancel</Button>
+              <Button type="submit" variant="destructive">Suspend Student</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Student Detail View */}
       <Dialog open={!!viewingStudent} onOpenChange={(open) => { if (!open) setViewingStudent(null); }}>

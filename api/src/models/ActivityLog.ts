@@ -14,7 +14,7 @@ const ActivityLogSchema = new Schema<IActivityLog>({
   },
   userRole: {
     type: String,
-    enum: ['super_admin', 'branch_admin', 'accountant', 'teacher', 'staff'],
+    enum: ['platform_admin', 'org_admin', 'branch_admin', 'accountant', 'teacher', 'staff'],
     required: true
   },
   action: {
@@ -43,6 +43,10 @@ const ActivityLogSchema = new Schema<IActivityLog>({
   branchId: {
     type: Schema.Types.ObjectId as any,
     ref: 'Branch'
+  },
+  organizationId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'Organization'
   }
 }, {
   timestamps: true
@@ -51,8 +55,12 @@ const ActivityLogSchema = new Schema<IActivityLog>({
 // Indexes
 ActivityLogSchema.index({ userId: 1 });
 ActivityLogSchema.index({ branchId: 1 });
+ActivityLogSchema.index({ organizationId: 1 });
 ActivityLogSchema.index({ timestamp: -1 });
 ActivityLogSchema.index({ module: 1 });
 ActivityLogSchema.index({ action: 1 });
+
+// TTL index: auto-delete activity logs older than 20 days
+ActivityLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 20 * 24 * 60 * 60 });
 
 export const ActivityLog = mongoose.model<IActivityLog>('ActivityLog', ActivityLogSchema);

@@ -1,4 +1,22 @@
-export type UserRole = 'super_admin' | 'branch_admin' | 'accountant' | 'teacher' | 'staff';
+export type UserRole = 'platform_admin' | 'org_admin' | 'branch_admin' | 'accountant' | 'teacher' | 'staff' | 'student';
+
+export interface Organization {
+  id: string;
+  _id?: string;
+  name: string;
+  code: string;
+  address: string;
+  phone: string;
+  email: string;
+  website?: string;
+  logo?: string;
+  status: 'active' | 'inactive';
+  subscriptionPlan?: string;
+  maxBranches?: number;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface User {
   id: string;
@@ -7,8 +25,10 @@ export interface User {
   pin: string;
   name: string;
   role: UserRole;
-  branchId?: string; // null for super_admin, required for others
+  organizationId?: string;
+  branchId?: string;
   permissions: Permission[];
+  studentId?: string;
   status: 'active' | 'inactive';
   createdAt: string;
   lastLogin?: string;
@@ -16,6 +36,7 @@ export interface User {
 
 export interface Branch {
   id: string;
+  _id?: string;
   name: string;
   code: string;
   address: string;
@@ -23,9 +44,10 @@ export interface Branch {
   email: string;
   principalName?: string;
   establishedDate: string;
+  organizationId: string;
   status: 'active' | 'inactive';
   createdAt: string;
-  createdBy: string; // super admin id
+  createdBy: string;
 }
 
 export interface Permission {

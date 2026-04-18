@@ -83,7 +83,7 @@ const Designations = () => {
     
     try {
       // Validate branch selection for super admin
-      if (user?.role === 'super_admin' && !formData.branchId) {
+      if ((user?.role === 'platform_admin' || user?.role === 'org_admin') && !formData.branchId) {
         toast({
           title: 'Validation Error',
           description: 'Please select a branch for this designation.',
@@ -93,7 +93,7 @@ const Designations = () => {
       }
 
       // Prepare submit data with proper branchId handling
-      const targetBranchId = user?.role === 'super_admin' ? formData.branchId : user?.branchId;
+      const targetBranchId = (user?.role === 'platform_admin' || user?.role === 'org_admin') ? formData.branchId : user?.branchId;
       
       const submitData = {
         name: formData.name,
@@ -203,7 +203,7 @@ const Designations = () => {
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
-                {user?.role === 'super_admin' && (
+                {(user?.role === 'platform_admin' || user?.role === 'org_admin') && (
                   <div className="space-y-2">
                     <Label htmlFor="branchId">Branch *</Label>
                     <Select

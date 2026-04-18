@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { BranchProvider } from "@/contexts/BranchContext";
 import { PermissionAction, userHasAccess } from "@/utils/accessControl";
 import { UserRole } from "@/types";
 import Index from "./pages/Index";
@@ -27,17 +28,30 @@ import ExpenseCategories from "./pages/ExpenseCategories";
 import IncomeCategories from "./pages/IncomeCategories";
 import Departments from "./pages/Departments";
 import Designations from "./pages/Designations";
+import StaffCategories from "./pages/StaffCategories";
 import TransportRoutes from "./pages/TransportRoutes";
 import ActivityLog from "./pages/ActivityLog";
 import UserAccess from "./pages/UserAccess";
 import BranchManagement from "./pages/BranchManagement";
-import ReceiptConfig from "./pages/ReceiptConfig";
+import OrganizationManagement from "./pages/OrganizationManagement";
 import { DayBook } from "./pages/accounting/DayBook";
 import { Ledger } from "./pages/accounting/Ledger";
 import { FeeDetails } from "./pages/accounting/FeeDetails";
 import { BalanceSheet } from "./pages/accounting/BalanceSheet";
 import { AnnualReport } from "./pages/accounting/AnnualReport";
-import NotFound from "./pages/NotFound";
+import ExamManagement from "./pages/ExamManagement";
+import SubjectManagement from "./pages/SubjectManagement";
+import AcademicYearManagement from "./pages/AcademicYearManagement";
+import MarkEntryPage from "./pages/MarkEntry";
+import StudentPromotion from "./pages/StudentPromotion";
+import ExamScore from "./pages/ExamScore";
+import ProgressCard from "./pages/ProgressCard";
+import AttendanceMarking from "./pages/AttendanceMarking";
+import AttendanceReport from "./pages/AttendanceReport";
+import LeaveRequests from "./pages/LeaveRequests";
+import DomainManagement from './pages/DomainManagement';
+import NotFound from './pages/NotFound';
+import { OrgBrandingProvider } from '@/contexts/OrgBrandingContext';
 
 const queryClient = new QueryClient();
 
@@ -80,6 +94,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <OrgBrandingProvider>
       <BrowserRouter
         future={{
           v7_startTransition: true,
@@ -87,6 +102,7 @@ const App = () => (
         }}
       >
         <AuthProvider>
+          <BranchProvider>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
@@ -243,6 +259,14 @@ const App = () => (
               }
             />
             <Route
+              path="/staff-categories"
+              element={
+                <ProtectedRoute>
+                  <StaffCategories />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/transport-routes"
               element={
                 <ProtectedRoute>
@@ -261,24 +285,32 @@ const App = () => (
             <Route
               path="/user-access"
               element={
-                <ProtectedRoute access={{ roles: ['super_admin'] }}>
+                <ProtectedRoute access={{ roles: ['platform_admin', 'org_admin'] }}>
                   <UserAccess />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/organization-management"
+              element={
+                <ProtectedRoute access={{ roles: ['platform_admin'] }}>
+                  <OrganizationManagement />
                 </ProtectedRoute>
               }
             />
             <Route
               path="/branch-management"
               element={
-                <ProtectedRoute access={{ roles: ['super_admin'] }}>
+                <ProtectedRoute access={{ roles: ['platform_admin', 'org_admin'] }}>
                   <BranchManagement />
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/receipt-config"
+              path="/domain-management"
               element={
-                <ProtectedRoute>
-                  <ReceiptConfig />
+                <ProtectedRoute access={{ roles: ['platform_admin', 'org_admin'] }}>
+                  <DomainManagement />
                 </ProtectedRoute>
               }
             />
@@ -323,10 +355,92 @@ const App = () => (
               }
             />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route
+              path="/exams"
+              element={
+                <ProtectedRoute>
+                  <ExamManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/subjects"
+              element={
+                <ProtectedRoute>
+                  <SubjectManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/academic-years"
+              element={
+                <ProtectedRoute>
+                  <AcademicYearManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/mark-entry"
+              element={
+                <ProtectedRoute>
+                  <MarkEntryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/student-promotion"
+              element={
+                <ProtectedRoute>
+                  <StudentPromotion />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/exam-score"
+              element={
+                <ProtectedRoute>
+                  <ExamScore />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/progress-card"
+              element={
+                <ProtectedRoute>
+                  <ProgressCard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/attendance"
+              element={
+                <ProtectedRoute access={{ module: 'attendance' }}>
+                  <AttendanceMarking />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/attendance-report"
+              element={
+                <ProtectedRoute access={{ module: 'attendance' }}>
+                  <AttendanceReport />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/leave-requests"
+              element={
+                <ProtectedRoute>
+                  <LeaveRequests />
+                </ProtectedRoute>
+              }
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </BranchProvider>
         </AuthProvider>
       </BrowserRouter>
+      </OrgBrandingProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

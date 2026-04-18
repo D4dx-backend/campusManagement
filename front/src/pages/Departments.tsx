@@ -30,7 +30,7 @@ const Departments = () => {
   const { confirm, ConfirmationComponent } = useConfirmation();
 
   // Get branches for super admin users
-  const { data: branchesResponse, isLoading: branchesLoading, error: branchesError } = useBranches(user?.role === 'super_admin');
+  const { data: branchesResponse, isLoading: branchesLoading, error: branchesError } = useBranches((user?.role === 'platform_admin' || user?.role === 'org_admin'));
   const branches = branchesResponse?.data || [];
   
 
@@ -108,7 +108,7 @@ const Departments = () => {
     
     try {
       // Validate branch selection for super admin
-      if (user?.role === 'super_admin' && !formData.branchId) {
+      if ((user?.role === 'platform_admin' || user?.role === 'org_admin') && !formData.branchId) {
         toast({
           title: 'Validation Error',
           description: 'Please select a branch for this department.',
@@ -117,7 +117,7 @@ const Departments = () => {
         return;
       }
 
-      const targetBranchId = user?.role === 'super_admin' ? formData.branchId : user?.branchId;
+      const targetBranchId = (user?.role === 'platform_admin' || user?.role === 'org_admin') ? formData.branchId : user?.branchId;
       
       const submitData = {
         name: formData.name,
@@ -283,7 +283,7 @@ const Departments = () => {
                   />
                 </div>
 
-                {user?.role === 'super_admin' && (
+                {(user?.role === 'platform_admin' || user?.role === 'org_admin') && (
                   <div className="space-y-2">
                     <Label htmlFor="branchId">Branch *</Label>
                     <Select

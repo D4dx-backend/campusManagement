@@ -6,6 +6,8 @@ import { AccountTransaction } from '../models/AccountTransaction';
 import { authenticate, checkPermission } from '../middleware/auth';
 import { AuthenticatedRequest, ApiResponse } from '../types';
 
+import { getOrgBranchFilter, getOrgBranchForCreate } from '../utils/orgFilter';
+
 const router = express.Router();
 
 // Apply authentication to all routes
@@ -29,11 +31,7 @@ router.get('/', checkPermission('accounting', 'read'), async (req: Authenticated
     const filter: any = {};
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    } else if (req.query.branchId) {
-      filter.branchId = req.query.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     if (search) {
       filter.$or = [
@@ -127,6 +125,7 @@ router.post('/', checkPermission('accounting', 'create'), async (req: Authentica
       contactInfo,
       accountId,
       remarks,
+      organizationId: req.user!.organizationId,
       branchId: req.user!.branchId,
       createdBy: req.user!._id
     });
@@ -156,6 +155,7 @@ router.post('/', checkPermission('accounting', 'create'), async (req: Authentica
           description: `Income: ${description}`,
           balanceBefore,
           balanceAfter,
+          organizationId: req.user!.organizationId,
           branchId: req.user!.branchId,
           createdBy: req.user!._id
         });
@@ -199,11 +199,7 @@ router.get('/stats/overview', checkPermission('accounting', 'read'), async (req:
     const filter: any = {};
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    } else if (req.query.branchId) {
-      filter.branchId = req.query.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const today = new Date();
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -264,8 +260,12 @@ router.delete('/:id', checkPermission('accounting', 'delete'), async (req: Authe
       return res.status(404).json(response);
     }
 
-    // Check branch access
-    if (req.user!.role !== 'super_admin' && req.user!.branchId?.toString() !== income.branchId?.toString()) {
+    // Check org + branch access
+    if (req.user!.role === 'org_admin' && income.organizationId?.toString() !== req.user!.organizationId?.toString()) {
+      const response: ApiResponse = { success: false, message: 'Access denied to this income entry' };
+      return res.status(403).json(response);
+    }
+    if (!['platform_admin', 'org_admin'].includes(req.user!.role) && req.user!.branchId?.toString() !== income.branchId?.toString()) {
       const response: ApiResponse = {
         success: false,
         message: 'Access denied to this income entry'

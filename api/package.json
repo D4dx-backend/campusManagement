@@ -13,7 +13,9 @@
     "seed": "ts-node src/utils/seeder.ts",
     "seed:prod": "node dist/utils/seeder.js",
     "remove-receipt-permission": "ts-node src/utils/removeReceiptPermission.ts",
-    "add-accounting-permissions": "ts-node src/scripts/addAccountingPermissions.ts"
+    "add-accounting-permissions": "ts-node src/scripts/addAccountingPermissions.ts",
+    "migrate:org": "ts-node src/migrations/migrate-organization.ts",
+    "seed:platform-admin": "ts-node src/seeds/seed-platform-admin.ts"
   },
   "keywords": [
     "school",

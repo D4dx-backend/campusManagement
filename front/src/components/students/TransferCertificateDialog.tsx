@@ -111,16 +111,26 @@ export const TransferCertificateDialog = ({
           {/* Certificate Preview */}
           <div ref={certificateRef} className="bg-white p-8 border-2 border-gray-800">
             <div className="text-center mb-6">
+              {tcData.organization?.name && (
+                <h2 className="text-sm font-semibold text-gray-600 mb-1">{tcData.organization.name}</h2>
+              )}
               <h1 className="text-2xl font-bold uppercase mb-2">Transfer Certificate</h1>
-              <p className="text-sm">{tcData.currentSchool.name}</p>
-              <p className="text-xs text-muted-foreground">{tcData.currentSchool.address}</p>
+              <p className="text-sm">{tcData.school?.name || tcData.currentSchool?.name}</p>
+              <p className="text-xs text-muted-foreground">{tcData.school?.address || tcData.currentSchool?.address}</p>
+              {(tcData.school?.phone || tcData.school?.email) && (
+                <p className="text-xs text-muted-foreground">
+                  {tcData.school?.phone && `Phone: ${tcData.school.phone}`}
+                  {tcData.school?.phone && tcData.school?.email && ' | '}
+                  {tcData.school?.email && `Email: ${tcData.school.email}`}
+                </p>
+              )}
               <div className="border-b-2 border-gray-800 mt-4 mb-4"></div>
             </div>
 
             <div className="space-y-4 text-sm">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <span className="font-semibold">TC No:</span> {tcData.admissionNo}/TC/{new Date().getFullYear()}
+                  <span className="font-semibold">TC No:</span> {tcData.tcNumber || `${tcData.admissionNo}/TC/${new Date().getFullYear()}`}
                 </div>
                 <div className="text-right">
                   <span className="font-semibold">Date:</span> {new Date(tcData.generatedDate).toLocaleDateString('en-GB')}
@@ -138,9 +148,16 @@ export const TransferCertificateDialog = ({
                   <span className="col-span-2">{tcData.admissionNo}</span>
                 </div>
 
+                {tcData.gender && (
+                  <div className="grid grid-cols-3">
+                    <span className="font-semibold">Gender:</span>
+                    <span className="col-span-2 capitalize">{tcData.gender}</span>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-3">
                   <span className="font-semibold">Class/Division:</span>
-                  <span className="col-span-2">{tcData.class} - {tcData.division}</span>
+                  <span className="col-span-2">{tcData.class}{tcData.section ? ` - ${tcData.section}` : ''}</span>
                 </div>
 
                 <div className="grid grid-cols-3">
@@ -150,7 +167,7 @@ export const TransferCertificateDialog = ({
 
                 <div className="grid grid-cols-3">
                   <span className="font-semibold">Date of Admission:</span>
-                  <span className="col-span-2">{new Date(tcData.admissionDate).toLocaleDateString('en-GB')}</span>
+                  <span className="col-span-2">{new Date(tcData.dateOfAdmission).toLocaleDateString('en-GB')}</span>
                 </div>
 
                 <div className="grid grid-cols-3">
@@ -158,10 +175,26 @@ export const TransferCertificateDialog = ({
                   <span className="col-span-2">{new Date(tcData.transferDate).toLocaleDateString('en-GB')}</span>
                 </div>
 
-                <div className="grid grid-cols-3">
-                  <span className="font-semibold">Guardian Name:</span>
-                  <span className="col-span-2">{tcData.guardianName}</span>
-                </div>
+                {tcData.fatherName && (
+                  <div className="grid grid-cols-3">
+                    <span className="font-semibold">Father's Name:</span>
+                    <span className="col-span-2">{tcData.fatherName}</span>
+                  </div>
+                )}
+
+                {tcData.motherName && (
+                  <div className="grid grid-cols-3">
+                    <span className="font-semibold">Mother's Name:</span>
+                    <span className="col-span-2">{tcData.motherName}</span>
+                  </div>
+                )}
+
+                {tcData.address && (
+                  <div className="grid grid-cols-3">
+                    <span className="font-semibold">Address:</span>
+                    <span className="col-span-2">{tcData.address}</span>
+                  </div>
+                )}
 
                 {tcData.transferSchoolName && tcData.transferSchoolName !== 'Not Specified' && (
                   <div className="grid grid-cols-3">

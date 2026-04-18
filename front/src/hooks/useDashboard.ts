@@ -49,3 +49,41 @@ export const useDashboardStats = () => {
     refetchInterval: 10 * 60 * 1000, // Refetch every 10 minutes
   });
 };
+
+export interface PlatformDashboardStats {
+  organizations: { total: number; active: number; inactive: number };
+  branches: { total: number; active: number };
+  users: { total: number; byRole: Record<string, number> };
+  students: { active: number };
+  recentOrganizations: Array<{
+    _id: string;
+    name: string;
+    code: string;
+    status: string;
+    branchCount: number;
+    userCount: number;
+    createdAt: string;
+  }>;
+  recentActivities: Array<{
+    userName: string;
+    userRole: string;
+    module: string;
+    action: string;
+    details: string;
+    timestamp: string;
+  }>;
+  generatedAt: string;
+}
+
+export const usePlatformDashboard = (enabled: boolean = true) => {
+  return useQuery({
+    queryKey: ['dashboard', 'platform'],
+    queryFn: async () => {
+      const response = await apiClient.get<PlatformDashboardStats>('/reports/platform-dashboard');
+      return response.data;
+    },
+    enabled,
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 10 * 60 * 1000,
+  });
+};

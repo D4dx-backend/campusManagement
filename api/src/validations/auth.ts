@@ -53,14 +53,24 @@ export const registerSchema = Joi.object({
       'any.required': 'Name is required'
     }),
   role: Joi.string()
-    .valid('super_admin', 'branch_admin', 'accountant', 'teacher', 'staff')
+    .valid('platform_admin', 'org_admin', 'branch_admin', 'accountant', 'teacher', 'staff', 'student')
     .required()
     .messages({
-      'any.only': 'Role must be one of: super_admin, branch_admin, accountant, teacher, staff',
+      'any.only': 'Role must be one of: platform_admin, org_admin, branch_admin, accountant, teacher, staff, student',
       'any.required': 'Role is required'
     }),
+  studentId: Joi.string()
+    .optional()
+    .messages({
+      'string.base': 'Student ID must be a valid string'
+    }),
+  organizationId: Joi.string()
+    .optional()
+    .messages({
+      'any.required': 'Organization ID is required'
+    }),
   branchId: Joi.string()
-    .optional() // Made optional - will be validated in the route handler based on current user role
+    .optional()
     .messages({
       'any.required': 'Branch ID is required'
     }),

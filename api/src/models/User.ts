@@ -34,17 +34,31 @@ const UserSchema = new Schema<IUser>({
   },
   role: {
     type: String,
-    enum: ['super_admin', 'branch_admin', 'accountant', 'teacher', 'staff'],
+    enum: ['platform_admin', 'org_admin', 'branch_admin', 'accountant', 'teacher', 'staff', 'student'],
     required: true
+  },
+  organizationId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'Organization',
+    required: function(this: IUser) {
+      return this.role !== 'platform_admin';
+    }
   },
   branchId: {
     type: Schema.Types.ObjectId as any,
     ref: 'Branch',
     required: function(this: IUser) {
-      return this.role !== 'super_admin';
+      return !['platform_admin', 'org_admin'].includes(this.role);
     }
   },
   permissions: [PermissionSchema],
+  studentId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'Student',
+    required: function(this: IUser) {
+      return this.role === 'student';
+    }
+  },
   status: {
     type: String,
     enum: ['active', 'inactive'],
@@ -59,6 +73,7 @@ const UserSchema = new Schema<IUser>({
 
 // Index for better performance (email and mobile already have unique indexes)
 UserSchema.index({ branchId: 1 });
+UserSchema.index({ organizationId: 1 });
 
 // Hash PIN before saving
 UserSchema.pre('save', async function(next) {

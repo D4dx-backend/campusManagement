@@ -5,6 +5,8 @@ import { validateQuery } from '../middleware/validation';
 import { AuthenticatedRequest, ApiResponse, QueryParams } from '../types';
 import Joi from 'joi';
 
+import { getOrgBranchFilter, getOrgBranchForCreate } from '../utils/orgFilter';
+
 const router = express.Router();
 
 // Apply authentication to all routes
@@ -16,7 +18,7 @@ const queryActivityLogsSchema = Joi.object({
   limit: Joi.number().integer().min(1).max(100).default(20),
   search: Joi.string().optional().allow(''),
   userId: Joi.string().optional().allow(''),
-  userRole: Joi.string().valid('super_admin', 'branch_admin', 'accountant', 'teacher', 'staff').optional(),
+  userRole: Joi.string().valid('platform_admin', 'org_admin', 'branch_admin', 'accountant', 'teacher', 'staff').optional(),
   module: Joi.string().optional().allow(''),
   action: Joi.string().optional().allow(''),
   startDate: Joi.date().optional(),
@@ -47,10 +49,8 @@ router.get('/', checkPermission('activity_logs', 'read'), validateQuery(queryAct
     // Build filter object
     const filter: any = {};
 
-    // Branch filter (non-super admins can only see their branch logs)
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    // Org + Branch filter
+    Object.assign(filter, getOrgBranchFilter(req));
 
     if (search) {
       filter.$or = [
@@ -86,6 +86,8 @@ router.get('/', checkPermission('activity_logs', 'read'), validateQuery(queryAct
     const [logs, total] = await Promise.all([
       ActivityLog.find(filter)
         .populate('userId', 'name email')
+        .populate('organizationId', 'name code')
+        .populate('branchId', 'name code')
         .sort(sortOptions)
         .skip(skip)
         .limit(limit)
@@ -124,9 +126,7 @@ router.get('/:id', checkPermission('activity_logs', 'read'), async (req: Authent
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const log = await ActivityLog.findOne(filter)
       .populate('userId', 'name email mobile role')
@@ -165,9 +165,7 @@ router.get('/stats/overview', checkPermission('activity_logs', 'read'), async (r
     const filter: any = {};
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const currentDate = new Date();
     const startOfDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
@@ -258,10 +256,8 @@ router.get('/user/:userId', checkPermission('activity_logs', 'read'), validateQu
     // Build filter object
     const filter: any = { userId };
 
-    // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    // Org + Branch filter
+    Object.assign(filter, getOrgBranchFilter(req));
 
     if (module) filter.module = { $regex: module, $options: 'i' };
     if (action) filter.action = { $regex: action, $options: 'i' };
@@ -321,7 +317,7 @@ router.get('/user/:userId', checkPermission('activity_logs', 'read'), validateQu
 router.delete('/cleanup', checkPermission('activity_logs', 'delete'), async (req: AuthenticatedRequest, res) => {
   try {
     // Only super admin can perform cleanup
-    if (req.user!.role !== 'super_admin') {
+    if (!['platform_admin', 'org_admin'].includes(req.user!.role)) {
       const response: ApiResponse = {
         success: false,
         message: 'Only super admin can perform log cleanup'
@@ -329,7 +325,7 @@ router.delete('/cleanup', checkPermission('activity_logs', 'delete'), async (req
       return res.status(403).json(response);
     }
 
-    const { days = 90 } = req.query;
+    const { days = 20 } = req.query;
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - Number(days));
 

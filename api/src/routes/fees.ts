@@ -2,10 +2,14 @@ import express from 'express';
 import { FeePayment } from '../models/FeePayment';
 import { Student } from '../models/Student';
 import { ActivityLog } from '../models/ActivityLog';
-import { ReceiptConfig } from '../models/ReceiptConfig';
+import { Organization } from '../models/Organization';
+import { Branch } from '../models/Branch';
 import { authenticate, checkPermission } from '../middleware/auth';
 import { AuthenticatedRequest, ApiResponse } from '../types';
 import { sendFeeReceiptEmail, sendFeeReceiptWhatsApp } from '../utils/notificationService';
+import { resolveSettings } from '../utils/resolveSettings';
+
+import { getOrgBranchFilter, getOrgBranchForCreate } from '../utils/orgFilter';
 
 const router = express.Router();
 
@@ -31,12 +35,7 @@ router.get('/', checkPermission('fees', 'read'), async (req: AuthenticatedReques
     const filter: any = {};
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    } else if (req.query.branchId) {
-      // Super admin can filter by specific branch
-      filter.branchId = req.query.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     if (search) {
       filter.$or = [
@@ -139,6 +138,7 @@ router.post('/', checkPermission('fees', 'create'), async (req: AuthenticatedReq
       paymentMethod,
       status: 'paid',
       remarks,
+      organizationId: req.user!.organizationId,
       branchId: req.user!.branchId || student.branchId,
       createdBy: req.user!._id
     });
@@ -146,10 +146,9 @@ router.post('/', checkPermission('fees', 'create'), async (req: AuthenticatedReq
     await feePayment.save();
 
     // Send automatic notifications (email & WhatsApp)
-    const receiptConfig = await ReceiptConfig.findOne({ 
-      branchId: feePayment.branchId, 
-      isActive: true 
-    });
+    const branch = await Branch.findById(feePayment.branchId).lean();
+    const org = await Organization.findById(feePayment.organizationId).lean();
+    const settings = resolveSettings(org, branch);
 
     const notificationData = {
       receiptNo: feePayment.receiptNo,
@@ -159,7 +158,7 @@ router.post('/', checkPermission('fees', 'create'), async (req: AuthenticatedReq
       totalAmount: feePayment.totalAmount || 0,
       paymentDate: feePayment.paymentDate,
       paymentMethod: feePayment.paymentMethod,
-      institutionName: (receiptConfig as any)?.institutionName,
+      institutionName: settings.name,
       guardianEmail: student.guardianEmail,
       guardianPhone: student.guardianPhone || ''
     };
@@ -213,12 +212,7 @@ router.get('/stats/overview', checkPermission('fees', 'read'), async (req: Authe
     const filter: any = {};
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    } else if (req.query.branchId) {
-      // Super admin can filter by specific branch
-      filter.branchId = req.query.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const today = new Date();
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -293,8 +287,12 @@ router.get('/:id/receipt-data', checkPermission('fees', 'read'), async (req: Aut
       return res.status(404).json(response);
     }
 
-    // Check branch access
-    if (req.user!.role !== 'super_admin' && req.user!.branchId?.toString() !== payment.branchId?.toString()) {
+    // Check org + branch access
+    if (req.user!.role === 'org_admin' && payment.organizationId?.toString() !== req.user!.organizationId?.toString()) {
+      const response: ApiResponse = { success: false, message: 'Access denied to this payment record' };
+      return res.status(403).json(response);
+    }
+    if (!['platform_admin', 'org_admin'].includes(req.user!.role) && req.user!.branchId?.toString() !== payment.branchId?.toString()) {
       const response: ApiResponse = {
         success: false,
         message: 'Access denied to this payment record'
@@ -302,19 +300,19 @@ router.get('/:id/receipt-data', checkPermission('fees', 'read'), async (req: Aut
       return res.status(403).json(response);
     }
 
-    // Get receipt configuration for the branch
-    const receiptConfig = await ReceiptConfig.findOne({ 
-      branchId: payment.branchId, 
-      isActive: true 
-    });
+    // Get receipt configuration from organization + branch settings
+    const receiptBranch = await Branch.findById(payment.branchId).lean();
+    const receiptOrg = await Organization.findById(payment.organizationId).lean();
 
-    if (!receiptConfig) {
+    if (!receiptOrg) {
       const response: ApiResponse = {
         success: false,
-        message: 'Receipt configuration not found for this branch'
+        message: 'Organization not found for this payment'
       };
       return res.status(404).json(response);
     }
+
+    const settings = resolveSettings(receiptOrg, receiptBranch);
 
     const student = payment.studentId as any;
     const receiptData = {
@@ -328,7 +326,18 @@ router.get('/:id/receipt-data', checkPermission('fees', 'read'), async (req: Aut
       paymentMethod: payment.paymentMethod,
       paymentDate: payment.paymentDate,
       remarks: payment.remarks,
-      config: receiptConfig
+      config: {
+        schoolName: settings.name,
+        address: settings.address,
+        phone: settings.phone,
+        email: settings.email,
+        website: settings.website || '',
+        logo: settings.logo || '',
+        principalName: settings.principalName || '',
+        taxNumber: settings.taxId || '',
+        registrationNumber: settings.registrationNumber || '',
+        footerText: settings.footerText || '',
+      }
     };
 
     const response: ApiResponse = {

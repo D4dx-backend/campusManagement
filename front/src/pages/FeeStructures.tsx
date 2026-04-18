@@ -37,7 +37,7 @@ const FeeStructures = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
-  const isSuperAdmin = user?.role === 'super_admin';
+  const isSuperAdmin = (user?.role === 'platform_admin' || user?.role === 'org_admin');
 
   const { data: branchesResponse } = useBranches();
   const branches = branchesResponse?.data || [];

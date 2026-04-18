@@ -30,6 +30,11 @@ const DepartmentSchema = new Schema<IDepartment>({
     type: Schema.Types.ObjectId as any,
     ref: 'Branch',
     required: true
+  },
+  organizationId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'Organization',
+    required: true
   }
 }, {
   timestamps: true
@@ -38,6 +43,7 @@ const DepartmentSchema = new Schema<IDepartment>({
 // Compound index to ensure unique department code per branch
 DepartmentSchema.index({ code: 1, branchId: 1 }, { unique: true });
 DepartmentSchema.index({ branchId: 1 });
+DepartmentSchema.index({ organizationId: 1 });
 DepartmentSchema.index({ status: 1 });
 
 export const Department = mongoose.model<IDepartment>('Department', DepartmentSchema);

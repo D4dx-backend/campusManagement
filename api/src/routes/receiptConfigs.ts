@@ -5,6 +5,8 @@ import { Branch } from '../models/Branch';
 import { authenticate, authorize } from '../middleware/auth';
 import { AuthenticatedRequest, ApiResponse } from '../types';
 
+import { getOrgBranchFilter, getOrgBranchForCreate } from '../utils/orgFilter';
+
 const router = express.Router();
 
 // Apply authentication to all routes
@@ -13,9 +15,11 @@ router.use(authenticate);
 // @desc    Get all receipt configurations
 // @route   GET /api/receipt-configs
 // @access  Private (Super Admin only)
-router.get('/', authorize('super_admin'), async (req: AuthenticatedRequest, res) => {
+router.get('/', authorize('platform_admin', 'org_admin'), async (req: AuthenticatedRequest, res) => {
   try {
-    const configs = await ReceiptConfig.find().populate('branchId', 'name code');
+    const filter: any = {};
+    Object.assign(filter, getOrgBranchFilter(req));
+    const configs = await ReceiptConfig.find(filter).populate('branchId', 'name code');
 
     const response: ApiResponse = {
       success: true,
@@ -43,20 +47,23 @@ router.get('/current', async (req: AuthenticatedRequest, res) => {
 
     let config;
 
-    if (user.role === 'super_admin') {
+    if (['platform_admin', 'org_admin'].includes(user.role)) {
       // For super admin, get the first active config or allow branch selection via query param
       const branchId = req.query.branchId as string;
       
       if (branchId) {
         config = await ReceiptConfig.findOne({ 
           branchId, 
-          isActive: true 
+          isActive: true,
+          ...(user.role === 'org_admin' ? { organizationId: user.organizationId } : {})
         }).populate('branchId', 'name code');
       } else {
         // Get the first active config available
-        config = await ReceiptConfig.findOne({ 
-          isActive: true 
-        }).populate('branchId', 'name code');
+        const currentFilter: any = { isActive: true };
+        if (user.role === 'org_admin') {
+          currentFilter.organizationId = user.organizationId;
+        }
+        config = await ReceiptConfig.findOne(currentFilter).populate('branchId', 'name code');
       }
     } else {
       // For other users, check if they have a branchId
@@ -108,7 +115,7 @@ router.get('/branch/:branchId', async (req: AuthenticatedRequest, res) => {
     const user = req.user!;
 
     // Check if user has access to this branch
-    if (user.role !== 'super_admin' && user.branchId && !new Types.ObjectId(user.branchId).equals(branchId)) {
+    if (!['platform_admin', 'org_admin'].includes(user.role) && user.branchId && !new Types.ObjectId(user.branchId).equals(branchId)) {
       const response: ApiResponse = {
         success: false,
         message: 'Access denied to this branch'
@@ -116,10 +123,12 @@ router.get('/branch/:branchId', async (req: AuthenticatedRequest, res) => {
       return res.status(403).json(response);
     }
 
-    const config = await ReceiptConfig.findOne({ 
-      branchId, 
-      isActive: true 
-    }).populate('branchId', 'name code');
+    const configFilter: any = { branchId, isActive: true };
+    if (user.role === 'org_admin') {
+      configFilter.organizationId = user.organizationId;
+    }
+
+    const config = await ReceiptConfig.findOne(configFilter).populate('branchId', 'name code');
 
     if (!config) {
       const response: ApiResponse = {
@@ -149,7 +158,7 @@ router.get('/branch/:branchId', async (req: AuthenticatedRequest, res) => {
 // @desc    Create receipt configuration
 // @route   POST /api/receipt-configs
 // @access  Private (Super Admin and Branch Admin)
-router.post('/', authorize('super_admin', 'branch_admin'), async (req: AuthenticatedRequest, res) => {
+router.post('/', authorize('platform_admin', 'org_admin', 'branch_admin'), async (req: AuthenticatedRequest, res) => {
   try {
     const {
       branchId,
@@ -169,7 +178,7 @@ router.post('/', authorize('super_admin', 'branch_admin'), async (req: Authentic
     const user = req.user!;
 
     // Check if user has access to this branch
-    if (user.role !== 'super_admin' && user.branchId && !new Types.ObjectId(user.branchId).equals(branchId)) {
+    if (!['platform_admin', 'org_admin'].includes(user.role) && user.branchId && !new Types.ObjectId(user.branchId).equals(branchId)) {
       const response: ApiResponse = {
         success: false,
         message: 'Access denied to create configuration for this branch'
@@ -177,8 +186,12 @@ router.post('/', authorize('super_admin', 'branch_admin'), async (req: Authentic
       return res.status(403).json(response);
     }
 
-    // Get branch details
-    const branch = await Branch.findById(branchId);
+    // Get branch details and verify it belongs to user's org
+    const branchFilter: any = { _id: branchId };
+    if (user.role === 'org_admin') {
+      branchFilter.organizationId = user.organizationId;
+    }
+    const branch = await Branch.findOne(branchFilter);
     if (!branch) {
       const response: ApiResponse = {
         success: false,
@@ -210,7 +223,8 @@ router.post('/', authorize('super_admin', 'branch_admin'), async (req: Authentic
       taxNumber,
       registrationNumber,
       footerText,
-      isActive
+      isActive,
+      organizationId: req.user!.organizationId
     });
 
     await config.save();
@@ -235,7 +249,7 @@ router.post('/', authorize('super_admin', 'branch_admin'), async (req: Authentic
 // @desc    Update receipt configuration
 // @route   PUT /api/receipt-configs/:id
 // @access  Private (Super Admin and Branch Admin)
-router.put('/:id', authorize('super_admin', 'branch_admin'), async (req: AuthenticatedRequest, res) => {
+router.put('/:id', authorize('platform_admin', 'org_admin', 'branch_admin'), async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
@@ -250,8 +264,13 @@ router.put('/:id', authorize('super_admin', 'branch_admin'), async (req: Authent
       return res.status(404).json(response);
     }
 
-    // Check if user has access to this branch
-    if (user.role !== 'super_admin' && user.branchId && !new Types.ObjectId(user.branchId).equals(config.branchId)) {
+    // Check org access for org_admin
+    if (user.role === 'org_admin' && config.organizationId?.toString() !== user.organizationId?.toString()) {
+      const response: ApiResponse = { success: false, message: 'Access denied to update this configuration' };
+      return res.status(403).json(response);
+    }
+    // Check branch access for branch-level users
+    if (!['platform_admin', 'org_admin'].includes(user.role) && user.branchId && !new Types.ObjectId(user.branchId).equals(config.branchId)) {
       const response: ApiResponse = {
         success: false,
         message: 'Access denied to update this configuration'
@@ -301,7 +320,7 @@ router.put('/:id', authorize('super_admin', 'branch_admin'), async (req: Authent
 // @desc    Delete receipt configuration
 // @route   DELETE /api/receipt-configs/:id
 // @access  Private (Super Admin and Branch Admin)
-router.delete('/:id', authorize('super_admin', 'branch_admin'), async (req: AuthenticatedRequest, res) => {
+router.delete('/:id', authorize('platform_admin', 'org_admin', 'branch_admin'), async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
     const user = req.user!;
@@ -315,8 +334,13 @@ router.delete('/:id', authorize('super_admin', 'branch_admin'), async (req: Auth
       return res.status(404).json(response);
     }
 
-    // Check if user has access to this branch
-    if (user.role !== 'super_admin' && user.branchId && !new Types.ObjectId(user.branchId).equals(config.branchId)) {
+    // Check org access for org_admin
+    if (user.role === 'org_admin' && config.organizationId?.toString() !== user.organizationId?.toString()) {
+      const response: ApiResponse = { success: false, message: 'Access denied to delete this configuration' };
+      return res.status(403).json(response);
+    }
+    // Check branch access for branch-level users
+    if (!['platform_admin', 'org_admin'].includes(user.role) && user.branchId && !new Types.ObjectId(user.branchId).equals(config.branchId)) {
       const response: ApiResponse = {
         success: false,
         message: 'Access denied to delete this configuration'

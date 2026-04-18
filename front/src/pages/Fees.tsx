@@ -429,7 +429,7 @@ const Fees = () => {
             <p className="text-muted-foreground mt-1">Collect and manage student fees</p>
           </div>
           <div className="flex gap-3">
-            {user?.role === 'super_admin' && branches.length > 0 && (
+            {(user?.role === 'platform_admin' || user?.role === 'org_admin') && branches.length > 0 && (
               <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="All Branches" />

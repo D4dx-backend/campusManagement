@@ -59,6 +59,11 @@ const PayrollEntrySchema = new Schema<IPayrollEntry>({
     type: Schema.Types.ObjectId as any,
     ref: 'Branch',
     required: true
+  },
+  organizationId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'Organization',
+    required: true
   }
 }, {
   timestamps: true
@@ -67,6 +72,7 @@ const PayrollEntrySchema = new Schema<IPayrollEntry>({
 // Compound index to ensure unique payroll entry per staff per month per year
 PayrollEntrySchema.index({ staffId: 1, month: 1, year: 1 }, { unique: true });
 PayrollEntrySchema.index({ branchId: 1 });
+PayrollEntrySchema.index({ organizationId: 1 });
 PayrollEntrySchema.index({ paymentDate: 1 });
 PayrollEntrySchema.index({ status: 1 });
 

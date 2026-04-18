@@ -2,7 +2,7 @@ import { apiClient } from '@/lib/api';
 
 export interface Branch {
   _id: string;
-  id?: string; // Add id as optional for compatibility
+  id?: string;
   name: string;
   code: string;
   address: string;
@@ -10,6 +10,7 @@ export interface Branch {
   email: string;
   principalName?: string;
   establishedDate: string;
+  organizationId: string;
   status: 'active' | 'inactive';
   createdAt: string;
   createdBy: string;
@@ -23,6 +24,7 @@ export interface CreateBranchData {
   email: string;
   principalName?: string;
   establishedDate: string;
+  organizationId?: string;
   status: 'active' | 'inactive';
 }
 

@@ -25,6 +25,11 @@ const ClassSchema = new Schema<IClass>({
     type: Schema.Types.ObjectId as any,
     ref: 'Branch',
     required: true
+  },
+  organizationId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'Organization',
+    required: true
   }
 }, {
   timestamps: true
@@ -33,6 +38,7 @@ const ClassSchema = new Schema<IClass>({
 // Compound index to ensure unique class name per branch per academic year
 ClassSchema.index({ name: 1, branchId: 1, academicYear: 1 }, { unique: true });
 ClassSchema.index({ branchId: 1 });
+ClassSchema.index({ organizationId: 1 });
 ClassSchema.index({ status: 1 });
 
 export const Class = mongoose.model<IClass>('Class', ClassSchema);

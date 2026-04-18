@@ -98,6 +98,11 @@ const FeePaymentSchema = new Schema<IFeePayment>({
     ref: 'Branch',
     required: true
   },
+  organizationId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'Organization',
+    required: true
+  },
   createdBy: {
     type: Schema.Types.ObjectId as any,
     ref: 'User',
@@ -110,6 +115,7 @@ const FeePaymentSchema = new Schema<IFeePayment>({
 // Indexes
 FeePaymentSchema.index({ studentId: 1 });
 FeePaymentSchema.index({ branchId: 1 });
+FeePaymentSchema.index({ organizationId: 1 });
 FeePaymentSchema.index({ paymentDate: 1 });
 FeePaymentSchema.index({ feeType: 1 });
 FeePaymentSchema.index({ status: 1 });

@@ -6,6 +6,8 @@ import { validate } from '../middleware/validation';
 import { AuthenticatedRequest, ApiResponse } from '../types';
 import Joi from 'joi';
 
+import { getOrgBranchFilter, getOrgBranchForCreate } from '../utils/orgFilter';
+
 const router = express.Router();
 router.use(authenticate);
 
@@ -21,11 +23,7 @@ router.get('/', checkPermission('fees', 'read'), async (req: AuthenticatedReques
   try {
     const query: any = {};
 
-    if (req.user!.role !== 'super_admin') {
-      query.branchId = req.user!.branchId;
-    } else if (req.query.branchId) {
-      query.branchId = req.query.branchId;
-    }
+    Object.assign(query, getOrgBranchFilter(req));
 
     if (req.query.isActive !== undefined) {
       query.isActive = req.query.isActive === 'true';
@@ -48,7 +46,8 @@ router.get('/', checkPermission('fees', 'read'), async (req: AuthenticatedReques
 // POST /api/fee-type-configs
 router.post('/', checkPermission('fees', 'create'), validate(feeTypeConfigSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const branchId = req.user!.role === 'super_admin'
+    const orgBranch = getOrgBranchForCreate(req);
+    const branchId = ['platform_admin', 'org_admin'].includes(req.user!.role)
       ? req.body.branchId || null
       : req.user!.branchId;
 
@@ -61,7 +60,7 @@ router.post('/', checkPermission('fees', 'create'), validate(feeTypeConfigSchema
       return res.status(400).json({ success: false, message: 'A fee type with this name already exists' });
     }
 
-    const feeType = await FeeTypeConfig.create({ ...req.body, branchId });
+    const feeType = await FeeTypeConfig.create({ ...req.body, organizationId: orgBranch.organizationId, branchId });
 
     await ActivityLog.create({
       userId: req.user!._id,
@@ -87,9 +86,7 @@ router.put('/:id', checkPermission('fees', 'update'), validate(feeTypeConfigSche
   try {
     const { id } = req.params;
     const query: any = { _id: id };
-    if (req.user!.role !== 'super_admin') {
-      query.branchId = req.user!.branchId;
-    }
+    Object.assign(query, getOrgBranchFilter(req));
 
     const feeType = await FeeTypeConfig.findOneAndUpdate(query, req.body, { new: true, runValidators: true });
 
@@ -105,6 +102,7 @@ router.put('/:id', checkPermission('fees', 'update'), validate(feeTypeConfigSche
       module: 'FeeTypeConfig',
       details: `Updated fee type: ${feeType.name}`,
       ipAddress: req.ip,
+      organizationId: req.user!.organizationId,
       branchId: req.user!.branchId
     });
 
@@ -121,9 +119,7 @@ router.delete('/:id', checkPermission('fees', 'delete'), async (req: Authenticat
   try {
     const { id } = req.params;
     const query: any = { _id: id };
-    if (req.user!.role !== 'super_admin') {
-      query.branchId = req.user!.branchId;
-    }
+    Object.assign(query, getOrgBranchFilter(req));
 
     const feeType = await FeeTypeConfig.findOneAndDelete(query);
 
@@ -139,6 +135,7 @@ router.delete('/:id', checkPermission('fees', 'delete'), async (req: Authenticat
       module: 'FeeTypeConfig',
       details: `Deleted fee type: ${feeType.name}`,
       ipAddress: req.ip,
+      organizationId: req.user!.organizationId,
       branchId: req.user!.branchId
     });
 

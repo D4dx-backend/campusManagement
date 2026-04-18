@@ -70,6 +70,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
       module: 'Authentication',
       details: 'User logged in successfully',
       ipAddress: req.ip,
+      organizationId: user.organizationId,
       branchId: user.branchId
     });
 
@@ -84,7 +85,9 @@ router.post('/login', validate(loginSchema), async (req, res) => {
           email: user.email,
           mobile: user.mobile,
           role: user.role,
+          organizationId: user.organizationId,
           branchId: user.branchId,
+          studentId: (user as any).studentId || undefined,
           permissions: user.permissions,
           status: user.status,
           lastLogin: user.lastLogin
@@ -106,15 +109,34 @@ router.post('/login', validate(loginSchema), async (req, res) => {
 // @desc    Register new user
 // @route   POST /api/auth/register
 // @access  Private (Super Admin only)
-router.post('/register', authenticate, authorize('super_admin'), validate(registerSchema), async (req: AuthenticatedRequest, res) => {
+router.post('/register', authenticate, authorize('platform_admin', 'org_admin'), validate(registerSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const { email, mobile, pin, name, role, branchId, permissions, status } = req.body;
+    const { email, mobile, pin, name, role, branchId, organizationId, permissions, status } = req.body;
 
-    // Additional validation based on current user role
-    if (role !== 'super_admin' && req.user!.role === 'super_admin' && !branchId) {
+    // Determine organizationId
+    let assignedOrgId;
+    if (role === 'platform_admin') {
+      assignedOrgId = undefined;
+    } else if (req.user!.role === 'platform_admin') {
+      assignedOrgId = organizationId;
+    } else {
+      assignedOrgId = req.user!.organizationId;
+    }
+
+    // Validate: non-platform roles need an org
+    if (role !== 'platform_admin' && !assignedOrgId) {
       const response: ApiResponse = {
         success: false,
-        message: 'Branch ID is required when super admin creates non-super admin users'
+        message: 'Organization ID is required for non-platform admin users'
+      };
+      return res.status(400).json(response);
+    }
+
+    // Additional validation based on current user role
+    if (!['platform_admin', 'org_admin'].includes(role) && req.user!.role === 'org_admin' && !branchId) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'Branch ID is required when org admin creates branch-level users'
       };
       return res.status(400).json(response);
     }
@@ -134,16 +156,15 @@ router.post('/register', authenticate, authorize('super_admin'), validate(regist
 
     // Determine branchId based on user role and current user
     let assignedBranchId;
-    if (role === 'super_admin') {
-      assignedBranchId = undefined; // Super admins don't have a branch
-    } else if (req.user!.role === 'super_admin') {
-      // Super admin creating user - use provided branchId
+    if (['platform_admin', 'org_admin'].includes(role)) {
+      assignedBranchId = undefined; // Platform/org admins don't have a branch
+    } else if (['platform_admin', 'org_admin'].includes(req.user!.role)) {
+      // Platform/org admin creating user - use provided branchId
       assignedBranchId = branchId;
     } else {
-      // Non-super admin creating user - use their own branch
+      // Branch-level user creating user - use their own branch
       assignedBranchId = req.user!.branchId;
       
-      // If the current user doesn't have a branchId, this is a data issue
       if (!assignedBranchId) {
         const response: ApiResponse = {
           success: false,
@@ -155,8 +176,8 @@ router.post('/register', authenticate, authorize('super_admin'), validate(regist
 
 
 
-    // Ensure non-super admin users have a branchId
-    if (role !== 'super_admin' && !assignedBranchId) {
+    // Ensure branch-level users have a branchId
+    if (!['platform_admin', 'org_admin'].includes(role) && !assignedBranchId) {
       const response: ApiResponse = {
         success: false,
         message: 'Unable to determine branch for user. Please contact administrator.'
@@ -188,6 +209,7 @@ router.post('/register', authenticate, authorize('super_admin'), validate(regist
       pin,
       name,
       role,
+      organizationId: assignedOrgId,
       branchId: assignedBranchId,
       permissions: defaultPermissions,
       status: status || 'active'
@@ -204,6 +226,7 @@ router.post('/register', authenticate, authorize('super_admin'), validate(regist
       module: 'Users',
       details: `Created new user: ${name} (${role})`,
       ipAddress: req.ip,
+      organizationId: req.user!.organizationId,
       branchId: req.user!.branchId
     });
 
@@ -217,6 +240,7 @@ router.post('/register', authenticate, authorize('super_admin'), validate(regist
           email: user.email,
           mobile: user.mobile,
           role: user.role,
+          organizationId: user.organizationId,
           branchId: user.branchId,
           permissions: user.permissions,
           status: user.status
@@ -299,6 +323,7 @@ router.put('/change-pin', authenticate, validate(changePasswordSchema), async (r
       module: 'Authentication',
       details: 'Changed PIN',
       ipAddress: req.ip,
+      organizationId: user.organizationId,
       branchId: user.branchId
     });
 
@@ -332,6 +357,7 @@ router.post('/logout', authenticate, async (req: AuthenticatedRequest, res) => {
       module: 'Authentication',
       details: 'User logged out',
       ipAddress: req.ip,
+      organizationId: req.user!.organizationId,
       branchId: req.user!.branchId
     });
 

@@ -41,6 +41,14 @@ const ClassFeeSchema = new Schema({
   distanceGroupFees: [DistanceGroupFeeSchema]
 }, { _id: false });
 
+const DriverHistorySchema = new Schema({
+  driverName: { type: String, required: true, trim: true },
+  driverPhone: { type: String, required: true, trim: true },
+  fromDate: { type: Date, required: true },
+  toDate: { type: Date, required: true },
+  reason: { type: String, trim: true }
+}, { _id: false });
+
 const VehicleSchema = new Schema({
   vehicleNumber: {
     type: String,
@@ -56,7 +64,12 @@ const VehicleSchema = new Schema({
     type: String,
     required: true,
     trim: true
-  }
+  },
+  driverLicenseNo: {
+    type: String,
+    trim: true
+  },
+  driverHistory: [DriverHistorySchema]
 }, { _id: false });
 
 const TransportRouteSchema = new Schema<ITransportRoute>({
@@ -91,6 +104,11 @@ const TransportRouteSchema = new Schema<ITransportRoute>({
     type: Schema.Types.ObjectId as any,
     ref: 'Branch',
     required: true
+  },
+  organizationId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'Organization',
+    required: true
   }
 }, {
   timestamps: true
@@ -98,6 +116,7 @@ const TransportRouteSchema = new Schema<ITransportRoute>({
 
 // Indexes
 TransportRouteSchema.index({ branchId: 1, status: 1 });
+TransportRouteSchema.index({ organizationId: 1 });
 // routeCode index is already created by unique: true
 
 export const TransportRoute = mongoose.model<ITransportRoute>('TransportRoute', TransportRouteSchema);

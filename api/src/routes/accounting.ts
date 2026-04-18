@@ -7,6 +7,8 @@ import { validateQuery } from '../middleware/validation';
 import { AuthenticatedRequest, ApiResponse } from '../types';
 import Joi from 'joi';
 
+import { getOrgBranchFilter, getOrgBranchForCreate } from '../utils/orgFilter';
+
 const router = express.Router();
 router.use(authenticate);
 
@@ -63,9 +65,7 @@ router.get(
 
       // Branch filter
       const branchFilter: any = {};
-      if (req.user!.role !== 'super_admin') {
-        branchFilter.branchId = req.user!.branchId;
-      }
+      Object.assign(branchFilter, getOrgBranchFilter(req));
 
       // Aggregation pipeline to combine all transactions
       const transactions: any[] = [];
@@ -213,9 +213,7 @@ router.get(
 
       // Branch filter
       const branchFilter: any = {};
-      if (req.user!.role !== 'super_admin') {
-        branchFilter.branchId = req.user!.branchId;
-      }
+      Object.assign(branchFilter, getOrgBranchFilter(req));
 
       const ledgerAccounts: any[] = [];
 
@@ -382,9 +380,7 @@ router.get(
 
       // Branch filter
       const branchFilter: any = {};
-      if (req.user!.role !== 'super_admin') {
-        branchFilter.branchId = req.user!.branchId;
-      }
+      Object.assign(branchFilter, getOrgBranchFilter(req));
 
       // Build search filter
       const searchFilter: any = {};
@@ -513,9 +509,7 @@ router.get(
 
       // Branch filter
       const branchFilter: any = {};
-      if (req.user!.role !== 'super_admin') {
-        branchFilter.branchId = req.user!.branchId;
-      }
+      Object.assign(branchFilter, getOrgBranchFilter(req));
 
       // Calculate total income (assets)
       const totalFeeIncome = await FeePayment.aggregate([
@@ -688,9 +682,7 @@ router.get(
 
       // Branch filter
       const branchFilter: any = {};
-      if (req.user!.role !== 'super_admin') {
-        branchFilter.branchId = req.user!.branchId;
-      }
+      Object.assign(branchFilter, getOrgBranchFilter(req));
 
       // Monthly fee income breakdown
       const monthlyFeeIncome = await FeePayment.aggregate([

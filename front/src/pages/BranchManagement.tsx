@@ -46,6 +46,18 @@ const BranchManagement = () => {
     principalName: '',
     establishedDate: '',
     status: 'active' as 'active' | 'inactive',
+    // Override fields (empty = inherit from organization)
+    taxId: '',
+    taxLabel: '',
+    currency: '',
+    currencySymbol: '',
+    country: '',
+    state: '',
+    city: '',
+    pincode: '',
+    registrationNumber: '',
+    footerText: '',
+    website: '',
   });
 
   const resetForm = () => {
@@ -58,6 +70,17 @@ const BranchManagement = () => {
       principalName: '',
       establishedDate: '',
       status: 'active',
+      taxId: '',
+      taxLabel: '',
+      currency: '',
+      currencySymbol: '',
+      country: '',
+      state: '',
+      city: '',
+      pincode: '',
+      registrationNumber: '',
+      footerText: '',
+      website: '',
     });
     setEditingBranch(null);
   };
@@ -114,6 +137,17 @@ const BranchManagement = () => {
       principalName: branch.principalName || '',
       establishedDate: branch.establishedDate,
       status: branch.status,
+      taxId: branch.taxId || '',
+      taxLabel: branch.taxLabel || '',
+      currency: branch.currency || '',
+      currencySymbol: branch.currencySymbol || '',
+      country: branch.country || '',
+      state: branch.state || '',
+      city: branch.city || '',
+      pincode: branch.pincode || '',
+      registrationNumber: branch.registrationNumber || '',
+      footerText: branch.footerText || '',
+      website: branch.website || '',
     });
     setIsDialogOpen(true);
   };
@@ -174,7 +208,7 @@ const BranchManagement = () => {
   );
 
   // Only super admin can access this page
-  if (user?.role !== 'super_admin') {
+  if ((user?.role !== 'platform_admin' && user?.role !== 'org_admin')) {
     return (
       <AppLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
@@ -218,7 +252,7 @@ const BranchManagement = () => {
                 Add Branch
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingBranch ? 'Edit Branch' : 'Create New Branch'}</DialogTitle>
                 <p className="text-sm text-muted-foreground">
@@ -316,6 +350,137 @@ const BranchManagement = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Override Settings */}
+                <div className="border-t pt-4 mt-4">
+                  <h3 className="text-sm font-semibold mb-1">Settings Override</h3>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Leave empty to inherit from organization defaults.
+                  </p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="b-currency">Currency Code</Label>
+                      <Select
+                        value={formData.currency || '__inherit__'}
+                        onValueChange={(value) => {
+                          if (value === '__inherit__') {
+                            setFormData({ ...formData, currency: '', currencySymbol: '' });
+                          } else {
+                            const symbols: Record<string, string> = { BHD: 'BD', INR: '₹', USD: '$', EUR: '€', GBP: '£', AED: 'AED', SAR: 'SAR', KWD: 'KD', OMR: 'OMR', QAR: 'QAR' };
+                            setFormData({ ...formData, currency: value, currencySymbol: symbols[value] || value });
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Inherit from org" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__inherit__">Inherit from organization</SelectItem>
+                          <SelectItem value="BHD">BHD - Bahraini Dinar</SelectItem>
+                          <SelectItem value="INR">INR - Indian Rupee</SelectItem>
+                          <SelectItem value="USD">USD - US Dollar</SelectItem>
+                          <SelectItem value="EUR">EUR - Euro</SelectItem>
+                          <SelectItem value="AED">AED - UAE Dirham</SelectItem>
+                          <SelectItem value="SAR">SAR - Saudi Riyal</SelectItem>
+                          <SelectItem value="KWD">KWD - Kuwaiti Dinar</SelectItem>
+                          <SelectItem value="OMR">OMR - Omani Rial</SelectItem>
+                          <SelectItem value="QAR">QAR - Qatari Riyal</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="b-currencySymbol">Currency Symbol</Label>
+                      <Input
+                        id="b-currencySymbol"
+                        placeholder="Inherit from org"
+                        value={formData.currencySymbol}
+                        onChange={e => setFormData({ ...formData, currencySymbol: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="b-taxLabel">Tax Label</Label>
+                      <Input
+                        id="b-taxLabel"
+                        placeholder="Inherit from org"
+                        value={formData.taxLabel}
+                        onChange={e => setFormData({ ...formData, taxLabel: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="b-taxId">Tax / Registration Number</Label>
+                      <Input
+                        id="b-taxId"
+                        placeholder="Inherit from org"
+                        value={formData.taxId}
+                        onChange={e => setFormData({ ...formData, taxId: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="b-country">Country</Label>
+                      <Input
+                        id="b-country"
+                        placeholder="Inherit from org"
+                        value={formData.country}
+                        onChange={e => setFormData({ ...formData, country: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="b-state">State / Province</Label>
+                      <Input
+                        id="b-state"
+                        placeholder="Inherit from org"
+                        value={formData.state}
+                        onChange={e => setFormData({ ...formData, state: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="b-city">City</Label>
+                      <Input
+                        id="b-city"
+                        placeholder="Inherit from org"
+                        value={formData.city}
+                        onChange={e => setFormData({ ...formData, city: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="b-pincode">PIN / ZIP Code</Label>
+                      <Input
+                        id="b-pincode"
+                        placeholder="Inherit from org"
+                        value={formData.pincode}
+                        onChange={e => setFormData({ ...formData, pincode: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="b-website">Website</Label>
+                      <Input
+                        id="b-website"
+                        placeholder="Inherit from org"
+                        value={formData.website}
+                        onChange={e => setFormData({ ...formData, website: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="b-registrationNumber">Registration Number</Label>
+                      <Input
+                        id="b-registrationNumber"
+                        placeholder="Inherit from org"
+                        value={formData.registrationNumber}
+                        onChange={e => setFormData({ ...formData, registrationNumber: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="b-footerText">Receipt Footer Text</Label>
+                    <Input
+                      id="b-footerText"
+                      placeholder="Inherit from org"
+                      value={formData.footerText}
+                      onChange={e => setFormData({ ...formData, footerText: e.target.value })}
+                    />
+                  </div>
+                </div>
+
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                     Cancel

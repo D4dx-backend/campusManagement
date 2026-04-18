@@ -7,6 +7,8 @@ import { validate, validateQuery } from '../middleware/validation';
 import { AuthenticatedRequest, ApiResponse, QueryParams } from '../types';
 import Joi from 'joi';
 
+import { getOrgBranchFilter, getOrgBranchForCreate } from '../utils/orgFilter';
+
 const router = express.Router();
 
 // Apply authentication to all routes
@@ -79,10 +81,8 @@ router.get('/', checkPermission('textbooks', 'read'), validateQuery(queryTextBoo
     // Build filter object
     const filter: any = {};
 
-    // Branch filter (non-super admins can only see their branch data)
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    // Org + Branch filter
+    Object.assign(filter, getOrgBranchFilter(req));
 
     if (search) {
       filter.$or = [
@@ -160,9 +160,7 @@ router.get('/:id', checkPermission('textbooks', 'read'), async (req: Authenticat
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const textbook = await TextBook.findOne(filter);
 
@@ -206,6 +204,7 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextBook
     // Check if book code already exists
     const existingBook = await TextBook.findOne({ 
       bookCode: req.body.bookCode,
+      organizationId: req.user!.organizationId,
       branchId: req.user!.branchId || req.body.branchId
     });
 
@@ -230,18 +229,14 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextBook
       return res.status(400).json(response);
     }
 
-    // Get the appropriate branchId
-    const { getRequiredBranchId } = require('../utils/branchHelper');
-    let branchId;
-    
-    try {
-      // For textbooks, prefer the class's branchId if available
-      const preferredBranchId = classInfo.branchId || req.body.branchId;
-      branchId = await getRequiredBranchId(req, preferredBranchId);
-    } catch (error) {
+    // Use class's branchId if available, otherwise use selected branch context
+    const orgBranch = getOrgBranchForCreate(req);
+    const branchId = classInfo.branchId || orgBranch.branchId;
+
+    if (!branchId) {
       const response: ApiResponse = {
         success: false,
-        message: error.message || 'Branch information is required for textbook creation'
+        message: 'Branch information is required for textbook creation'
       };
       return res.status(400).json(response);
     }
@@ -251,6 +246,7 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextBook
       classId: classIdFromPayload,
       class: classInfo.name,
       available: req.body.quantity, // Initially all books are available
+      organizationId: orgBranch.organizationId,
       branchId: branchId
     };
 
@@ -301,9 +297,7 @@ router.put('/:id', checkPermission('textbooks', 'update'), validate(updateTextBo
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const existingBook = await TextBook.findOne(filter);
     if (!existingBook) {
@@ -378,9 +372,7 @@ router.delete('/:id', checkPermission('textbooks', 'delete'), async (req: Authen
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const textbook = await TextBook.findOne(filter);
     if (!textbook) {
@@ -439,9 +431,7 @@ router.get('/stats/overview', checkPermission('textbooks', 'read'), async (req: 
     const filter: any = {};
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const [
       totalBooks,
@@ -540,9 +530,7 @@ router.put('/:id/stock', checkPermission('textbooks', 'update'), async (req: Aut
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const textbook = await TextBook.findOne(filter);
     if (!textbook) {

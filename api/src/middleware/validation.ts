@@ -30,7 +30,7 @@ export const validate = (schema: Joi.ObjectSchema) => {
 
 export const validateQuery = (schema: Joi.ObjectSchema) => {
   return (req: Request, res: Response, next: NextFunction): void => {
-    const { error, value } = schema.validate(req.query, { abortEarly: false });
+    const { error, value } = schema.validate(req.query, { abortEarly: false, allowUnknown: true });
     
     if (error) {
       const errors = error.details.map(detail => ({

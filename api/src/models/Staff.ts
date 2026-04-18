@@ -1,6 +1,15 @@
 import mongoose, { Schema } from 'mongoose';
 import { IStaff } from '../types';
 
+const SalaryHistorySchema = new Schema({
+  previousSalary: { type: Number, required: true },
+  newSalary: { type: Number, required: true },
+  effectiveDate: { type: Date, required: true },
+  reason: { type: String, required: true, trim: true },
+  incrementedBy: { type: String, trim: true },
+  createdAt: { type: Date, default: Date.now }
+}, { _id: false });
+
 const StaffSchema = new Schema<IStaff>({
   employeeId: {
     type: String,
@@ -12,6 +21,11 @@ const StaffSchema = new Schema<IStaff>({
     type: String,
     required: true,
     trim: true
+  },
+  category: {
+    type: String,
+    trim: true,
+    default: ''
   },
   designation: {
     type: String,
@@ -48,14 +62,34 @@ const StaffSchema = new Schema<IStaff>({
     required: true,
     min: 0
   },
+  salaryHistory: [SalaryHistorySchema],
   status: {
     type: String,
-    enum: ['active', 'inactive'],
+    enum: ['active', 'inactive', 'terminated', 'resigned'],
     default: 'active'
+  },
+  separationDate: {
+    type: Date
+  },
+  separationReason: {
+    type: String,
+    trim: true
+  },
+  lastWorkingDate: {
+    type: Date
+  },
+  separationType: {
+    type: String,
+    enum: ['terminated', 'resigned']
   },
   branchId: {
     type: Schema.Types.ObjectId as any,
     ref: 'Branch',
+    required: true
+  },
+  organizationId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'Organization',
     required: true
   }
 }, {
@@ -64,6 +98,8 @@ const StaffSchema = new Schema<IStaff>({
 
 // Indexes
 StaffSchema.index({ branchId: 1 });
+StaffSchema.index({ organizationId: 1 });
+StaffSchema.index({ category: 1 });
 StaffSchema.index({ department: 1 });
 StaffSchema.index({ status: 1 });
 StaffSchema.index({ name: 'text', designation: 'text' });

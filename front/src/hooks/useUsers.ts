@@ -70,3 +70,17 @@ export const useDeleteUser = () => {
     },
   });
 };
+
+export const useResetPin = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const response = await api.post(`/users/${id}/reset-pin`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+};

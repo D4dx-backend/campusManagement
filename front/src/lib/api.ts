@@ -16,21 +16,25 @@ export interface ApiResponse<T = any> {
 
 // Create axios instance
 const api: AxiosInstance = axios.create({
-  baseURL: import.meta.env.DEV 
-    ? 'http://localhost:5001/api' 
-    : (import.meta.env.VITE_API_URL),
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token and branch context
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('auth_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    // Inject selected branch for org_admin branch-level context
+    const selectedBranchId = localStorage.getItem('selected_branch_id');
+    if (selectedBranchId) {
+      // Add branchId as query param — backend getOrgBranchFilter already supports this
+      config.params = { ...config.params, branchId: selectedBranchId };
     }
     return config;
   },

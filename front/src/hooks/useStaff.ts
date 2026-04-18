@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { staffService, StaffQueryParams, CreateStaffData } from '@/services/staffService';
+import { staffService, StaffQueryParams, CreateStaffData, SalaryIncrementData, SeparationData } from '@/services/staffService';
 import { useToast } from '@/hooks/use-toast';
 
 // Query keys
@@ -110,5 +110,74 @@ export const useDeleteStaff = () => {
         variant: 'destructive',
       });
     },
+  });
+};
+
+// Salary increment mutation
+export const useSalaryIncrement = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: SalaryIncrementData }) =>
+      staffService.addSalaryIncrement(id, data),
+    onSuccess: (response, { id }) => {
+      queryClient.invalidateQueries({ queryKey: staffKeys.all });
+      queryClient.invalidateQueries({ queryKey: staffKeys.detail(id) });
+      toast({
+        title: 'Success',
+        description: response.message || 'Salary increment recorded successfully',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to record salary increment',
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+// Get salary history
+export const useSalaryHistory = (id: string) => {
+  return useQuery({
+    queryKey: ['staffSalaryHistory', id],
+    queryFn: () => staffService.getSalaryHistory(id),
+    enabled: !!id,
+  });
+};
+
+// Staff separation mutation
+export const useStaffSeparation = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: SeparationData }) =>
+      staffService.recordSeparation(id, data),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: staffKeys.all });
+      toast({
+        title: 'Success',
+        description: response.message || 'Separation recorded successfully',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to record separation',
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+// Experience certificate query
+export const useExperienceCertificate = (id: string) => {
+  return useQuery({
+    queryKey: ['staffExpCert', id],
+    queryFn: () => staffService.getExperienceCertificate(id),
+    enabled: !!id,
   });
 };

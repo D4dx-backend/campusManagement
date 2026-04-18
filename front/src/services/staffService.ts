@@ -5,9 +5,10 @@ export interface StaffQueryParams {
   page?: number;
   limit?: number;
   search?: string;
+  category?: string;
   department?: string;
   designation?: string;
-  status?: 'active' | 'inactive';
+  status?: 'active' | 'inactive' | 'terminated' | 'resigned';
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }
@@ -28,6 +29,7 @@ export interface StaffStats {
 export interface CreateStaffData {
   employeeId: string;
   name: string;
+  category?: string;
   designation: string;
   department: string;
   dateOfJoining: string;
@@ -37,40 +39,70 @@ export interface CreateStaffData {
   salary: number;
 }
 
+export interface SalaryIncrementData {
+  newSalary: number;
+  effectiveDate: string;
+  reason: string;
+}
+
+export interface SeparationData {
+  separationType: 'terminated' | 'resigned';
+  separationDate: string;
+  lastWorkingDate: string;
+  separationReason: string;
+}
+
 export const staffService = {
-  // Get all staff members
   getStaff: async (params?: StaffQueryParams) => {
     const response = await apiClient.get<Staff[]>('/staff', params);
     return response.data;
   },
 
-  // Get staff member by ID
   getStaffMember: async (id: string) => {
     const response = await apiClient.get<Staff>(`/staff/${id}`);
     return response.data;
   },
 
-  // Create new staff member
   createStaff: async (staffData: CreateStaffData) => {
     const response = await apiClient.post<Staff>('/staff', staffData);
     return response.data;
   },
 
-  // Update staff member
   updateStaff: async (id: string, staffData: Partial<CreateStaffData>) => {
     const response = await apiClient.put<Staff>(`/staff/${id}`, staffData);
     return response.data;
   },
 
-  // Delete staff member
   deleteStaff: async (id: string) => {
     const response = await apiClient.delete(`/staff/${id}`);
     return response.data;
   },
 
-  // Get staff statistics
   getStaffStats: async () => {
     const response = await apiClient.get<StaffStats>('/staff/stats/overview');
     return response.data;
-  }
+  },
+
+  // Salary increment
+  addSalaryIncrement: async (id: string, data: SalaryIncrementData) => {
+    const response = await apiClient.post(`/staff/${id}/salary-increment`, data);
+    return response.data;
+  },
+
+  getSalaryHistory: async (id: string) => {
+    const response = await apiClient.get(`/staff/${id}/salary-history`);
+    return response.data;
+  },
+
+  // Separation (termination/resignation)
+  recordSeparation: async (id: string, data: SeparationData) => {
+    const response = await apiClient.post(`/staff/${id}/separation`, data);
+    return response.data;
+  },
+
+  // Experience certificate
+  getExperienceCertificate: async (id: string) => {
+    const response = await apiClient.get(`/staff/${id}/experience-certificate`);
+    return response.data;
+  },
 };

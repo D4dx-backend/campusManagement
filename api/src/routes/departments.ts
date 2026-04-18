@@ -7,6 +7,8 @@ import { validate, validateQuery } from '../middleware/validation';
 import { AuthenticatedRequest, ApiResponse, QueryParams } from '../types';
 import Joi from 'joi';
 
+import { getOrgBranchFilter, getOrgBranchForCreate } from '../utils/orgFilter';
+
 const router = express.Router();
 
 // Apply authentication to all routes
@@ -57,10 +59,8 @@ router.get('/', checkPermission('departments', 'read'), validateQuery(queryDepar
     // Build filter object
     const filter: any = {};
 
-    // Branch filter (non-super admins can only see their branch data)
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    // Organization & Branch filter
+    Object.assign(filter, getOrgBranchFilter(req));
 
     if (search) {
       filter.$or = [
@@ -133,9 +133,7 @@ router.get('/:id', checkPermission('departments', 'read'), async (req: Authentic
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const department = await Department.findOne(filter);
 
@@ -187,12 +185,12 @@ router.get('/:id', checkPermission('departments', 'read'), async (req: Authentic
 router.post('/', checkPermission('departments', 'create'), validate(createDepartmentSchema), async (req: AuthenticatedRequest, res) => {
   try {
     
-    const { name, description, code, headOfDepartment, branchId } = req.body;
+    const { name, description, code, headOfDepartment } = req.body;
 
     // Determine the branchId to use
-    const targetBranchId = req.user!.branchId || branchId;
+    const orgBranch = getOrgBranchForCreate(req);
     
-    if (!targetBranchId) {
+    if (!orgBranch.branchId) {
       const response: ApiResponse = {
         success: false,
         message: 'Branch ID is required to create a department'
@@ -203,7 +201,7 @@ router.post('/', checkPermission('departments', 'create'), validate(createDepart
     // Check if department code already exists for the same branch
     const existingDepartment = await Department.findOne({
       code,
-      branchId: targetBranchId
+      branchId: orgBranch.branchId
     });
 
     if (existingDepartment) {
@@ -217,7 +215,7 @@ router.post('/', checkPermission('departments', 'create'), validate(createDepart
     // Check if department name already exists for the same branch
     const existingName = await Department.findOne({
       name,
-      branchId: targetBranchId
+      branchId: orgBranch.branchId
     });
 
     if (existingName) {
@@ -234,7 +232,8 @@ router.post('/', checkPermission('departments', 'create'), validate(createDepart
       description,
       code: code.toUpperCase(),
       headOfDepartment,
-      branchId: targetBranchId
+      organizationId: orgBranch.organizationId,
+      branchId: orgBranch.branchId
     };
 
     const department = new Department(departmentData);
@@ -249,7 +248,7 @@ router.post('/', checkPermission('departments', 'create'), validate(createDepart
       module: 'Departments',
       details: `Created department: ${department.name} (${department.code})`,
       ipAddress: req.ip,
-      branchId: targetBranchId
+      branchId: orgBranch.branchId
     });
 
     const response: ApiResponse = {
@@ -277,9 +276,7 @@ router.put('/:id', checkPermission('departments', 'update'), validate(updateDepa
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const existingDepartment = await Department.findOne(filter);
     if (!existingDepartment) {
@@ -328,7 +325,7 @@ router.put('/:id', checkPermission('departments', 'update'), validate(updateDepa
     const updateData = { ...req.body };
 
     if (updateData.branchId) {
-      if (req.user!.role !== 'super_admin') {
+      if (!['platform_admin', 'org_admin'].includes(req.user!.role)) {
         const response: ApiResponse = {
           success: false,
           message: 'Only super admins can change department branch'
@@ -391,9 +388,7 @@ router.delete('/:id', checkPermission('departments', 'delete'), async (req: Auth
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const department = await Department.findOne(filter);
     if (!department) {
@@ -456,9 +451,7 @@ router.get('/stats/overview', checkPermission('departments', 'read'), async (req
     const filter: any = {};
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const [
       totalDepartments,

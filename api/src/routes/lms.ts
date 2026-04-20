@@ -226,7 +226,7 @@ const contentUpdateSchema = Joi.object({
 
 const contentQuerySchema = Joi.object({
   page: Joi.alternatives().try(Joi.number().integer().min(1), Joi.string().pattern(/^\d+$/).custom(v => parseInt(v, 10))).default(1),
-  limit: Joi.alternatives().try(Joi.number().integer().min(1).max(100), Joi.string().pattern(/^\d+$/).custom(v => Math.min(parseInt(v, 10), 100))).default(50),
+  limit: Joi.alternatives().try(Joi.number().integer().min(1).max(200), Joi.string().pattern(/^\d+$/).custom(v => Math.min(parseInt(v, 10), 200))).default(50),
   search: Joi.string().optional().allow(''),
   chapterId: Joi.string().optional().allow(''),
   subjectId: Joi.string().optional().allow(''),
@@ -518,7 +518,7 @@ const assessmentUpdateSchema = Joi.object({
 
 const assessmentQuerySchema = Joi.object({
   page: Joi.alternatives().try(Joi.number().integer().min(1), Joi.string().pattern(/^\d+$/).custom(v => parseInt(v, 10))).default(1),
-  limit: Joi.alternatives().try(Joi.number().integer().min(1).max(100), Joi.string().pattern(/^\d+$/).custom(v => Math.min(parseInt(v, 10), 100))).default(50),
+  limit: Joi.alternatives().try(Joi.number().integer().min(1).max(200), Joi.string().pattern(/^\d+$/).custom(v => Math.min(parseInt(v, 10), 200))).default(50),
   search: Joi.string().optional().allow(''),
   subjectId: Joi.string().optional().allow(''),
   classId: Joi.string().optional().allow(''),
@@ -707,7 +707,7 @@ router.post('/assessments/:id/duplicate', checkPermission('classes', 'create'), 
 
 const submissionQuerySchema = Joi.object({
   page: Joi.alternatives().try(Joi.number().integer().min(1), Joi.string().pattern(/^\d+$/).custom(v => parseInt(v, 10))).default(1),
-  limit: Joi.alternatives().try(Joi.number().integer().min(1).max(100), Joi.string().pattern(/^\d+$/).custom(v => Math.min(parseInt(v, 10), 100))).default(50),
+  limit: Joi.alternatives().try(Joi.number().integer().min(1).max(200), Joi.string().pattern(/^\d+$/).custom(v => Math.min(parseInt(v, 10), 200))).default(50),
   assessmentId: Joi.string().optional().allow(''),
   studentId: Joi.string().optional().allow(''),
   status: Joi.string().valid('not_started', 'in_progress', 'submitted', 'graded', 'returned').optional(),

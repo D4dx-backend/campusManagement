@@ -27,7 +27,7 @@ export const markAttendanceSchema = Joi.object({
 
 export const queryAttendanceSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(50),
+  limit: Joi.number().integer().min(0).default(50),
   classId: Joi.string().optional(),
   section: Joi.string().optional().allow(''),
   date: Joi.date().optional(),
@@ -71,7 +71,7 @@ export const reviewLeaveRequestSchema = Joi.object({
 
 export const queryLeaveRequestSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(20),
+  limit: Joi.number().integer().min(0).default(20),
   classId: Joi.string().optional(),
   studentId: Joi.string().optional(),
   status: Joi.string().valid('pending', 'approved', 'rejected').optional(),

@@ -44,8 +44,8 @@ export const queryTimetableConfigSchema = Joi.object({
     .default(1),
   limit: Joi.alternatives()
     .try(
-      Joi.number().integer().min(1).max(100),
-      Joi.string().pattern(/^\d+$/).custom((v) => Math.min(parseInt(v, 10), 100))
+      Joi.number().integer().min(0),
+      Joi.string().pattern(/^\d+$/).custom((v) => parseInt(v, 10))
     )
     .default(10),
   search: Joi.string().optional().allow(''),
@@ -100,8 +100,8 @@ export const queryTimetableSchema = Joi.object({
     .default(1),
   limit: Joi.alternatives()
     .try(
-      Joi.number().integer().min(1).max(100),
-      Joi.string().pattern(/^\d+$/).custom((v) => Math.min(parseInt(v, 10), 100))
+      Joi.number().integer().min(0),
+      Joi.string().pattern(/^\d+$/).custom((v) => parseInt(v, 10))
     )
     .default(10),
   classId: Joi.string().optional().allow(''),

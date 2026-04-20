@@ -39,8 +39,8 @@ const queryClassesSchema = Joi.object({
     Joi.string().pattern(/^\d+$/).custom((value) => parseInt(value, 10))
   ).default(1),
   limit: Joi.alternatives().try(
-    Joi.number().integer().min(1).max(100),
-    Joi.string().pattern(/^\d+$/).custom((value) => Math.min(parseInt(value, 10), 100))
+    Joi.number().integer().min(0),
+    Joi.string().pattern(/^\d+$/).custom((value) => parseInt(value, 10))
   ).default(10),
   search: Joi.string().optional().allow(''),
   academicYear: Joi.string().optional().allow(''),
@@ -114,8 +114,7 @@ router.get('/', checkPermission('classes', 'read'), validateQuery(queryClassesSc
         },
         { $project: { divisions: 0 } },
         { $sort: sortOptions },
-        { $skip: skip },
-        { $limit: limit }
+        ...(limit > 0 ? [{ $skip: skip }, { $limit: limit }] : [])
       ]),
       Class.countDocuments(filter)
     ]);

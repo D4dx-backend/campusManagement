@@ -112,8 +112,7 @@ router.get('/', checkPermission('divisions', 'read'), validateQuery(queryDivisio
         },
         { $project: { classInfo: 0, teacherInfo: 0 } },
         { $sort: sortOptions },
-        { $skip: skip },
-        { $limit: limit }
+        ...(limit > 0 ? [{ $skip: skip }, { $limit: limit }] : [])
       ]),
       Division.countDocuments(filter)
     ]);

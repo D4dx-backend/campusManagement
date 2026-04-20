@@ -51,7 +51,7 @@ const BranchFeatureSettings = () => {
         }
       }
     }).catch(() => {
-      toast({ title: 'Error', description: 'Failed to load branch features', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading. Please try again branch features', variant: 'destructive' });
     }).finally(() => setLoading(false));
   }, [selectedBranchId]);
 
@@ -87,7 +87,7 @@ const BranchFeatureSettings = () => {
     } catch (err: any) {
       toast({
         title: 'Error',
-        description: err.response?.data?.message || 'Failed to update features',
+        description: err.response?.data?.message || 'Something went wrong while updating. Please try again features',
         variant: 'destructive',
       });
     } finally {

@@ -142,14 +142,14 @@ export default function TimetableManager() {
         if (current) setSelectedAcademicYearId(current._id);
       }
     }).catch((err) => {
-      console.error('Failed to load academic years:', err);
-      toast({ title: 'Failed to load academic years', description: err?.response?.data?.message || err.message, variant: 'destructive' });
+      console.error('Something went wrong while loading. Please try again academic years:', err);
+      toast({ title: 'Something went wrong while loading academic years', description: err?.response?.data?.message || err.message, variant: 'destructive' });
     });
     staffService.getStaff({ limit: 500, status: 'active' }).then((res) => {
       if (res.data) setStaffList(res.data);
     }).catch((err) => {
-      console.error('Failed to load teachers:', err);
-      toast({ title: 'Failed to load teachers', description: err?.response?.data?.message || err.message, variant: 'destructive' });
+      console.error('Something went wrong while loading. Please try again teachers:', err);
+      toast({ title: 'Something went wrong while loading teachers', description: err?.response?.data?.message || err.message, variant: 'destructive' });
     });
   }, []);
 
@@ -157,8 +157,8 @@ export default function TimetableManager() {
     classesApi.getClasses({ limit: 100, status: 'active' }).then((res) => {
       if (res.success) setClasses(res.data);
     }).catch((err) => {
-      console.error('Failed to load classes:', err);
-      toast({ title: 'Failed to load classes', description: err?.response?.data?.message || err.message, variant: 'destructive' });
+      console.error('Something went wrong while loading. Please try again classes:', err);
+      toast({ title: 'Something went wrong while loading classes. Please try again.', description: err?.response?.data?.message || err.message, variant: 'destructive' });
     });
   }, []);
 
@@ -167,12 +167,12 @@ export default function TimetableManager() {
       divisionsApi.getDivisionsByClass(selectedClassId).then((res) => {
         if (res.success) setDivisions(res.data);
       }).catch((err) => {
-        console.error('Failed to load divisions:', err);
+        console.error('Something went wrong while loading. Please try again divisions:', err);
       });
       subjectApi.getAll({ classId: selectedClassId, status: 'active', limit: 100 }).then((res) => {
         if (res.success) setSubjects(res.data);
       }).catch((err) => {
-        console.error('Failed to load subjects:', err);
+        console.error('Something went wrong while loading. Please try again subjects:', err);
       });
     } else {
       setDivisions([]);

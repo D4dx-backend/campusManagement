@@ -236,7 +236,7 @@ router.get('/', checkPermission('fees', 'read'), async (req: AuthenticatedReques
     console.error('Get fee payments error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving fee payments'
+      message: 'Something went wrong while loading fee payments. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -274,7 +274,7 @@ router.get('/paid-student-ids', checkPermission('fees', 'read'), async (req: Aut
     console.error('Get paid student ids error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving paid student ids'
+      message: 'Something went wrong while loading paid student ids. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -292,7 +292,7 @@ router.post('/', checkPermission('fees', 'create'), async (req: AuthenticatedReq
     if (!student) {
       const response: ApiResponse = {
         success: false,
-        message: 'Student not found'
+        message: 'Student was not found.'
       };
       return res.status(404).json(response);
     }
@@ -301,7 +301,7 @@ router.post('/', checkPermission('fees', 'create'), async (req: AuthenticatedReq
     if (!feeItems || !Array.isArray(feeItems) || feeItems.length === 0) {
       const response: ApiResponse = {
         success: false,
-        message: 'At least one fee item is required'
+        message: 'Please add at least one fee item before saving.'
       };
       return res.status(400).json(response);
     }
@@ -327,7 +327,7 @@ router.post('/', checkPermission('fees', 'create'), async (req: AuthenticatedReq
     console.error('Create fee payment error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error recording fee payment'
+      message: 'Something went wrong while recording the fee payment. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -343,7 +343,7 @@ router.post('/bulk', checkPermission('fees', 'create'), async (req: Authenticate
     if (!payments || !Array.isArray(payments) || payments.length === 0) {
       const response: ApiResponse = {
         success: false,
-        message: 'At least one payment entry is required'
+        message: 'Please add at least one payment entry.'
       };
       return res.status(400).json(response);
     }
@@ -419,7 +419,7 @@ router.post('/bulk', checkPermission('fees', 'create'), async (req: Authenticate
     console.error('Create bulk fee payments error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error recording bulk fee payments'
+      message: 'Something went wrong while recording the bulk fee payments. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -491,7 +491,7 @@ router.get('/stats/overview', checkPermission('fees', 'read'), async (req: Authe
     console.error('Get fee stats error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving fee statistics'
+      message: 'Something went wrong while loading fee statistics. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -508,7 +508,7 @@ router.get('/:id/receipt-data', checkPermission('fees', 'read'), async (req: Aut
     if (!payment) {
       const response: ApiResponse = {
         success: false,
-        message: 'Fee payment not found'
+        message: 'Fee payment was not found.'
       };
       return res.status(404).json(response);
     }
@@ -580,7 +580,7 @@ router.get('/:id/receipt-data', checkPermission('fees', 'read'), async (req: Aut
     console.error('Get receipt data error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving receipt data'
+      message: 'Something went wrong while loading receipt data. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -597,7 +597,7 @@ router.patch('/:id/cancel', checkPermission('fees', 'update'), async (req: Authe
     if (!reason) {
       const response: ApiResponse = {
         success: false,
-        message: 'Cancellation reason is required'
+        message: 'Please provide a reason for cancelling this payment.'
       };
       return res.status(400).json(response);
     }
@@ -606,7 +606,7 @@ router.patch('/:id/cancel', checkPermission('fees', 'update'), async (req: Authe
     if (!payment) {
       const response: ApiResponse = {
         success: false,
-        message: 'Fee payment not found'
+        message: 'Fee payment was not found.'
       };
       return res.status(404).json(response);
     }
@@ -660,7 +660,7 @@ router.patch('/:id/cancel', checkPermission('fees', 'update'), async (req: Authe
     console.error('Cancel fee payment error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error cancelling fee payment'
+      message: 'Something went wrong while cancelling the fee payment. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -685,7 +685,7 @@ router.patch('/:id', checkPermission('fees', 'update'), async (req: Authenticate
     if (!trimmedReason) {
       const response: ApiResponse = {
         success: false,
-        message: 'Edit reason is required'
+        message: 'Please provide a reason for editing this payment.'
       };
       return res.status(400).json(response);
     }
@@ -693,7 +693,7 @@ router.patch('/:id', checkPermission('fees', 'update'), async (req: Authenticate
     if (!['cash', 'bank', 'online'].includes(paymentMethod)) {
       const response: ApiResponse = {
         success: false,
-        message: 'Valid payment method is required'
+        message: 'Please select a valid payment method.'
       };
       return res.status(400).json(response);
     }
@@ -702,7 +702,7 @@ router.patch('/:id', checkPermission('fees', 'update'), async (req: Authenticate
     if (!paymentDate || Number.isNaN(nextPaymentDate.getTime())) {
       const response: ApiResponse = {
         success: false,
-        message: 'Valid payment date is required'
+        message: 'Please enter a valid payment date.'
       };
       return res.status(400).json(response);
     }
@@ -711,7 +711,7 @@ router.patch('/:id', checkPermission('fees', 'update'), async (req: Authenticate
     if (!payment) {
       const response: ApiResponse = {
         success: false,
-        message: 'Fee payment not found'
+        message: 'Fee payment was not found.'
       };
       return res.status(404).json(response);
     }
@@ -789,7 +789,7 @@ router.patch('/:id', checkPermission('fees', 'update'), async (req: Authenticate
     console.error('Edit fee payment error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error updating fee payment'
+      message: 'Something went wrong while updating the fee payment. Please try again.'
     };
     res.status(500).json(response);
   }

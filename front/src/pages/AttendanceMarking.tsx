@@ -130,7 +130,7 @@ const AttendanceMarking = () => {
       );
       setLoaded(true);
     } catch (error: any) {
-      const message = error?.response?.data?.message || error?.message || 'Failed to load students';
+      const message = error?.response?.data?.message || error?.message || 'Something went wrong while loading. Please try again students';
       setLoadError(message);
       setRecords([]);
       setLoaded(true);

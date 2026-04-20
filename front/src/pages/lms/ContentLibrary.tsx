@@ -84,7 +84,7 @@ const ContentLibrary = () => {
       });
       setChapters(res.data || []);
     } catch {
-      toast({ title: 'Error', description: 'Failed to load chapters', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading. Please try again chapters', variant: 'destructive' });
     } finally {
       setLoading(false);
     }

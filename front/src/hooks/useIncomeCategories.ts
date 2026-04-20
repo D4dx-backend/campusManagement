@@ -36,7 +36,7 @@ export const useCreateIncomeCategory = () => {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || 'Failed to create income category';
+      const errorMessage = error.response?.data?.message || 'Something went wrong while creating the income category. Please try again.';
       const errorDetails = error.response?.data?.error;
       const fullMessage = errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage;
       
@@ -64,7 +64,7 @@ export const useUpdateIncomeCategory = () => {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || 'Failed to update income category';
+      const errorMessage = error.response?.data?.message || 'Something went wrong while updating the income category. Please try again.';
       const errorDetails = error.response?.data?.error;
       const fullMessage = errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage;
       
@@ -91,7 +91,7 @@ export const useDeleteIncomeCategory = () => {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || 'Failed to delete income category';
+      const errorMessage = error.response?.data?.message || 'Something went wrong while deleting the income category. Please try again.';
       const errorDetails = error.response?.data?.error;
       const fullMessage = errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage;
       

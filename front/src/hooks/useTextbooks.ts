@@ -56,7 +56,7 @@ export const useCreateTextbook = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to create textbook',
+        description: error.response?.data?.message || 'Something went wrong while creating the textbook. Please try again.',
         variant: 'destructive',
       });
     },
@@ -82,7 +82,7 @@ export const useUpdateTextbook = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to update textbook',
+        description: error.response?.data?.message || 'Something went wrong while updating the textbook. Please try again.',
         variant: 'destructive',
       });
     },
@@ -106,7 +106,7 @@ export const useDeleteTextbook = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to delete textbook',
+        description: error.response?.data?.message || 'Something went wrong while deleting the textbook. Please try again.',
         variant: 'destructive',
       });
     },
@@ -131,7 +131,7 @@ export const useUpdateStock = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to update stock',
+        description: error.response?.data?.message || 'Something went wrong while updating the stock. Please try again.',
         variant: 'destructive',
       });
     },

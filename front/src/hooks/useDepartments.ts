@@ -36,7 +36,7 @@ export const useCreateDepartment = () => {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || 'Failed to create department';
+      const errorMessage = error.response?.data?.message || 'Something went wrong while creating the department. Please try again.';
       const errorDetails = error.response?.data?.error;
       const fullMessage = errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage;
       
@@ -64,7 +64,7 @@ export const useUpdateDepartment = () => {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || 'Failed to update department';
+      const errorMessage = error.response?.data?.message || 'Something went wrong while updating the department. Please try again.';
       const errorDetails = error.response?.data?.error;
       const fullMessage = errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage;
       
@@ -91,7 +91,7 @@ export const useDeleteDepartment = () => {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || 'Failed to delete department';
+      const errorMessage = error.response?.data?.message || 'Something went wrong while deleting the department. Please try again.';
       const errorDetails = error.response?.data?.error;
       const fullMessage = errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage;
       

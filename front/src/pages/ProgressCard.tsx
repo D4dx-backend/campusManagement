@@ -137,7 +137,7 @@ const ProgressCard = () => {
       const res = await markApi.getProgressReport(params);
       setData(res.data);
     } catch {
-      toast({ title: 'Error', description: 'Failed to load progress report data', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading. Please try again progress report data', variant: 'destructive' });
     }
     setLoading(false);
   };

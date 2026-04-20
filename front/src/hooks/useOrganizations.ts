@@ -42,7 +42,7 @@ export const useCreateOrganization = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to create organization',
+        description: error.response?.data?.message || 'Something went wrong while creating the organization. Please try again.',
         variant: 'destructive',
       });
     },
@@ -66,7 +66,7 @@ export const useUpdateOrganization = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to update organization',
+        description: error.response?.data?.message || 'Something went wrong while updating the organization. Please try again.',
         variant: 'destructive',
       });
     },
@@ -89,7 +89,7 @@ export const useDeleteOrganization = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to delete organization',
+        description: error.response?.data?.message || 'Something went wrong while deleting the organization. Please try again.',
         variant: 'destructive',
       });
     },

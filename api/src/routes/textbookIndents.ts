@@ -209,7 +209,7 @@ router.get('/', checkPermission('textbooks', 'read'), validateQuery(queryTextboo
     console.error('Get textbook indents error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving textbook indents'
+      message: 'Something went wrong while loading textbook indents. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -309,7 +309,7 @@ router.get('/stats/overview', checkPermission('textbooks', 'read'), async (req: 
     console.error('Get textbook indent stats error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving textbook indent statistics'
+      message: 'Something went wrong while loading textbook indent statistics. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -330,7 +330,7 @@ router.get('/:id', checkPermission('textbooks', 'read'), async (req: Authenticat
     if (!indent) {
       const response: ApiResponse = {
         success: false,
-        message: 'Textbook indent not found'
+        message: 'Textbook indent was not found.'
       };
       return res.status(404).json(response);
     }
@@ -346,7 +346,7 @@ router.get('/:id', checkPermission('textbooks', 'read'), async (req: Authenticat
     console.error('Get textbook indent error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving textbook indent'
+      message: 'Something went wrong while loading textbook indent. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -380,7 +380,7 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextbook
     if (!student) {
       const response: ApiResponse = {
         success: false,
-        message: 'Student not found'
+        message: 'Student was not found.'
       };
       return res.status(404).json(response);
     }
@@ -397,7 +397,7 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextbook
     if (textbooks.length !== items.length) {
       const response: ApiResponse = {
         success: false,
-        message: 'One or more textbooks not found'
+        message: 'One or more selected textbooks were not found.'
       };
       return res.status(404).json(response);
     }
@@ -522,7 +522,7 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextbook
     
     const response: ApiResponse = {
       success: false,
-      message: `Server error creating textbook indent: ${error.message || 'Unknown error'}`
+      message: `Something went wrong while creating the textbook indent: ${error.message || 'Unknown error'}`
     };
     res.status(500).json(response);
   }
@@ -553,7 +553,7 @@ router.put('/:id/issue', checkPermission('textbooks', 'update'), async (req: Aut
     if (!indent) {
       const response: ApiResponse = {
         success: false,
-        message: 'Textbook indent not found'
+        message: 'Textbook indent was not found.'
       };
       return res.status(404).json(response);
     }
@@ -608,7 +608,7 @@ router.put('/:id/issue', checkPermission('textbooks', 'update'), async (req: Aut
     
     const response: ApiResponse = {
       success: false,
-      message: `Server error issuing textbook indent: ${error.message || 'Unknown error'}`
+      message: `Something went wrong while issuing the textbook indent: ${error.message || 'Unknown error'}`
     };
     res.status(500).json(response);
   }
@@ -630,7 +630,7 @@ router.put('/:id/return', checkPermission('textbooks', 'update'), validate(retur
     if (!indent) {
       const response: ApiResponse = {
         success: false,
-        message: 'Textbook indent not found'
+        message: 'Textbook indent was not found.'
       };
       return res.status(404).json(response);
     }
@@ -726,7 +726,7 @@ router.put('/:id/return', checkPermission('textbooks', 'update'), validate(retur
     console.error('Return textbooks error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error processing textbook return'
+      message: 'Something went wrong while processing the textbook return. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -758,7 +758,7 @@ router.put('/:id/cancel', checkPermission('textbooks', 'update'), async (req: Au
     if (!indent) {
       const response: ApiResponse = {
         success: false,
-        message: 'Textbook indent not found'
+        message: 'Textbook indent was not found.'
       };
       return res.status(404).json(response);
     }
@@ -806,7 +806,7 @@ router.put('/:id/cancel', checkPermission('textbooks', 'update'), async (req: Au
     
     const response: ApiResponse = {
       success: false,
-      message: `Server error cancelling textbook indent: ${error.message || 'Unknown error'}`
+      message: `Something went wrong while cancelling the textbook indent: ${error.message || 'Unknown error'}`
     };
     res.status(500).json(response);
   }
@@ -837,7 +837,7 @@ router.post('/:id/receipt', checkPermission('textbooks', 'read'), async (req: Au
     if (!indent) {
       const response: ApiResponse = {
         success: false,
-        message: 'Textbook indent not found'
+        message: 'Textbook indent was not found.'
       };
       return res.status(404).json(response);
     }
@@ -915,7 +915,7 @@ router.post('/:id/receipt', checkPermission('textbooks', 'read'), async (req: Au
     
     const response: ApiResponse = {
       success: false,
-      message: `Server error generating receipt: ${error.message || 'Unknown error'}`
+      message: `Something went wrong while generating the receipt: ${error.message || 'Unknown error'}`
     };
     res.status(500).json(response);
   }

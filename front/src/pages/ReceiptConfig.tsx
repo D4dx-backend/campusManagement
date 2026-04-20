@@ -152,7 +152,7 @@ const ReceiptConfigPage = () => {
       console.error('Error details:', error.response?.data);
       
       // Show specific error message if available
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to upload logo';
+      const errorMessage = error.response?.data?.message || error.message || 'Something went wrong while uploading the logo. Please try again.';
       
       toast({
         title: 'Logo upload failed',

@@ -111,7 +111,7 @@ const ContentSchedule = () => {
       const res = await contentAssignmentApi.getAll(params);
       setAssignments(res.data || []);
     } catch {
-      toast({ title: 'Error', description: 'Failed to load assignments', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading. Please try again assignments', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -232,7 +232,7 @@ const ContentSchedule = () => {
       toast({ title: 'Deleted' });
       loadAssignments();
     } catch {
-      toast({ title: 'Error', description: 'Failed to delete', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while deleting. Please try again.', variant: 'destructive' });
     }
   };
 

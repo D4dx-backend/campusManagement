@@ -46,7 +46,7 @@ router.get('/', checkPermission('students', 'read'), validateQuery(queryStudents
       if (!Types.ObjectId.isValid(branchId)) {
         const response: ApiResponse = {
           success: false,
-          message: 'Invalid branch ID format'
+          message: 'The selected branch ID is not valid.'
         };
         return res.status(400).json(response);
       }
@@ -100,7 +100,7 @@ router.get('/', checkPermission('students', 'read'), validateQuery(queryStudents
     console.error('Get students error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving students'
+      message: 'Something went wrong while loading students. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -116,14 +116,14 @@ router.get('/next-admission-no', checkPermission('students', 'read'), async (req
     if (!classId) {
       const response: ApiResponse = {
         success: false,
-        message: 'classId is required'
+        message: 'Please select a class.'
       };
       return res.status(400).json(response);
     }
 
     const classDoc = await Class.findById(classId);
     if (!classDoc) {
-      const response: ApiResponse = { success: false, message: 'Class not found' };
+      const response: ApiResponse = { success: false, message: 'The selected class was not found.' };
       return res.status(404).json(response);
     }
 
@@ -156,7 +156,7 @@ router.get('/next-admission-no', checkPermission('students', 'read'), async (req
     res.json(response);
   } catch (error) {
     console.error('Next admission no error:', error);
-    const response: ApiResponse = { success: false, message: 'Server error generating admission number' };
+    const response: ApiResponse = { success: false, message: 'Something went wrong while generating the admission number. Please try again.' };
     res.status(500).json(response);
   }
 });
@@ -176,7 +176,7 @@ router.get('/:id', checkPermission('students', 'read'), async (req: Authenticate
     if (!student) {
       const response: ApiResponse = {
         success: false,
-        message: 'Student not found'
+        message: 'Student not found. They may have been deleted or you may not have access.'
       };
       return res.status(404).json(response);
     }
@@ -192,7 +192,7 @@ router.get('/:id', checkPermission('students', 'read'), async (req: Authenticate
     console.error('Get student error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving student'
+      message: 'Something went wrong while loading the student details. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -208,7 +208,7 @@ router.post('/', checkPermission('students', 'create'), validate(createStudentSc
     if (existingStudent) {
       const response: ApiResponse = {
         success: false,
-        message: 'Student with this admission number already exists'
+        message: 'A student with this Admission Number already exists. Please check and try again.'
       };
       return res.status(400).json(response);
     }
@@ -218,7 +218,7 @@ router.post('/', checkPermission('students', 'create'), validate(createStudentSc
     if (!classInfo) {
       const response: ApiResponse = {
         success: false,
-        message: 'Invalid class selected'
+        message: 'The selected class was not found. Please select a valid class.'
       };
       return res.status(400).json(response);
     }
@@ -230,7 +230,7 @@ router.post('/', checkPermission('students', 'create'), validate(createStudentSc
     if (!branchId) {
       const response: ApiResponse = {
         success: false,
-        message: 'Branch information is required for student creation'
+        message: 'Branch information is missing. Please select a branch before creating a student.'
       };
       return res.status(400).json(response);
     }
@@ -271,7 +271,7 @@ router.post('/', checkPermission('students', 'create'), validate(createStudentSc
     console.error('Create student error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error creating student'
+      message: 'Something went wrong while creating the student. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -294,7 +294,7 @@ router.put('/:id', checkPermission('students', 'update'), validate(updateStudent
       if (!classInfo) {
         const response: ApiResponse = {
           success: false,
-          message: 'Invalid class selected'
+          message: 'The selected class was not found. Please select a valid class.'
         };
         return res.status(400).json(response);
       }
@@ -311,7 +311,7 @@ router.put('/:id', checkPermission('students', 'update'), validate(updateStudent
     if (!student) {
       const response: ApiResponse = {
         success: false,
-        message: 'Student not found'
+        message: 'Student was not found.'
       };
       return res.status(404).json(response);
     }
@@ -339,7 +339,7 @@ router.put('/:id', checkPermission('students', 'update'), validate(updateStudent
     console.error('Update student error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error updating student'
+      message: 'Something went wrong while updating the student. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -360,7 +360,7 @@ router.delete('/:id', checkPermission('students', 'delete'), async (req: Authent
     if (!student) {
       const response: ApiResponse = {
         success: false,
-        message: 'Student not found'
+        message: 'Student was not found.'
       };
       return res.status(404).json(response);
     }
@@ -387,7 +387,7 @@ router.delete('/:id', checkPermission('students', 'delete'), async (req: Authent
     console.error('Delete student error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error deleting student'
+      message: 'Something went wrong while deleting the student. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -441,7 +441,7 @@ router.get('/stats/overview', checkPermission('students', 'read'), async (req: A
     console.error('Get student stats error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving student statistics'
+      message: 'Something went wrong while loading statistics. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -457,7 +457,7 @@ router.post('/promote', checkPermission('students', 'update'), async (req: Authe
     if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
       const response: ApiResponse = {
         success: false,
-        message: 'Student IDs array is required'
+        message: 'Please select at least one student for promotion.'
       };
       return res.status(400).json(response);
     }
@@ -475,7 +475,7 @@ router.post('/promote', checkPermission('students', 'update'), async (req: Authe
     if (!targetClass) {
       const response: ApiResponse = {
         success: false,
-        message: 'Target class not found'
+        message: 'Target class was not found. Please select a valid class for promotion.'
       };
       return res.status(404).json(response);
     }
@@ -489,7 +489,7 @@ router.post('/promote', checkPermission('students', 'update'), async (req: Authe
         Object.assign(studentFilter, getOrgBranchFilter(req));
         const student = await Student.findOne(studentFilter);
         if (!student) {
-          failed.push({ studentId, reason: 'Student not found' });
+          failed.push({ studentId, reason: 'Student was not found.' });
           continue;
         }
 
@@ -542,7 +542,7 @@ router.post('/promote', checkPermission('students', 'update'), async (req: Authe
     console.error('Promote students error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error promoting students'
+      message: 'Something went wrong while promoting students. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -565,7 +565,7 @@ router.post('/:id/transfer', checkPermission('students', 'update'), async (req: 
     if (!student) {
       const response: ApiResponse = {
         success: false,
-        message: 'Student not found'
+        message: 'Student was not found.'
       };
       return res.status(404).json(response);
     }
@@ -648,7 +648,7 @@ router.post('/:id/transfer', checkPermission('students', 'update'), async (req: 
     console.error('Transfer student error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error generating transfer certificate'
+      message: 'Something went wrong while generating the transfer certificate. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -664,7 +664,7 @@ router.post('/:id/suspend', checkPermission('students', 'update'), async (req: A
     const { suspensionReason, suspensionDate, suspensionEndDate } = req.body;
 
     if (!suspensionReason) {
-      return res.status(400).json({ success: false, message: 'Suspension reason is required' } as ApiResponse);
+      return res.status(400).json({ success: false, message: 'Please provide a reason for suspending this student.' } as ApiResponse);
     }
 
     const filter: any = { _id: req.params.id };
@@ -672,7 +672,7 @@ router.post('/:id/suspend', checkPermission('students', 'update'), async (req: A
 
     const student = await Student.findOne(filter);
     if (!student) {
-      return res.status(404).json({ success: false, message: 'Student not found' } as ApiResponse);
+      return res.status(404).json({ success: false, message: 'Student was not found.' } as ApiResponse);
     }
 
     if (student.status === 'suspended') {
@@ -699,7 +699,7 @@ router.post('/:id/suspend', checkPermission('students', 'update'), async (req: A
     res.json({ success: true, message: 'Student suspended successfully', data: student } as ApiResponse);
   } catch (error) {
     console.error('Suspend student error:', error);
-    res.status(500).json({ success: false, message: 'Server error suspending student' } as ApiResponse);
+    res.status(500).json({ success: false, message: 'Something went wrong while suspending the student. Please try again.' } as ApiResponse);
   }
 });
 
@@ -713,7 +713,7 @@ router.post('/:id/revoke-suspension', checkPermission('students', 'update'), asy
 
     const student = await Student.findOne(filter);
     if (!student) {
-      return res.status(404).json({ success: false, message: 'Student not found' } as ApiResponse);
+      return res.status(404).json({ success: false, message: 'Student was not found.' } as ApiResponse);
     }
 
     if (student.status !== 'suspended') {
@@ -738,7 +738,7 @@ router.post('/:id/revoke-suspension', checkPermission('students', 'update'), asy
     res.json({ success: true, message: 'Suspension revoked successfully', data: student } as ApiResponse);
   } catch (error) {
     console.error('Revoke suspension error:', error);
-    res.status(500).json({ success: false, message: 'Server error revoking suspension' } as ApiResponse);
+    res.status(500).json({ success: false, message: 'Something went wrong while revoking the suspension. Please try again.' } as ApiResponse);
   }
 });
 

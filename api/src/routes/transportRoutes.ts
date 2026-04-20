@@ -70,7 +70,7 @@ router.get('/', checkPermission('classes', 'read'), validateQuery(queryTransport
     console.error('Get transport routes error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving transport routes'
+      message: 'Something went wrong while loading transport routes. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -91,7 +91,7 @@ router.get('/:id', checkPermission('classes', 'read'), async (req: Authenticated
     if (!route) {
       const response: ApiResponse = {
         success: false,
-        message: 'Transport route not found'
+        message: 'Transport route was not found.'
       };
       return res.status(404).json(response);
     }
@@ -107,7 +107,7 @@ router.get('/:id', checkPermission('classes', 'read'), async (req: Authenticated
     console.error('Get transport route error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving transport route'
+      message: 'Something went wrong while loading transport route. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -125,7 +125,7 @@ router.post('/', checkPermission('classes', 'create'), validate(createTransportR
     if (!resolvedBranchId) {
       const response: ApiResponse = {
         success: false,
-        message: 'Branch is required'
+        message: 'Please select a branch.'
       };
       return res.status(400).json(response);
     }
@@ -139,7 +139,7 @@ router.post('/', checkPermission('classes', 'create'), validate(createTransportR
     if (existingRoute) {
       const response: ApiResponse = {
         success: false,
-        message: 'Transport route with this code already exists'
+        message: 'A transport route with this code already exists. Please use a different code.'
       };
       return res.status(400).json(response);
     }
@@ -170,7 +170,7 @@ router.post('/', checkPermission('classes', 'create'), validate(createTransportR
     console.error('Create transport route error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error creating transport route'
+      message: 'Something went wrong while creating the transport route. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -198,7 +198,7 @@ router.put('/:id', checkPermission('classes', 'update'), validate(updateTranspor
       if (existingRoute) {
         const response: ApiResponse = {
           success: false,
-          message: 'Transport route with this code already exists'
+          message: 'A transport route with this code already exists. Please use a different code.'
         };
         return res.status(400).json(response);
       }
@@ -215,7 +215,7 @@ router.put('/:id', checkPermission('classes', 'update'), validate(updateTranspor
     if (!route) {
       const response: ApiResponse = {
         success: false,
-        message: 'Transport route not found'
+        message: 'Transport route was not found.'
       };
       return res.status(404).json(response);
     }
@@ -231,7 +231,7 @@ router.put('/:id', checkPermission('classes', 'update'), validate(updateTranspor
     console.error('Update transport route error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error updating transport route'
+      message: 'Something went wrong while updating the transport route. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -252,7 +252,7 @@ router.delete('/:id', checkPermission('classes', 'delete'), async (req: Authenti
     if (!route) {
       const response: ApiResponse = {
         success: false,
-        message: 'Transport route not found'
+        message: 'Transport route was not found.'
       };
       return res.status(404).json(response);
     }
@@ -267,7 +267,7 @@ router.delete('/:id', checkPermission('classes', 'delete'), async (req: Authenti
     console.error('Delete transport route error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error deleting transport route'
+      message: 'Something went wrong while deleting the transport route. Please try again.'
     };
     res.status(500).json(response);
   }

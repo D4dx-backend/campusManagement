@@ -86,7 +86,7 @@ export const useCreateTextbookIndent = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to create textbook indent',
+        description: error.response?.data?.message || 'Something went wrong while creating the textbook indent. Please try again.',
         variant: 'destructive',
       });
     },
@@ -112,7 +112,7 @@ export const useUpdateTextbookIndent = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to update textbook indent',
+        description: error.response?.data?.message || 'Something went wrong while updating the textbook indent. Please try again.',
         variant: 'destructive',
       });
     },
@@ -138,7 +138,7 @@ export const useIssueTextbookIndent = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to issue textbooks',
+        description: error.response?.data?.message || 'Something went wrong while issuing textbooks. Please try again.',
         variant: 'destructive',
       });
     },
@@ -165,7 +165,7 @@ export const useReturnTextbooks = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to return textbooks',
+        description: error.response?.data?.message || 'Something went wrong while returning textbooks. Please try again.',
         variant: 'destructive',
       });
     },
@@ -192,7 +192,7 @@ export const useCancelTextbookIndent = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to cancel textbook indent',
+        description: error.response?.data?.message || 'Something went wrong while cancelling the textbook indent. Please try again.',
         variant: 'destructive',
       });
     },
@@ -214,7 +214,7 @@ export const useGenerateTextbookReceipt = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to generate receipt',
+        description: error.response?.data?.message || 'Something went wrong while generating the receipt. Please try again.',
         variant: 'destructive',
       });
     },
@@ -240,7 +240,7 @@ export const useBulkIssueForClass = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to complete bulk textbook issue',
+        description: error.response?.data?.message || 'Something went wrong while completing the bulk textbook issue. Please try again.',
         variant: 'destructive',
       });
     },

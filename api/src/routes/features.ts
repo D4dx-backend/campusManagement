@@ -39,7 +39,7 @@ router.get(
   async (req: AuthenticatedRequest, res) => {
     const org = await Organization.findById(req.params.organizationId).select('enabledFeatures name').lean();
     if (!org) {
-      res.status(404).json({ success: false, message: 'Organization not found' });
+      res.status(404).json({ success: false, message: 'Organization was not found.' });
       return;
     }
 
@@ -91,7 +91,7 @@ router.put(
     ).select('enabledFeatures name');
 
     if (!org) {
-      res.status(404).json({ success: false, message: 'Organization not found' });
+      res.status(404).json({ success: false, message: 'Organization was not found.' });
       return;
     }
 
@@ -126,7 +126,7 @@ router.get(
   async (req: AuthenticatedRequest, res) => {
     const branch = await Branch.findById(req.params.branchId).select('enabledFeatures organizationId name').lean();
     if (!branch) {
-      res.status(404).json({ success: false, message: 'Branch not found' });
+      res.status(404).json({ success: false, message: 'Branch was not found.' });
       return;
     }
 
@@ -177,7 +177,7 @@ router.put(
 
     const branch = await Branch.findById(req.params.branchId);
     if (!branch) {
-      res.status(404).json({ success: false, message: 'Branch not found' });
+      res.status(404).json({ success: false, message: 'Branch was not found.' });
       return;
     }
 

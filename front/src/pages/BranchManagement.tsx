@@ -61,7 +61,7 @@ const BranchManagement = () => {
         );
       }
     } catch {
-      toast({ title: 'Error', description: 'Failed to load feature settings', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading. Please try again feature settings', variant: 'destructive' });
     } finally {
       setFeatureLoading(false);
     }
@@ -88,7 +88,7 @@ const BranchManagement = () => {
       setFeatureDialogOpen(false);
       refetchFeatures();
     } catch (err: any) {
-      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to save', variant: 'destructive' });
+      toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong while saving. Please try again', variant: 'destructive' });
     } finally {
       setFeatureSaving(false);
     }
@@ -188,7 +188,7 @@ const BranchManagement = () => {
     } catch (error: any) {
       toast({ 
         title: 'Error', 
-        description: error.response?.data?.message || 'Failed to save branch',
+        description: error.response?.data?.message || 'Something went wrong while saving. Please try again branch',
         variant: 'destructive'
       });
     }
@@ -250,7 +250,7 @@ const BranchManagement = () => {
         } catch (error: any) {
           toast({ 
             title: 'Error', 
-            description: error.response?.data?.message || 'Failed to delete branch',
+            description: error.response?.data?.message || 'Something went wrong while deleting. Please try again branch',
             variant: 'destructive'
           });
         }

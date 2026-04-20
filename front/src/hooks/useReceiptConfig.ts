@@ -103,7 +103,7 @@ export const useUpdateReceiptConfig = () => {
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Failed to update receipt configuration",
+        description: error.response?.data?.message || "Something went wrong while updating the receipt configuration. Please try again.",
         variant: "destructive",
       });
     },
@@ -127,7 +127,7 @@ export const useDeleteReceiptConfig = () => {
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Failed to delete receipt configuration",
+        description: error.response?.data?.message || "Something went wrong while deleting the receipt configuration. Please try again.",
         variant: "destructive",
       });
     },

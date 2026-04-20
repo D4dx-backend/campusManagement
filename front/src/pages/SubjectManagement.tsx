@@ -52,7 +52,7 @@ const SubjectManagement = () => {
       const res = await subjectApi.getAll({ limit: 100, search });
       setSubjects(res.data || []);
     } catch {
-      toast({ title: 'Error', description: 'Failed to load subjects', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading subjects. Please try again.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -108,7 +108,7 @@ const SubjectManagement = () => {
       setDialogOpen(false);
       loadSubjects();
     } catch (err: any) {
-      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to save', variant: 'destructive' });
+      toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong while saving. Please try again', variant: 'destructive' });
     }
   };
 
@@ -119,7 +119,7 @@ const SubjectManagement = () => {
       toast({ title: 'Deleted', description: 'Subject deleted' });
       loadSubjects();
     } catch {
-      toast({ title: 'Error', description: 'Failed to delete', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while deleting. Please try again.', variant: 'destructive' });
     }
   };
 

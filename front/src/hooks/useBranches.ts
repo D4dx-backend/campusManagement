@@ -34,7 +34,7 @@ export const useCreateBranch = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to create branch',
+        description: error.response?.data?.message || 'Something went wrong while creating the branch. Please try again.',
         variant: 'destructive',
       });
     },
@@ -58,7 +58,7 @@ export const useUpdateBranch = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to update branch',
+        description: error.response?.data?.message || 'Something went wrong while updating the branch. Please try again.',
         variant: 'destructive',
       });
     },
@@ -81,7 +81,7 @@ export const useDeleteBranch = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to delete branch',
+        description: error.response?.data?.message || 'Something went wrong while deleting the branch. Please try again.',
         variant: 'destructive',
       });
     },

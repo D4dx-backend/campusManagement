@@ -192,7 +192,7 @@ router.get('/', checkPermission('expenses', 'read'), validateQuery(queryExpenses
     console.error('Get expenses error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving expenses'
+      message: 'Something went wrong while loading expenses. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -213,7 +213,7 @@ router.get('/:id', checkPermission('expenses', 'read'), async (req: Authenticate
     if (!expense) {
       const response: ApiResponse = {
         success: false,
-        message: 'Expense not found'
+        message: 'Expense record was not found.'
       };
       return res.status(404).json(response);
     }
@@ -229,7 +229,7 @@ router.get('/:id', checkPermission('expenses', 'read'), async (req: Authenticate
     console.error('Get expense error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving expense'
+      message: 'Something went wrong while loading expense. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -348,7 +348,7 @@ router.put('/:id', checkPermission('expenses', 'update'), validate(updateExpense
     if (!expense) {
       const response: ApiResponse = {
         success: false,
-        message: 'Expense not found'
+        message: 'Expense record was not found.'
       };
       return res.status(404).json(response);
     }
@@ -376,7 +376,7 @@ router.put('/:id', checkPermission('expenses', 'update'), validate(updateExpense
     console.error('Update expense error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error updating expense'
+      message: 'Something went wrong while updating the expense. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -397,7 +397,7 @@ router.delete('/:id', checkPermission('expenses', 'delete'), async (req: Authent
     if (!expense) {
       const response: ApiResponse = {
         success: false,
-        message: 'Expense not found'
+        message: 'Expense record was not found.'
       };
       return res.status(404).json(response);
     }
@@ -424,7 +424,7 @@ router.delete('/:id', checkPermission('expenses', 'delete'), async (req: Authent
     console.error('Delete expense error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error deleting expense'
+      message: 'Something went wrong while deleting the expense. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -507,7 +507,7 @@ router.get('/stats/overview', checkPermission('expenses', 'read'), async (req: A
     console.error('Get expense stats error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving expense statistics'
+      message: 'Something went wrong while loading expense statistics. Please try again.'
     };
     res.status(500).json(response);
   }

@@ -28,7 +28,7 @@ export const useCreateStaffCategory = () => {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || 'Failed to create staff category';
+      const errorMessage = error.response?.data?.message || 'Something went wrong while creating the staff category. Please try again.';
       toast({
         title: 'Error',
         description: errorMessage,
@@ -53,7 +53,7 @@ export const useUpdateStaffCategory = () => {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || 'Failed to update staff category';
+      const errorMessage = error.response?.data?.message || 'Something went wrong while updating the staff category. Please try again.';
       toast({
         title: 'Error',
         description: errorMessage,
@@ -77,7 +77,7 @@ export const useDeleteStaffCategory = () => {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || 'Failed to delete staff category';
+      const errorMessage = error.response?.data?.message || 'Something went wrong while deleting the staff category. Please try again.';
       toast({
         title: 'Error',
         description: errorMessage,

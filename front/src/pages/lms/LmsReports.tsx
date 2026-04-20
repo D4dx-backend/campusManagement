@@ -79,7 +79,7 @@ const LmsReports = () => {
       const res = await lmsReportsApi.getClassPerformance(params);
       setClassReport(res.data);
     } catch {
-      toast({ title: 'Error', description: 'Failed to load report', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading. Please try again report', variant: 'destructive' });
     } finally {
       setClassLoading(false);
     }
@@ -99,7 +99,7 @@ const LmsReports = () => {
       const res = await lmsReportsApi.getStudentActivity(params);
       setStudentReport(res.data);
     } catch {
-      toast({ title: 'Error', description: 'Failed to load student report', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading. Please try again student report', variant: 'destructive' });
     } finally {
       setStudentLoading(false);
     }

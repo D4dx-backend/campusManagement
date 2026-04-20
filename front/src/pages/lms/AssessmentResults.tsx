@@ -28,7 +28,7 @@ const AssessmentResults = () => {
       const res = await submissionApi.getAssessmentSummary(id!);
       setSummary(res.data);
     } catch (err: any) {
-      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to load results', variant: 'destructive' });
+      toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong while loading. Please try again results', variant: 'destructive' });
     } finally {
       setLoading(false);
     }

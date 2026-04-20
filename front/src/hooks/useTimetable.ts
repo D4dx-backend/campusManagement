@@ -66,7 +66,7 @@ export const useCreateTimetableConfig = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to create config',
+        description: error.response?.data?.message || 'Something went wrong while creating the timetable config. Please try again.',
         variant: 'destructive',
       });
     },
@@ -87,7 +87,7 @@ export const useUpdateTimetableConfig = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to update config',
+        description: error.response?.data?.message || 'Something went wrong while updating the timetable config. Please try again.',
         variant: 'destructive',
       });
     },
@@ -107,7 +107,7 @@ export const useDeleteTimetableConfig = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to delete config',
+        description: error.response?.data?.message || 'Something went wrong while deleting the timetable config. Please try again.',
         variant: 'destructive',
       });
     },
@@ -178,7 +178,7 @@ export const useCreateTimetable = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to create timetable',
+        description: error.response?.data?.message || 'Something went wrong while creating the timetable. Please try again.',
         variant: 'destructive',
       });
     },
@@ -199,7 +199,7 @@ export const useUpdateTimetable = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to update timetable',
+        description: error.response?.data?.message || 'Something went wrong while updating the timetable. Please try again.',
         variant: 'destructive',
       });
     },
@@ -219,7 +219,7 @@ export const useActivateTimetable = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to activate timetable',
+        description: error.response?.data?.message || 'Something went wrong while activating the timetable. Please try again.',
         variant: 'destructive',
       });
     },
@@ -240,7 +240,7 @@ export const useCloneTimetable = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to clone timetable',
+        description: error.response?.data?.message || 'Something went wrong while cloning the timetable. Please try again.',
         variant: 'destructive',
       });
     },
@@ -260,7 +260,7 @@ export const useDeleteTimetable = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to delete timetable',
+        description: error.response?.data?.message || 'Something went wrong while deleting the timetable. Please try again.',
         variant: 'destructive',
       });
     },
@@ -275,7 +275,7 @@ export const useCheckConflicts = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to check conflicts',
+        description: error.response?.data?.message || 'Something went wrong while checking for conflicts. Please try again.',
         variant: 'destructive',
       });
     },
@@ -295,7 +295,7 @@ export const useAutoGenerate = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to auto-generate timetable',
+        description: error.response?.data?.message || 'Something went wrong while auto-generating the timetable. Please try again.',
         variant: 'destructive',
       });
     },

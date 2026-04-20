@@ -104,7 +104,7 @@ router.post('/', authorize('platform_admin', 'org_admin', 'branch_admin'), valid
     res.status(201).json({ success: true, message: 'Allocation created', data: allocation });
   } catch (error: any) {
     if (error.code === 11000) {
-      return res.status(400).json({ success: false, message: 'This teacher-class-subject allocation already exists' });
+      return res.status(400).json({ success: false, message: 'This teacher is already allocated to this class and subject.' });
     }
     res.status(500).json({ success: false, message: error.message });
   }
@@ -145,7 +145,7 @@ router.post('/bulk', authorize('platform_admin', 'org_admin', 'branch_admin'), v
 router.delete('/:id', authorize('platform_admin', 'org_admin', 'branch_admin'), async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
-    if (!Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+    if (!Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
 
     const result = await TeacherAllocation.findByIdAndDelete(id);
     if (!result) return res.status(404).json({ success: false, message: 'Not found' });
@@ -163,7 +163,7 @@ router.delete('/class/:classId', authorize('platform_admin', 'org_admin', 'branc
   try {
     const { classId } = req.params;
     const { academicYear } = req.query as any;
-    if (!Types.ObjectId.isValid(classId)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+    if (!Types.ObjectId.isValid(classId)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
 
     const filter: any = { classId: new Types.ObjectId(classId) };
     if (academicYear) filter.academicYear = academicYear;

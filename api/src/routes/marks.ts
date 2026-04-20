@@ -72,14 +72,14 @@ router.get('/sheet', checkPermission('classes', 'read'), async (req: Authenticat
 // GET /api/marks/students — Get students for mark entry prefill
 router.get('/students', checkPermission('classes', 'read'), async (req: AuthenticatedRequest, res) => {
   const { classId, divisionId } = req.query;
-  if (!classId) return res.status(400).json({ success: false, message: 'classId is required' });
+  if (!classId) return res.status(400).json({ success: false, message: 'Please select a class.' });
 
   const studentFilter: any = { status: 'active' };
   Object.assign(studentFilter, getOrgBranchFilter(req));
 
   // Look up class and find matching students
   const cls = await Class.findById(classId);
-  if (!cls) return res.status(404).json({ success: false, message: 'Class not found' });
+  if (!cls) return res.status(404).json({ success: false, message: 'Class was not found.' });
 
   studentFilter.classId = new Types.ObjectId(classId as string);
   if (divisionId && Types.ObjectId.isValid(divisionId as string)) {
@@ -107,9 +107,9 @@ router.post('/save', checkPermission('classes', 'create'), validate(saveMarkShee
     divisionId ? Division.findById(divisionId) : null
   ]);
 
-  if (!exam) return res.status(404).json({ success: false, message: 'Exam not found' });
-  if (!subject) return res.status(404).json({ success: false, message: 'Subject not found' });
-  if (!cls) return res.status(404).json({ success: false, message: 'Class not found' });
+  if (!exam) return res.status(404).json({ success: false, message: 'Exam was not found.' });
+  if (!subject) return res.status(404).json({ success: false, message: 'Subject was not found.' });
+  if (!cls) return res.status(404).json({ success: false, message: 'Class was not found.' });
 
   const filter: any = {
     examId: new Types.ObjectId(examId),
@@ -170,8 +170,8 @@ router.post('/bulk-save', checkPermission('classes', 'create'), validate(bulkMar
     divisionId ? Division.findById(divisionId) : null
   ]);
 
-  if (!exam) return res.status(404).json({ success: false, message: 'Exam not found' });
-  if (!cls) return res.status(404).json({ success: false, message: 'Class not found' });
+  if (!exam) return res.status(404).json({ success: false, message: 'Exam was not found.' });
+  if (!cls) return res.status(404).json({ success: false, message: 'Class was not found.' });
 
   // Get all students for this class/division to lookup names
   const studentFilter: any = { classId: new Types.ObjectId(classId), status: 'active' };

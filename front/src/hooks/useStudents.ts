@@ -54,7 +54,7 @@ export const useCreateStudent = () => {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || 'Failed to create student';
+      const errorMessage = error.response?.data?.message || 'Something went wrong while creating the student. Please try again.';
       const errorDetails = error.response?.data?.error;
       const fullMessage = errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage;
       
@@ -84,7 +84,7 @@ export const useUpdateStudent = () => {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || 'Failed to update student';
+      const errorMessage = error.response?.data?.message || 'Something went wrong while updating the student. Please try again.';
       const errorDetails = error.response?.data?.error;
       const fullMessage = errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage;
       
@@ -112,7 +112,7 @@ export const useDeleteStudent = () => {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || 'Failed to delete student';
+      const errorMessage = error.response?.data?.message || 'Something went wrong while deleting the student. Please try again.';
       const errorDetails = error.response?.data?.error;
       const fullMessage = errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage;
       

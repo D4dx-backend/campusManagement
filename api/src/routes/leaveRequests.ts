@@ -26,7 +26,7 @@ router.post('/', validate(createLeaveRequestSchema), async (req: AuthenticatedRe
     if (!student) {
       return res.status(404).json({
         success: false,
-        message: 'Student not found',
+        message: 'Student was not found.',
       });
     }
 
@@ -148,12 +148,12 @@ router.put('/:id/review', checkPermission('attendance', 'update'), validate(revi
     const { status, reviewNote } = req.body;
 
     if (!Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ success: false, message: 'Invalid leave request ID' });
+      return res.status(400).json({ success: false, message: 'The leave request ID is not valid.' });
     }
 
     const leaveRequest = await LeaveRequest.findById(id);
     if (!leaveRequest) {
-      return res.status(404).json({ success: false, message: 'Leave request not found' });
+      return res.status(404).json({ success: false, message: 'Leave request was not found.' });
     }
 
     if (leaveRequest.status !== 'pending') {
@@ -200,12 +200,12 @@ router.delete('/:id', checkPermission('attendance', 'delete'), async (req: Authe
   try {
     const { id } = req.params;
     if (!Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ success: false, message: 'Invalid leave request ID' });
+      return res.status(400).json({ success: false, message: 'The leave request ID is not valid.' });
     }
 
     const leaveRequest = await LeaveRequest.findByIdAndDelete(id);
     if (!leaveRequest) {
-      return res.status(404).json({ success: false, message: 'Leave request not found' });
+      return res.status(404).json({ success: false, message: 'Leave request was not found.' });
     }
 
     res.json({ success: true, message: 'Leave request deleted successfully' });

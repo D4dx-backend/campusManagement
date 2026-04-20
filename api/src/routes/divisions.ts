@@ -151,7 +151,7 @@ router.get('/', checkPermission('divisions', 'read'), validateQuery(queryDivisio
     console.error('Get divisions error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving divisions'
+      message: 'Something went wrong while loading divisions. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -197,7 +197,7 @@ router.get('/:id', checkPermission('divisions', 'read'), async (req: Authenticat
     if (!divisionData || divisionData.length === 0) {
       const response: ApiResponse = {
         success: false,
-        message: 'Division not found'
+        message: 'Division was not found.'
       };
       return res.status(404).json(response);
     }
@@ -226,7 +226,7 @@ router.get('/:id', checkPermission('divisions', 'read'), async (req: Authenticat
     console.error('Get division error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving division'
+      message: 'Something went wrong while loading division. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -247,7 +247,7 @@ router.post('/', checkPermission('divisions', 'create'), validate(createDivision
     if (!classExists) {
       const response: ApiResponse = {
         success: false,
-        message: 'Class not found'
+        message: 'Class was not found.'
       };
       return res.status(404).json(response);
     }
@@ -285,7 +285,7 @@ router.post('/', checkPermission('divisions', 'create'), validate(createDivision
       if (!teacher) {
         const response: ApiResponse = {
           success: false,
-          message: 'Class teacher not found'
+          message: 'The assigned class teacher was not found in the staff records.'
         };
         return res.status(404).json(response);
       }
@@ -331,7 +331,7 @@ router.post('/', checkPermission('divisions', 'create'), validate(createDivision
     console.error('Create division error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error creating division'
+      message: 'Something went wrong while creating the division. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -351,7 +351,7 @@ router.put('/:id', checkPermission('divisions', 'update'), validate(updateDivisi
     if (!existingDivision) {
       const response: ApiResponse = {
         success: false,
-        message: 'Division not found'
+        message: 'Division was not found.'
       };
       return res.status(404).json(response);
     }
@@ -385,7 +385,7 @@ router.put('/:id', checkPermission('divisions', 'update'), validate(updateDivisi
       if (!teacher) {
         const response: ApiResponse = {
           success: false,
-          message: 'Class teacher not found'
+          message: 'The assigned class teacher was not found in the staff records.'
         };
         return res.status(404).json(response);
       }
@@ -424,7 +424,7 @@ router.put('/:id', checkPermission('divisions', 'update'), validate(updateDivisi
     console.error('Update division error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error updating division'
+      message: 'Something went wrong while updating the division. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -444,7 +444,7 @@ router.delete('/:id', checkPermission('divisions', 'delete'), async (req: Authen
     if (!division) {
       const response: ApiResponse = {
         success: false,
-        message: 'Division not found'
+        message: 'Division was not found.'
       };
       return res.status(404).json(response);
     }
@@ -488,7 +488,7 @@ router.delete('/:id', checkPermission('divisions', 'delete'), async (req: Authen
     console.error('Delete division error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error deleting division'
+      message: 'Something went wrong while deleting the division. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -506,7 +506,7 @@ router.get('/class/:classId', checkPermission('divisions', 'read'), async (req: 
     if (!classInfo) {
       const response: ApiResponse = {
         success: false,
-        message: 'Class not found'
+        message: 'Class was not found.'
       };
       return res.status(404).json(response);
     }
@@ -563,7 +563,7 @@ router.get('/class/:classId', checkPermission('divisions', 'read'), async (req: 
     console.error('Get divisions by class error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving divisions'
+      message: 'Something went wrong while loading divisions. Please try again.'
     };
     res.status(500).json(response);
   }

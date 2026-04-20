@@ -74,7 +74,7 @@ router.get('/current', checkPermission('classes', 'read'), async (req: Authentic
 
 // GET /api/academic-years/:id
 router.get('/:id', checkPermission('classes', 'read'), async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const filter: any = { _id: req.params.id };
   Object.assign(filter, getOrgBranchFilter(req));
   const year = await AcademicYear.findOne(filter);
@@ -112,7 +112,7 @@ router.post('/', checkPermission('classes', 'create'), validate(createSchema), a
 
 // PUT /api/academic-years/:id
 router.put('/:id', checkPermission('classes', 'update'), validate(updateSchema), async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const filter: any = { _id: req.params.id };
   Object.assign(filter, getOrgBranchFilter(req));
 
@@ -134,7 +134,7 @@ router.put('/:id', checkPermission('classes', 'update'), validate(updateSchema),
 
 // DELETE /api/academic-years/:id
 router.delete('/:id', checkPermission('classes', 'delete'), async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const filter: any = { _id: req.params.id };
   Object.assign(filter, getOrgBranchFilter(req));
   const year = await AcademicYear.findOneAndDelete(filter);

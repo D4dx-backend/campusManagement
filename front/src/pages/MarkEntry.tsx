@@ -171,7 +171,7 @@ const MarkEntryPage = () => {
       setStudents(rows);
       setLoaded(true);
     } catch (err: any) {
-      toast({ title: 'Error', description: 'Failed to load data', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading. Please try again data', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -231,7 +231,7 @@ const MarkEntryPage = () => {
       });
       toast({ title: 'Pasted', description: `Pasted ${values.length} values` });
     }).catch(() => {
-      toast({ title: 'Error', description: 'Failed to read clipboard', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while reading the clipboard. Please try again.', variant: 'destructive' });
     });
   };
 
@@ -262,7 +262,7 @@ const MarkEntryPage = () => {
         description: finalize ? 'Marks finalized successfully' : 'Marks saved successfully'
       });
     } catch (err: any) {
-      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to save', variant: 'destructive' });
+      toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong while saving. Please try again', variant: 'destructive' });
     } finally {
       setSaving(false);
     }

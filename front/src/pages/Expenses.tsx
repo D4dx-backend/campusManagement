@@ -197,7 +197,7 @@ const ExpensesContent = () => {
           console.error('PDF generation error:', error);
           toast({
             title: 'Error',
-            description: 'Failed to generate voucher PDF',
+            description: 'Something went wrong while generating. Please try again voucher PDF',
             variant: 'destructive'
           });
         }

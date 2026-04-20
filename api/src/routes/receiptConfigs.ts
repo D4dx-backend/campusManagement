@@ -32,7 +32,7 @@ router.get('/', authorize('platform_admin', 'org_admin'), async (req: Authentica
     console.error('Get receipt configs error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving receipt configurations'
+      message: 'Something went wrong while loading receipt configurations. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -84,7 +84,7 @@ router.get('/current', async (req: AuthenticatedRequest, res) => {
     if (!config) {
       const response: ApiResponse = {
         success: false,
-        message: 'Receipt configuration not found'
+        message: 'Receipt configuration was not found.'
       };
       return res.status(404).json(response);
     }
@@ -100,7 +100,7 @@ router.get('/current', async (req: AuthenticatedRequest, res) => {
     console.error('Get current receipt config error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving receipt configuration'
+      message: 'Something went wrong while loading receipt configuration. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -118,7 +118,7 @@ router.get('/branch/:branchId', async (req: AuthenticatedRequest, res) => {
     if (!['platform_admin', 'org_admin'].includes(user.role) && user.branchId && !new Types.ObjectId(user.branchId).equals(branchId)) {
       const response: ApiResponse = {
         success: false,
-        message: 'Access denied to this branch'
+        message: 'You do not have access to this branch.'
       };
       return res.status(403).json(response);
     }
@@ -149,7 +149,7 @@ router.get('/branch/:branchId', async (req: AuthenticatedRequest, res) => {
     console.error('Get receipt config by branch error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving receipt configuration'
+      message: 'Something went wrong while loading receipt configuration. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -195,7 +195,7 @@ router.post('/', authorize('platform_admin', 'org_admin', 'branch_admin'), async
     if (!branch) {
       const response: ApiResponse = {
         success: false,
-        message: 'Branch not found'
+        message: 'Branch was not found.'
       };
       return res.status(404).json(response);
     }
@@ -240,7 +240,7 @@ router.post('/', authorize('platform_admin', 'org_admin', 'branch_admin'), async
     console.error('Create receipt config error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error creating receipt configuration'
+      message: 'Something went wrong while creating the receipt configuration. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -259,7 +259,7 @@ router.put('/:id', authorize('platform_admin', 'org_admin', 'branch_admin'), asy
     if (!config) {
       const response: ApiResponse = {
         success: false,
-        message: 'Receipt configuration not found'
+        message: 'Receipt configuration was not found.'
       };
       return res.status(404).json(response);
     }
@@ -311,7 +311,7 @@ router.put('/:id', authorize('platform_admin', 'org_admin', 'branch_admin'), asy
     console.error('Update receipt config error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error updating receipt configuration'
+      message: 'Something went wrong while updating the receipt configuration. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -329,7 +329,7 @@ router.delete('/:id', authorize('platform_admin', 'org_admin', 'branch_admin'), 
     if (!config) {
       const response: ApiResponse = {
         success: false,
-        message: 'Receipt configuration not found'
+        message: 'Receipt configuration was not found.'
       };
       return res.status(404).json(response);
     }
@@ -360,7 +360,7 @@ router.delete('/:id', authorize('platform_admin', 'org_admin', 'branch_admin'), 
     console.error('Delete receipt config error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error deleting receipt configuration'
+      message: 'Something went wrong while deleting the receipt configuration. Please try again.'
     };
     res.status(500).json(response);
   }

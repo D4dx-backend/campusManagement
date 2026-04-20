@@ -160,7 +160,7 @@ router.get(
       res.json(response);
     } catch (error) {
       console.error('Get timetables error:', error);
-      res.status(500).json({ success: false, message: 'Server error retrieving timetables' });
+      res.status(500).json({ success: false, message: 'Something went wrong while loading timetables. Please try again.' });
     }
   }
 );
@@ -193,7 +193,7 @@ router.get(
       res.json({ success: true, message: 'Timetable retrieved successfully', data: timetable });
     } catch (error) {
       console.error('Get timetable by class error:', error);
-      res.status(500).json({ success: false, message: 'Server error retrieving timetable' });
+      res.status(500).json({ success: false, message: 'Something went wrong while loading timetable. Please try again.' });
     }
   }
 );
@@ -258,7 +258,7 @@ router.get('/my-schedule', async (req: AuthenticatedRequest, res) => {
     });
   } catch (error) {
     console.error('Get my schedule error:', error);
-    res.status(500).json({ success: false, message: 'Server error retrieving your schedule' });
+    res.status(500).json({ success: false, message: 'Something went wrong while loading your schedule. Please try again.' });
   }
 });
 
@@ -272,7 +272,7 @@ router.get('/my-timetable', async (req: AuthenticatedRequest, res) => {
 
     const student = await Student.findById(req.user.studentId).lean();
     if (!student) {
-      return res.status(404).json({ success: false, message: 'Student profile not found' });
+      return res.status(404).json({ success: false, message: 'Student profile was not found.' });
     }
 
     const filter: any = {
@@ -309,7 +309,7 @@ router.get('/my-timetable', async (req: AuthenticatedRequest, res) => {
     res.json({ success: true, message: 'Timetable retrieved successfully', data: timetable });
   } catch (error) {
     console.error('Get my timetable error:', error);
-    res.status(500).json({ success: false, message: 'Server error retrieving your timetable' });
+    res.status(500).json({ success: false, message: 'Something went wrong while loading your timetable. Please try again.' });
   }
 });
 
@@ -346,7 +346,7 @@ router.get('/staff/:staffId', checkPermission('timetable', 'read'), async (req: 
     res.json({ success: true, message: 'Staff schedule retrieved successfully', data: schedule });
   } catch (error) {
     console.error('Get staff schedule error:', error);
-    res.status(500).json({ success: false, message: 'Server error retrieving staff schedule' });
+    res.status(500).json({ success: false, message: 'Something went wrong while loading staff schedule. Please try again.' });
   }
 });
 
@@ -374,7 +374,7 @@ router.post(
       });
     } catch (error) {
       console.error('Check conflicts error:', error);
-      res.status(500).json({ success: false, message: 'Server error checking conflicts' });
+      res.status(500).json({ success: false, message: 'Something went wrong while checking conflicts. Please try again.' });
     }
   }
 );
@@ -394,13 +394,13 @@ router.get('/:id', checkPermission('timetable', 'read'), async (req: Authenticat
       .lean();
 
     if (!timetable) {
-      return res.status(404).json({ success: false, message: 'Timetable not found' });
+      return res.status(404).json({ success: false, message: 'Timetable was not found.' });
     }
 
     res.json({ success: true, message: 'Timetable retrieved successfully', data: timetable });
   } catch (error) {
     console.error('Get timetable error:', error);
-    res.status(500).json({ success: false, message: 'Server error retrieving timetable' });
+    res.status(500).json({ success: false, message: 'Something went wrong while loading timetable. Please try again.' });
   }
 });
 
@@ -414,7 +414,7 @@ router.post(
     try {
       const orgBranch = getOrgBranchForCreate(req);
       if (!orgBranch.branchId) {
-        return res.status(400).json({ success: false, message: 'Branch information is required' });
+        return res.status(400).json({ success: false, message: 'Branch information is missing. Please select a branch.' });
       }
 
       const timetableData = {
@@ -446,7 +446,7 @@ router.post(
       res.status(201).json({ success: true, message: 'Timetable created successfully', data: newTimetable });
     } catch (error) {
       console.error('Create timetable error:', error);
-      res.status(500).json({ success: false, message: 'Server error creating timetable' });
+      res.status(500).json({ success: false, message: 'Something went wrong while creating the timetable. Please try again.' });
     }
   }
 );
@@ -464,7 +464,7 @@ router.put(
 
       const existing = await Timetable.findOne(filter);
       if (!existing) {
-        return res.status(404).json({ success: false, message: 'Timetable not found' });
+        return res.status(404).json({ success: false, message: 'Timetable was not found.' });
       }
 
       if (existing.status === 'archived') {
@@ -490,7 +490,7 @@ router.put(
       res.json({ success: true, message: 'Timetable updated successfully', data: updatedTimetable });
     } catch (error) {
       console.error('Update timetable error:', error);
-      res.status(500).json({ success: false, message: 'Server error updating timetable' });
+      res.status(500).json({ success: false, message: 'Something went wrong while updating the timetable. Please try again.' });
     }
   }
 );
@@ -504,7 +504,7 @@ router.put('/:id/activate', checkPermission('timetable', 'update'), async (req: 
 
     const timetable = await Timetable.findOne(filter);
     if (!timetable) {
-      return res.status(404).json({ success: false, message: 'Timetable not found' });
+      return res.status(404).json({ success: false, message: 'Timetable was not found.' });
     }
 
     if (timetable.status === 'active') {
@@ -567,7 +567,7 @@ router.put('/:id/activate', checkPermission('timetable', 'update'), async (req: 
     res.json({ success: true, message: 'Timetable activated successfully', data: timetable });
   } catch (error) {
     console.error('Activate timetable error:', error);
-    res.status(500).json({ success: false, message: 'Server error activating timetable' });
+    res.status(500).json({ success: false, message: 'Something went wrong while activating the timetable. Please try again.' });
   }
 });
 
@@ -584,7 +584,7 @@ router.post(
 
       const source = await Timetable.findOne(filter).lean();
       if (!source) {
-        return res.status(404).json({ success: false, message: 'Source timetable not found' });
+        return res.status(404).json({ success: false, message: 'Source timetable was not found.' });
       }
 
       const cloned = new Timetable({
@@ -622,7 +622,7 @@ router.post(
       res.status(201).json({ success: true, message: 'Timetable cloned successfully (draft)', data: cloned });
     } catch (error) {
       console.error('Clone timetable error:', error);
-      res.status(500).json({ success: false, message: 'Server error cloning timetable' });
+      res.status(500).json({ success: false, message: 'Something went wrong while cloning the timetable. Please try again.' });
     }
   }
 );
@@ -636,7 +636,7 @@ router.delete('/:id', checkPermission('timetable', 'delete'), async (req: Authen
 
     const timetable = await Timetable.findOne(filter);
     if (!timetable) {
-      return res.status(404).json({ success: false, message: 'Timetable not found' });
+      return res.status(404).json({ success: false, message: 'Timetable was not found.' });
     }
 
     if (timetable.status === 'active') {
@@ -662,7 +662,7 @@ router.delete('/:id', checkPermission('timetable', 'delete'), async (req: Authen
     res.json({ success: true, message: 'Timetable deleted successfully' });
   } catch (error) {
     console.error('Delete timetable error:', error);
-    res.status(500).json({ success: false, message: 'Server error deleting timetable' });
+    res.status(500).json({ success: false, message: 'Something went wrong while deleting the timetable. Please try again.' });
   }
 });
 
@@ -916,7 +916,7 @@ router.post(
       // 1. Load the config
       const config = await TimetableConfig.findOne({ _id: configId, ...orgBranch }).lean();
       if (!config) {
-        return res.status(404).json({ success: false, message: 'Timetable config not found' });
+        return res.status(404).json({ success: false, message: 'Timetable configuration was not found.' });
       }
 
       // 2. Build teacher busy-slots from existing active timetables
@@ -1051,7 +1051,7 @@ router.post(
       });
     } catch (error) {
       console.error('Auto-generate error:', error);
-      res.status(500).json({ success: false, message: 'Server error auto-generating timetable' });
+      res.status(500).json({ success: false, message: 'Something went wrong while auto-generating the timetable. Please try again.' });
     }
   }
 );

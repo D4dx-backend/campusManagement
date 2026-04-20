@@ -88,7 +88,7 @@ const TransportReport = () => {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to fetch transport report',
+        description: error.response?.data?.message || 'Something went wrong while loading data. Please try again transport report',
         variant: 'destructive',
       });
     } finally {

@@ -5,7 +5,8 @@ export const createStudentSchema = Joi.object({
     .required()
     .trim()
     .messages({
-      'any.required': 'Admission number is required'
+      'any.required': 'Admission Number is required. Please select a class (and division if applicable) to auto-generate it.',
+      'string.empty': 'Admission Number cannot be empty. Please select a class and division first.'
     }),
   name: Joi.string()
     .min(2)
@@ -13,14 +14,16 @@ export const createStudentSchema = Joi.object({
     .required()
     .trim()
     .messages({
-      'string.min': 'Name must be at least 2 characters',
-      'string.max': 'Name must not exceed 100 characters',
-      'any.required': 'Name is required'
+      'string.min': 'Student name must be at least 2 characters.',
+      'string.max': 'Student name must not exceed 100 characters.',
+      'string.empty': 'Student name cannot be empty.',
+      'any.required': 'Student name is required.'
     }),
   class: Joi.string()
     .required()
     .messages({
-      'any.required': 'Class is required'
+      'any.required': 'Class is required. Please select a class.',
+      'string.empty': 'Class cannot be empty. Please select a class.'
     }),
   section: Joi.string()
     .optional()
@@ -29,25 +32,38 @@ export const createStudentSchema = Joi.object({
   dateOfBirth: Joi.date()
     .required()
     .messages({
-      'any.required': 'Date of birth is required'
+      'any.required': 'Date of Birth is required.',
+      'date.base': 'Please enter a valid Date of Birth.'
     }),
   dateOfAdmission: Joi.date()
     .required()
     .messages({
-      'any.required': 'Date of admission is required'
+      'any.required': 'Date of Admission is required.',
+      'date.base': 'Please enter a valid Date of Admission.'
     }),
   fatherName: Joi.string().min(2).max(100).required().trim()
-    .messages({ 'any.required': "Father's name is required" }),
+    .messages({
+      'any.required': "Father's Name is required.",
+      'string.empty': "Father's Name cannot be empty.",
+      'string.min': "Father's Name must be at least 2 characters."
+    }),
   fatherPhone: Joi.string().pattern(/^\+\d{1,4}\d{6,14}$/).required()
-    .messages({ 'string.pattern.base': "Father's phone must include country code (e.g., +911234567890)", 'any.required': "Father's phone is required" }),
-  fatherEmail: Joi.string().email().optional().allow(''),
+    .messages({
+      'string.pattern.base': "Father's Phone must include country code (e.g., +919876543210).",
+      'any.required': "Father's Phone is required.",
+      'string.empty': "Father's Phone cannot be empty."
+    }),
+  fatherEmail: Joi.string().email().optional().allow('').messages({
+    'string.email': "Please enter a valid email for Father's Email."
+  }),
   fatherJobCompany: Joi.string().optional().allow('').trim(),
   motherName: Joi.string().min(2).max(100).optional().allow('').trim(),
   motherPhone: Joi.string().pattern(/^\+\d{1,4}\d{6,14}$/).optional().allow('')
-    .messages({ 'string.pattern.base': "Mother's phone must include country code (e.g., +911234567890)" }),
-  motherEmail: Joi.string().email().optional().allow(''),
+    .messages({ 'string.pattern.base': "Mother's Phone must include country code (e.g., +919876543210)." }),
+  motherEmail: Joi.string().email().optional().allow('').messages({
+    'string.email': "Please enter a valid email for Mother's Email."
+  }),
   motherJobCompany: Joi.string().optional().allow('').trim(),
-  // legacy guardian fields allowed for backward compatibility
   guardianName: Joi.string().min(2).max(100).optional().allow('').trim(),
   guardianPhone: Joi.string().pattern(/^\+\d{1,4}\d{6,14}$/).optional().allow(''),
   guardianEmail: Joi.string().email().optional().allow(''),
@@ -55,8 +71,9 @@ export const createStudentSchema = Joi.object({
     .valid('male', 'female')
     .required()
     .messages({
-      'any.only': 'Gender must be either male or female',
-      'any.required': 'Gender is required'
+      'any.only': 'Gender must be either Male or Female.',
+      'any.required': 'Gender is required.',
+      'string.empty': 'Gender cannot be empty. Please select Male or Female.'
     }),
   address: Joi.string()
     .min(10)
@@ -64,15 +81,16 @@ export const createStudentSchema = Joi.object({
     .required()
     .trim()
     .messages({
-      'string.min': 'Address must be at least 10 characters',
-      'string.max': 'Address must not exceed 500 characters',
-      'any.required': 'Address is required'
+      'string.min': 'Address must be at least 10 characters.',
+      'string.max': 'Address must not exceed 500 characters.',
+      'string.empty': 'Address cannot be empty.',
+      'any.required': 'Address is required.'
     }),
   transport: Joi.string()
     .valid('school', 'own', 'none')
     .default('none')
     .messages({
-      'any.only': 'Transport must be one of: school, own, none'
+      'any.only': 'Transport Mode must be one of: School, Own, or None.'
     }),
   transportRoute: Joi.string()
     .optional()
@@ -83,7 +101,7 @@ export const createStudentSchema = Joi.object({
     .valid('active', 'inactive', 'suspended', 'tc_issued')
     .default('active')
     .messages({
-      'any.only': 'Status must be one of: active, inactive, suspended, tc_issued'
+      'any.only': 'Status must be one of: Active, Inactive, Suspended, or TC Issued.'
     })
 });
 

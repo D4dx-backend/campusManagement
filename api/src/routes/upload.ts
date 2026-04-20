@@ -104,7 +104,7 @@ router.post('/logo', (req: AuthenticatedRequest, res, next) => {
   } catch (error) {
     console.error('Logo upload error:', error instanceof Error ? error.message : 'Unknown error');
     
-    let message = 'Server error uploading logo';
+    let message = 'Something went wrong while uploading the logo. Please try again.';
     if (error instanceof Error) {
       message = error.message;
     }
@@ -127,7 +127,7 @@ router.delete('/logo/:key(*)', async (req: AuthenticatedRequest, res) => {
     if (!key) {
       const response: ApiResponse = {
         success: false,
-        message: 'File key is required'
+        message: 'File key is required for this operation.'
       };
       return res.status(400).json(response);
     }
@@ -153,7 +153,7 @@ router.delete('/logo/:key(*)', async (req: AuthenticatedRequest, res) => {
     console.error('Logo delete error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error deleting logo'
+      message: 'Something went wrong while deleting the logo. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -169,7 +169,7 @@ router.post('/logo/delete-by-url', async (req: AuthenticatedRequest, res) => {
     if (!url) {
       const response: ApiResponse = {
         success: false,
-        message: 'URL is required'
+        message: 'A valid URL is required.'
       };
       return res.status(400).json(response);
     }
@@ -195,7 +195,7 @@ router.post('/logo/delete-by-url', async (req: AuthenticatedRequest, res) => {
     console.error('Logo delete by URL error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error deleting logo'
+      message: 'Something went wrong while deleting the logo. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -234,7 +234,7 @@ router.get('/files', async (req: AuthenticatedRequest, res) => {
     console.error('List files error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error listing files'
+      message: 'Something went wrong while loading files. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -250,7 +250,7 @@ router.post('/check-file', async (req: AuthenticatedRequest, res) => {
     if (!key) {
       const response: ApiResponse = {
         success: false,
-        message: 'File key is required'
+        message: 'File key is required for this operation.'
       };
       return res.status(400).json(response);
     }
@@ -268,7 +268,7 @@ router.post('/check-file', async (req: AuthenticatedRequest, res) => {
     console.error('Check file error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error checking file'
+      message: 'Something went wrong while checking file. Please try again.'
     };
     res.status(500).json(response);
   }

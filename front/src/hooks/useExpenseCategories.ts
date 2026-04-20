@@ -46,7 +46,7 @@ export const useCreateExpenseCategory = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to create expense category',
+        description: error.response?.data?.message || 'Something went wrong while creating the expense category. Please try again.',
         variant: 'destructive',
       });
     },
@@ -72,7 +72,7 @@ export const useUpdateExpenseCategory = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to update expense category',
+        description: error.response?.data?.message || 'Something went wrong while updating the expense category. Please try again.',
         variant: 'destructive',
       });
     },
@@ -96,7 +96,7 @@ export const useDeleteExpenseCategory = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to delete expense category',
+        description: error.response?.data?.message || 'Something went wrong while deleting the expense category. Please try again.',
         variant: 'destructive',
       });
     },

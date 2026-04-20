@@ -213,6 +213,6 @@ export const downloadTextbookReceipt = async (receiptData: TextbookIndentReceipt
     URL.revokeObjectURL(url);
   } catch (error) {
     console.error('Error generating textbook receipt:', error);
-    throw new Error('Failed to generate textbook receipt');
+    throw new Error('Something went wrong while generating the textbook receipt.');
   }
 };

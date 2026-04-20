@@ -93,7 +93,7 @@ router.get('/', checkPermission('staff', 'read'), validateQuery(queryStaffCatego
     console.error('Get staff categories error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving staff categories'
+      message: 'Something went wrong while loading staff categories. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -123,7 +123,7 @@ router.post('/', checkPermission('staff', 'create'), validate(createStaffCategor
     if (existing) {
       const response: ApiResponse = {
         success: false,
-        message: 'Staff category with this name already exists'
+        message: 'A staff category with this name already exists. Please use a different name.'
       };
       return res.status(400).json(response);
     }
@@ -160,13 +160,13 @@ router.post('/', checkPermission('staff', 'create'), validate(createStaffCategor
     if (error.code === 11000) {
       const response: ApiResponse = {
         success: false,
-        message: 'Staff category with this name already exists'
+        message: 'A staff category with this name already exists. Please use a different name.'
       };
       return res.status(400).json(response);
     }
     const response: ApiResponse = {
       success: false,
-      message: 'Server error creating staff category'
+      message: 'Something went wrong while creating the staff category. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -185,7 +185,7 @@ router.put('/:id', checkPermission('staff', 'update'), validate(updateStaffCateg
     if (!category) {
       const response: ApiResponse = {
         success: false,
-        message: 'Staff category not found'
+        message: 'Staff category was not found.'
       };
       return res.status(404).json(response);
     }
@@ -226,13 +226,13 @@ router.put('/:id', checkPermission('staff', 'update'), validate(updateStaffCateg
     if (error.code === 11000) {
       const response: ApiResponse = {
         success: false,
-        message: 'Staff category with this name already exists'
+        message: 'A staff category with this name already exists. Please use a different name.'
       };
       return res.status(400).json(response);
     }
     const response: ApiResponse = {
       success: false,
-      message: 'Server error updating staff category'
+      message: 'Something went wrong while updating the staff category. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -251,7 +251,7 @@ router.delete('/:id', checkPermission('staff', 'delete'), async (req: Authentica
     if (!category) {
       const response: ApiResponse = {
         success: false,
-        message: 'Staff category not found'
+        message: 'Staff category was not found.'
       };
       return res.status(404).json(response);
     }
@@ -293,7 +293,7 @@ router.delete('/:id', checkPermission('staff', 'delete'), async (req: Authentica
     console.error('Delete staff category error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error deleting staff category'
+      message: 'Something went wrong while deleting the staff category. Please try again.'
     };
     res.status(500).json(response);
   }

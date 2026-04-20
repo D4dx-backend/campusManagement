@@ -136,7 +136,7 @@ router.get('/', authorize('platform_admin', 'org_admin', 'branch_admin'), async 
     console.error('Get users error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving users'
+      message: 'Something went wrong while loading users. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -164,7 +164,7 @@ router.post('/', authorize('platform_admin', 'org_admin', 'branch_admin'), valid
     if (existingUser) {
       const response: ApiResponse = {
         success: false,
-        message: 'User with this email or mobile already exists'
+        message: 'A user with this email or mobile number already exists.'
       };
       return res.status(400).json(response);
     }
@@ -252,7 +252,7 @@ router.post('/', authorize('platform_admin', 'org_admin', 'branch_admin'), valid
     console.error('Create user error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error creating user'
+      message: 'Something went wrong while creating the user. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -267,7 +267,7 @@ router.put('/:id', authorize('platform_admin', 'org_admin', 'branch_admin'), val
     if (!userToUpdate) {
       const response: ApiResponse = {
         success: false,
-        message: 'User not found'
+        message: 'User was not found.'
       };
       return res.status(404).json(response);
     }
@@ -360,7 +360,7 @@ router.put('/:id', authorize('platform_admin', 'org_admin', 'branch_admin'), val
     console.error('Update user error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error updating user'
+      message: 'Something went wrong while updating the user. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -375,7 +375,7 @@ router.delete('/:id', authorize('platform_admin', 'org_admin', 'branch_admin'), 
     if (!userToDelete) {
       const response: ApiResponse = {
         success: false,
-        message: 'User not found'
+        message: 'User was not found.'
       };
       return res.status(404).json(response);
     }
@@ -416,7 +416,7 @@ router.delete('/:id', authorize('platform_admin', 'org_admin', 'branch_admin'), 
     console.error('Delete user error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error deleting user'
+      message: 'Something went wrong while deleting the user. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -429,7 +429,7 @@ router.post('/:id/reset-pin', authorize('platform_admin', 'org_admin', 'branch_a
   try {
     const userToReset = await User.findById(req.params.id);
     if (!userToReset) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      return res.status(404).json({ success: false, message: 'User was not found.' });
     }
 
     // Org isolation
@@ -453,7 +453,7 @@ router.post('/:id/reset-pin', authorize('platform_admin', 'org_admin', 'branch_a
     res.json({ success: true, message: 'PIN reset successfully', data: { pin: newPin } });
   } catch (error) {
     console.error('Reset PIN error:', error);
-    res.status(500).json({ success: false, message: 'Server error resetting PIN' });
+    res.status(500).json({ success: false, message: 'Something went wrong while resetting PIN. Please try again.' });
   }
 });
 

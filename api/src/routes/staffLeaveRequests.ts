@@ -129,12 +129,12 @@ router.put('/:id/review', authorize('platform_admin', 'org_admin', 'branch_admin
   try {
     const { id } = req.params;
     if (!Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ success: false, message: 'Invalid ID' });
+      return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
     }
 
     const leave = await StaffLeaveRequest.findById(id);
     if (!leave) {
-      return res.status(404).json({ success: false, message: 'Leave request not found' });
+      return res.status(404).json({ success: false, message: 'Leave request was not found.' });
     }
     if (leave.status !== 'pending') {
       return res.status(400).json({ success: false, message: 'Already reviewed' });
@@ -160,7 +160,7 @@ router.delete('/:id', async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
     if (!Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ success: false, message: 'Invalid ID' });
+      return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
     }
 
     const leave = await StaffLeaveRequest.findById(id);
@@ -172,7 +172,7 @@ router.delete('/:id', async (req: AuthenticatedRequest, res) => {
     const isOwner = leave.userId.toString() === req.user!._id.toString();
 
     if (!isAdmin && !isOwner) {
-      return res.status(403).json({ success: false, message: 'Access denied' });
+      return res.status(403).json({ success: false, message: 'You do not have permission to perform this action.' });
     }
     if (!isAdmin && leave.status !== 'pending') {
       return res.status(400).json({ success: false, message: 'Can only delete pending requests' });

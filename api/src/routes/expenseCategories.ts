@@ -95,7 +95,7 @@ router.get('/', checkPermission('expenses', 'read'), validateQuery(queryExpenseC
     console.error('Get expense categories error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving expense categories'
+      message: 'Something went wrong while loading expense categories. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -126,7 +126,7 @@ router.post('/', checkPermission('expenses', 'create'), validate(createExpenseCa
     if (existingCategory) {
       const response: ApiResponse = {
         success: false,
-        message: 'Expense category with this name already exists'
+        message: 'An expense category with this name already exists. Please use a different name.'
       };
       return res.status(400).json(response);
     }
@@ -170,7 +170,7 @@ router.post('/', checkPermission('expenses', 'create'), validate(createExpenseCa
     
     const response: ApiResponse = {
       success: false,
-      message: error.message || 'Server error creating expense category'
+      message: error.message || 'Something went wrong while creating the expense category. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -195,7 +195,7 @@ router.put('/:id', checkPermission('expenses', 'update'), validate(updateExpense
     if (!updatedCategory) {
       const response: ApiResponse = {
         success: false,
-        message: 'Expense category not found'
+        message: 'Expense category was not found.'
       };
       return res.status(404).json(response);
     }
@@ -223,7 +223,7 @@ router.put('/:id', checkPermission('expenses', 'update'), validate(updateExpense
     console.error('Update expense category error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error updating expense category'
+      message: 'Something went wrong while updating the expense category. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -244,7 +244,7 @@ router.delete('/:id', checkPermission('expenses', 'delete'), async (req: Authent
     if (!deletedCategory) {
       const response: ApiResponse = {
         success: false,
-        message: 'Expense category not found'
+        message: 'Expense category was not found.'
       };
       return res.status(404).json(response);
     }
@@ -271,7 +271,7 @@ router.delete('/:id', checkPermission('expenses', 'delete'), async (req: Authent
     console.error('Delete expense category error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error deleting expense category'
+      message: 'Something went wrong while deleting the expense category. Please try again.'
     };
     res.status(500).json(response);
   }

@@ -18,19 +18,51 @@ router.use(authenticate);
 
 // Validation schemas
 const createStaffSchema = Joi.object({
-  employeeId: Joi.string().required().trim(),
-  name: Joi.string().min(2).max(100).required().trim(),
-  category: Joi.string().optional().allow('').trim(),
-  designation: Joi.string().required().trim(),
-  department: Joi.string().required().trim(),
-  dateOfJoining: Joi.date().required(),
-  phone: Joi.string().pattern(/^(\+\d{1,4}\d{6,14}|\d{10})$/).required().messages({
-    'string.pattern.base': 'Phone must be either 10 digits or include country code (e.g., +911234567890)'
+  employeeId: Joi.string().required().trim().messages({
+    'any.required': 'Employee ID is required.',
+    'string.empty': 'Employee ID cannot be empty.'
   }),
-  email: Joi.string().email().optional().allow(''),
-  address: Joi.string().min(10).max(500).required().trim(),
-  salary: Joi.number().min(0).required(),
-  status: Joi.string().valid('active', 'inactive', 'terminated', 'resigned').default('active')
+  name: Joi.string().min(2).max(100).required().trim().messages({
+    'any.required': 'Full Name is required.',
+    'string.empty': 'Full Name cannot be empty.',
+    'string.min': 'Full Name must be at least 2 characters.',
+    'string.max': 'Full Name must not exceed 100 characters.'
+  }),
+  category: Joi.string().optional().allow('').trim(),
+  designation: Joi.string().required().trim().messages({
+    'any.required': 'Designation is required.',
+    'string.empty': 'Designation cannot be empty.'
+  }),
+  department: Joi.string().required().trim().messages({
+    'any.required': 'Department is required.',
+    'string.empty': 'Department cannot be empty.'
+  }),
+  dateOfJoining: Joi.date().required().messages({
+    'any.required': 'Date of Joining is required.',
+    'date.base': 'Date of Joining must be a valid date.'
+  }),
+  phone: Joi.string().pattern(/^(\+\d{1,4}\d{6,14}|\d{10})$/).required().messages({
+    'any.required': 'Phone Number is required.',
+    'string.empty': 'Phone Number cannot be empty.',
+    'string.pattern.base': 'Phone Number must be either 10 digits or include country code (e.g., +911234567890).'
+  }),
+  email: Joi.string().email().optional().allow('').messages({
+    'string.email': 'Please enter a valid email address.'
+  }),
+  address: Joi.string().min(10).max(500).required().trim().messages({
+    'any.required': 'Address is required.',
+    'string.empty': 'Address cannot be empty.',
+    'string.min': 'Address must be at least 10 characters.',
+    'string.max': 'Address must not exceed 500 characters.'
+  }),
+  salary: Joi.number().min(0).required().messages({
+    'any.required': 'Monthly Salary is required.',
+    'number.base': 'Monthly Salary must be a number.',
+    'number.min': 'Monthly Salary cannot be negative.'
+  }),
+  status: Joi.string().valid('active', 'inactive', 'terminated', 'resigned').default('active').messages({
+    'any.only': 'Status must be one of: active, inactive, terminated, or resigned.'
+  })
 });
 
 const updateStaffSchema = Joi.object({
@@ -130,7 +162,7 @@ router.get('/', checkPermission('staff', 'read'), validateQuery(queryStaffSchema
     console.error('Get staff error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving staff members'
+      message: 'Something went wrong while loading staff members. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -151,7 +183,7 @@ router.get('/:id', checkPermission('staff', 'read'), async (req: AuthenticatedRe
     if (!staff) {
       const response: ApiResponse = {
         success: false,
-        message: 'Staff member not found'
+        message: 'Staff member was not found.'
       };
       return res.status(404).json(response);
     }
@@ -167,7 +199,7 @@ router.get('/:id', checkPermission('staff', 'read'), async (req: AuthenticatedRe
     console.error('Get staff member error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving staff member'
+      message: 'Something went wrong while loading the staff details. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -183,19 +215,21 @@ router.post('/', checkPermission('staff', 'create'), validate(createStaffSchema)
     if (existingStaff) {
       const response: ApiResponse = {
         success: false,
-        message: 'Staff member with this employee ID already exists'
+        message: 'A staff member with this Employee ID already exists. Please use a different ID.'
       };
       return res.status(400).json(response);
     }
 
-    // Check if email already exists
-    const existingEmail = await Staff.findOne({ email: req.body.email });
-    if (existingEmail) {
-      const response: ApiResponse = {
-        success: false,
-        message: 'Staff member with this email already exists'
-      };
-      return res.status(400).json(response);
+    // Check if email already exists (only if email is provided)
+    if (req.body.email) {
+      const existingEmail = await Staff.findOne({ email: req.body.email });
+      if (existingEmail) {
+        const response: ApiResponse = {
+          success: false,
+          message: 'A staff member with this email address already exists.'
+        };
+        return res.status(400).json(response);
+      }
     }
 
     const orgBranch = getOrgBranchForCreate(req);
@@ -203,7 +237,7 @@ router.post('/', checkPermission('staff', 'create'), validate(createStaffSchema)
     if (!orgBranch.branchId) {
       const response: ApiResponse = {
         success: false,
-        message: 'Branch information is required for staff creation'
+        message: 'Branch information is missing. Please select a branch before creating a staff member.'
       };
       return res.status(400).json(response);
     }
@@ -241,7 +275,7 @@ router.post('/', checkPermission('staff', 'create'), validate(createStaffSchema)
     console.error('Create staff error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error creating staff member'
+      message: 'Something went wrong while creating the staff member. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -266,7 +300,7 @@ router.put('/:id', checkPermission('staff', 'update'), validate(updateStaffSchem
       if (existingEmail) {
         const response: ApiResponse = {
           success: false,
-          message: 'Another staff member with this email already exists'
+          message: 'Another staff member already uses this email address.'
         };
         return res.status(400).json(response);
       }
@@ -281,7 +315,7 @@ router.put('/:id', checkPermission('staff', 'update'), validate(updateStaffSchem
     if (!staff) {
       const response: ApiResponse = {
         success: false,
-        message: 'Staff member not found'
+        message: 'Staff member was not found.'
       };
       return res.status(404).json(response);
     }
@@ -309,7 +343,7 @@ router.put('/:id', checkPermission('staff', 'update'), validate(updateStaffSchem
     console.error('Update staff error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error updating staff member'
+      message: 'Something went wrong while updating the staff member. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -330,7 +364,7 @@ router.delete('/:id', checkPermission('staff', 'delete'), async (req: Authentica
     if (!staff) {
       const response: ApiResponse = {
         success: false,
-        message: 'Staff member not found'
+        message: 'Staff member was not found.'
       };
       return res.status(404).json(response);
     }
@@ -357,7 +391,7 @@ router.delete('/:id', checkPermission('staff', 'delete'), async (req: Authentica
     console.error('Delete staff error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error deleting staff member'
+      message: 'Something went wrong while deleting the staff member. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -424,7 +458,7 @@ router.get('/stats/overview', checkPermission('staff', 'read'), async (req: Auth
     console.error('Get staff stats error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving staff statistics'
+      message: 'Something went wrong while loading statistics. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -448,7 +482,7 @@ router.post('/:id/salary-increment', checkPermission('staff', 'update'), validat
 
     const staff = await Staff.findOne(filter);
     if (!staff) {
-      return res.status(404).json({ success: false, message: 'Staff member not found' } as ApiResponse);
+      return res.status(404).json({ success: false, message: 'Staff member was not found.' } as ApiResponse);
     }
 
     const previousSalary = staff.salary;
@@ -482,7 +516,7 @@ router.post('/:id/salary-increment', checkPermission('staff', 'update'), validat
     res.json({ success: true, message: 'Salary increment recorded successfully', data: staff } as ApiResponse);
   } catch (error) {
     console.error('Salary increment error:', error);
-    res.status(500).json({ success: false, message: 'Server error recording salary increment' } as ApiResponse);
+    res.status(500).json({ success: false, message: 'Something went wrong while recording the salary increment. Please try again.' } as ApiResponse);
   }
 });
 
@@ -496,7 +530,7 @@ router.get('/:id/salary-history', checkPermission('staff', 'read'), async (req: 
 
     const staff = await Staff.findOne(filter).select('name employeeId salary salaryHistory');
     if (!staff) {
-      return res.status(404).json({ success: false, message: 'Staff member not found' } as ApiResponse);
+      return res.status(404).json({ success: false, message: 'Staff member was not found.' } as ApiResponse);
     }
 
     res.json({
@@ -511,7 +545,7 @@ router.get('/:id/salary-history', checkPermission('staff', 'read'), async (req: 
     } as ApiResponse);
   } catch (error) {
     console.error('Get salary history error:', error);
-    res.status(500).json({ success: false, message: 'Server error retrieving salary history' } as ApiResponse);
+    res.status(500).json({ success: false, message: 'Something went wrong while loading salary history. Please try again.' } as ApiResponse);
   }
 });
 
@@ -534,7 +568,7 @@ router.post('/:id/separation', checkPermission('staff', 'update'), validate(sepa
 
     const staff = await Staff.findOne(filter);
     if (!staff) {
-      return res.status(404).json({ success: false, message: 'Staff member not found' } as ApiResponse);
+      return res.status(404).json({ success: false, message: 'Staff member was not found.' } as ApiResponse);
     }
 
     if (staff.status === 'terminated' || staff.status === 'resigned') {
@@ -566,7 +600,7 @@ router.post('/:id/separation', checkPermission('staff', 'update'), validate(sepa
     res.json({ success: true, message: `Staff ${actionLabel.toLowerCase()} successfully`, data: staff } as ApiResponse);
   } catch (error) {
     console.error('Staff separation error:', error);
-    res.status(500).json({ success: false, message: 'Server error processing separation' } as ApiResponse);
+    res.status(500).json({ success: false, message: 'Something went wrong while processing the separation. Please try again.' } as ApiResponse);
   }
 });
 
@@ -582,7 +616,7 @@ router.get('/:id/experience-certificate', checkPermission('staff', 'read'), asyn
 
     const staff = await Staff.findOne(filter);
     if (!staff) {
-      return res.status(404).json({ success: false, message: 'Staff member not found' } as ApiResponse);
+      return res.status(404).json({ success: false, message: 'Staff member was not found.' } as ApiResponse);
     }
 
     // Get organization and branch info
@@ -623,7 +657,7 @@ router.get('/:id/experience-certificate', checkPermission('staff', 'read'), asyn
     res.json({ success: true, message: 'Experience certificate data generated', data: certificateData } as ApiResponse);
   } catch (error) {
     console.error('Experience certificate error:', error);
-    res.status(500).json({ success: false, message: 'Server error generating experience certificate' } as ApiResponse);
+    res.status(500).json({ success: false, message: 'Something went wrong while generating the experience certificate. Please try again.' } as ApiResponse);
   }
 });
 

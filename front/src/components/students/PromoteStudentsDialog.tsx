@@ -67,7 +67,7 @@ export const PromoteStudentsDialog = ({
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to promote students',
+        description: error.response?.data?.message || 'Something went wrong while promoting students. Please try again.',
         variant: 'destructive',
       });
     } finally {

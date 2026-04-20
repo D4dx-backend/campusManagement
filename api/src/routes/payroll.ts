@@ -111,7 +111,7 @@ router.get('/', checkPermission('payroll', 'read'), validateQuery(queryPayrollSc
     console.error('Get payroll entries error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving payroll entries'
+      message: 'Something went wrong while loading payroll entries. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -133,7 +133,7 @@ router.get('/:id', checkPermission('payroll', 'read'), async (req: Authenticated
     if (!payrollEntry) {
       const response: ApiResponse = {
         success: false,
-        message: 'Payroll entry not found'
+        message: 'Payroll entry was not found.'
       };
       return res.status(404).json(response);
     }
@@ -149,7 +149,7 @@ router.get('/:id', checkPermission('payroll', 'read'), async (req: Authenticated
     console.error('Get payroll entry error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving payroll entry'
+      message: 'Something went wrong while loading payroll entry. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -173,7 +173,7 @@ router.post('/', checkPermission('payroll', 'create'), validate(createPayrollSch
     if (!staff) {
       const response: ApiResponse = {
         success: false,
-        message: 'Staff member not found'
+        message: 'Staff member was not found.'
       };
       return res.status(404).json(response);
     }
@@ -242,7 +242,7 @@ router.post('/', checkPermission('payroll', 'create'), validate(createPayrollSch
     console.error('Create payroll entry error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error creating payroll entry'
+      message: 'Something went wrong while creating the payroll entry. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -262,7 +262,7 @@ router.put('/:id', checkPermission('payroll', 'update'), validate(updatePayrollS
     if (!existingEntry) {
       const response: ApiResponse = {
         success: false,
-        message: 'Payroll entry not found'
+        message: 'Payroll entry was not found.'
       };
       return res.status(404).json(response);
     }
@@ -304,7 +304,7 @@ router.put('/:id', checkPermission('payroll', 'update'), validate(updatePayrollS
     console.error('Update payroll entry error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error updating payroll entry'
+      message: 'Something went wrong while updating the payroll entry. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -325,7 +325,7 @@ router.delete('/:id', checkPermission('payroll', 'delete'), async (req: Authenti
     if (!payrollEntry) {
       const response: ApiResponse = {
         success: false,
-        message: 'Payroll entry not found'
+        message: 'Payroll entry was not found.'
       };
       return res.status(404).json(response);
     }
@@ -352,7 +352,7 @@ router.delete('/:id', checkPermission('payroll', 'delete'), async (req: Authenti
     console.error('Delete payroll entry error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error deleting payroll entry'
+      message: 'Something went wrong while deleting the payroll entry. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -436,7 +436,7 @@ router.get('/stats/overview', checkPermission('payroll', 'read'), async (req: Au
     console.error('Get payroll stats error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving payroll statistics'
+      message: 'Something went wrong while loading payroll statistics. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -484,7 +484,7 @@ router.get('/pending/:month/:year', checkPermission('payroll', 'read'), async (r
     console.error('Get pending payroll error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving pending payroll data'
+      message: 'Something went wrong while loading pending payroll data. Please try again.'
     };
     res.status(500).json(response);
   }

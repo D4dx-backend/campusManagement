@@ -66,7 +66,7 @@ export const useCreatePayrollEntry = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to create payroll entry',
+        description: error.response?.data?.message || 'Something went wrong while creating the payroll entry. Please try again.',
         variant: 'destructive',
       });
     },
@@ -92,7 +92,7 @@ export const useUpdatePayrollEntry = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to update payroll entry',
+        description: error.response?.data?.message || 'Something went wrong while updating the payroll entry. Please try again.',
         variant: 'destructive',
       });
     },
@@ -116,7 +116,7 @@ export const useDeletePayrollEntry = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to delete payroll entry',
+        description: error.response?.data?.message || 'Something went wrong while deleting the payroll entry. Please try again.',
         variant: 'destructive',
       });
     },

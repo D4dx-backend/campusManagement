@@ -193,7 +193,7 @@ const UserAccess = () => {
     } catch (error: any) {
       toast({ 
         title: 'Error', 
-        description: error.response?.data?.message || (editingUser ? 'Failed to update user' : 'Failed to create user'),
+        description: error.response?.data?.message || (editingUser ? 'Something went wrong while updating. Please try again user' : 'Something went wrong while creating. Please try again user'),
         variant: 'destructive'
       });
     }
@@ -237,7 +237,7 @@ const UserAccess = () => {
         } catch (error: any) {
           toast({ 
             title: 'Error', 
-            description: error.response?.data?.message || 'Failed to delete user',
+            description: error.response?.data?.message || 'Something went wrong while deleting. Please try again user',
             variant: 'destructive'
           });
         }
@@ -298,7 +298,7 @@ const UserAccess = () => {
         } catch (error: any) {
           toast({
             title: 'Error',
-            description: error.response?.data?.message || 'Failed to reset PIN',
+            description: error.response?.data?.message || 'Something went wrong while resetting the PIN. Please try again.',
             variant: 'destructive'
           });
         }

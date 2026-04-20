@@ -53,7 +53,7 @@ const OrganizationManagement = () => {
         setEnabledFeatures(new Set(orgRes.data.data.enabledFeatures));
       }
     } catch {
-      toast({ title: 'Error', description: 'Failed to load feature settings', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading. Please try again feature settings', variant: 'destructive' });
     } finally {
       setFeatureLoading(false);
     }
@@ -75,7 +75,7 @@ const OrganizationManagement = () => {
       toast({ title: 'Success', description: 'Feature settings updated' });
       setFeatureDialogOpen(false);
     } catch (err: any) {
-      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to save', variant: 'destructive' });
+      toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong while saving. Please try again', variant: 'destructive' });
     } finally {
       setFeatureSaving(false);
     }
@@ -96,7 +96,7 @@ const OrganizationManagement = () => {
       const list = await domainService.getDomains(orgId);
       setDomainList(list);
     } catch {
-      toast({ title: 'Error', description: 'Failed to load domains', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading. Please try again domains', variant: 'destructive' });
     } finally {
       setDomainLoading(false);
     }
@@ -125,7 +125,7 @@ const OrganizationManagement = () => {
       setShowAddDomain(false);
       loadDomains(domainOrg._id || domainOrg.id);
     } catch (err: any) {
-      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to add domain', variant: 'destructive' });
+      toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong while adding the domain. Please try again.', variant: 'destructive' });
     } finally {
       setDomainAdding(false);
     }
@@ -140,7 +140,7 @@ const OrganizationManagement = () => {
           toast({ title: 'Domain removed' });
           if (domainOrg) loadDomains(domainOrg._id || domainOrg.id);
         } catch (err: any) {
-          toast({ title: 'Error', description: err.response?.data?.message || 'Failed to delete', variant: 'destructive' });
+          toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong while deleting. Please try again', variant: 'destructive' });
         }
       }
     );
@@ -162,7 +162,7 @@ const OrganizationManagement = () => {
       toast({ title: 'Primary domain updated' });
       if (domainOrg) loadDomains(domainOrg._id || domainOrg.id);
     } catch (err: any) {
-      toast({ title: 'Error', description: 'Failed to update', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while updating. Please try again', variant: 'destructive' });
     }
   };
 
@@ -209,7 +209,7 @@ const OrganizationManagement = () => {
       const res = await apiClient.get<any[]>('/branches', { organizationId: orgId, limit: 100 });
       setBranchList(res.data?.data || []);
     } catch {
-      toast({ title: 'Error', description: 'Failed to load branches', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading. Please try again branches', variant: 'destructive' });
     } finally {
       setBranchLoading(false);
     }
@@ -260,7 +260,7 @@ const OrganizationManagement = () => {
       resetBranchForm();
       loadBranches(orgId);
     } catch (err: any) {
-      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to save branch', variant: 'destructive' });
+      toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong while saving. Please try again branch', variant: 'destructive' });
     } finally {
       setBranchSaving(false);
     }
@@ -275,7 +275,7 @@ const OrganizationManagement = () => {
           toast({ title: 'Branch deleted' });
           if (branchOrg) loadBranches(branchOrg._id || branchOrg.id);
         } catch (err: any) {
-          toast({ title: 'Error', description: err.response?.data?.message || 'Failed to delete', variant: 'destructive' });
+          toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong while deleting. Please try again', variant: 'destructive' });
         }
       }
     );
@@ -297,7 +297,7 @@ const OrganizationManagement = () => {
         setBranchEnabledFeatures(data.branchEnabledFeatures ? new Set(data.branchEnabledFeatures) : new Set(data.orgEnabledFeatures));
       }
     } catch {
-      toast({ title: 'Error', description: 'Failed to load feature settings', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading. Please try again feature settings', variant: 'destructive' });
     } finally {
       setBranchFeatureLoading(false);
     }
@@ -320,7 +320,7 @@ const OrganizationManagement = () => {
       toast({ title: 'Success', description: 'Branch features updated' });
       setBranchFeatureDialogOpen(false);
     } catch (err: any) {
-      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to save', variant: 'destructive' });
+      toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong while saving. Please try again', variant: 'destructive' });
     } finally {
       setBranchFeatureSaving(false);
     }
@@ -415,7 +415,7 @@ const OrganizationManagement = () => {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to save organization',
+        description: error.response?.data?.message || 'Something went wrong while saving. Please try again organization',
         variant: 'destructive',
       });
     }
@@ -462,7 +462,7 @@ const OrganizationManagement = () => {
         } catch (error: any) {
           toast({
             title: 'Error',
-            description: error.response?.data?.message || 'Failed to delete organization',
+            description: error.response?.data?.message || 'Something went wrong while deleting. Please try again organization',
             variant: 'destructive',
           });
         }

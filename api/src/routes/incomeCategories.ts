@@ -95,7 +95,7 @@ router.get('/', checkPermission('fees', 'read'), validateQuery(queryIncomeCatego
     console.error('Get income categories error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving income categories'
+      message: 'Something went wrong while loading income categories. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -126,7 +126,7 @@ router.post('/', checkPermission('fees', 'create'), validate(createIncomeCategor
     if (existingCategory) {
       const response: ApiResponse = {
         success: false,
-        message: 'Income category with this name already exists'
+        message: 'An income category with this name already exists. Please use a different name.'
       };
       return res.status(400).json(response);
     }
@@ -170,7 +170,7 @@ router.post('/', checkPermission('fees', 'create'), validate(createIncomeCategor
     
     const response: ApiResponse = {
       success: false,
-      message: error.message || 'Server error creating income category'
+      message: error.message || 'Something went wrong while creating the income category. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -195,7 +195,7 @@ router.put('/:id', checkPermission('fees', 'update'), validate(updateIncomeCateg
     if (!updatedCategory) {
       const response: ApiResponse = {
         success: false,
-        message: 'Income category not found'
+        message: 'Income category was not found.'
       };
       return res.status(404).json(response);
     }
@@ -223,7 +223,7 @@ router.put('/:id', checkPermission('fees', 'update'), validate(updateIncomeCateg
     console.error('Update income category error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error updating income category'
+      message: 'Something went wrong while updating the income category. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -244,7 +244,7 @@ router.delete('/:id', checkPermission('fees', 'delete'), async (req: Authenticat
     if (!deletedCategory) {
       const response: ApiResponse = {
         success: false,
-        message: 'Income category not found'
+        message: 'Income category was not found.'
       };
       return res.status(404).json(response);
     }
@@ -271,7 +271,7 @@ router.delete('/:id', checkPermission('fees', 'delete'), async (req: Authenticat
     console.error('Delete income category error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error deleting income category'
+      message: 'Something went wrong while deleting the income category. Please try again.'
     };
     res.status(500).json(response);
   }

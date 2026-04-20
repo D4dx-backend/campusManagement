@@ -85,7 +85,7 @@ const Assessments = () => {
       const res = await assessmentApi.getAll(params);
       setAssessments(res.data || []);
     } catch {
-      toast({ title: 'Error', description: 'Failed to load assessments', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading assessments. Please try again.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -98,7 +98,7 @@ const Assessments = () => {
       toast({ title: 'Deleted' });
       loadAssessments();
     } catch {
-      toast({ title: 'Error', description: 'Failed to delete', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while deleting. Please try again.', variant: 'destructive' });
     }
   };
 
@@ -108,7 +108,7 @@ const Assessments = () => {
       toast({ title: 'Published', description: `"${a.title}" is now live` });
       loadAssessments();
     } catch (err: any) {
-      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to publish', variant: 'destructive' });
+      toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong while publishing. Please try again', variant: 'destructive' });
     }
   };
 
@@ -118,7 +118,7 @@ const Assessments = () => {
       toast({ title: 'Duplicated', description: 'A copy has been created' });
       loadAssessments();
     } catch {
-      toast({ title: 'Error', description: 'Failed to duplicate', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while duplicating. Please try again.', variant: 'destructive' });
     }
   };
 

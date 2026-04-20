@@ -230,7 +230,7 @@ const StudentPromotion = () => {
       toast({ title: 'Success', description: res.message });
       handleFetchStudents();
     } catch (err: any) {
-      toast({ title: 'Error', description: err.response?.data?.message || 'Promotion failed', variant: 'destructive' });
+      toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong during promotion. Please try again.', variant: 'destructive' });
     } finally {
       setPromoting(false);
     }

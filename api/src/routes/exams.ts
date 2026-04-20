@@ -72,7 +72,7 @@ router.get('/', checkPermission('classes', 'read'), validateQuery(querySchema), 
 
 // GET /api/exams/:id
 router.get('/:id', checkPermission('classes', 'read'), async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const filter: any = { _id: req.params.id };
   Object.assign(filter, getOrgBranchFilter(req));
   const exam = await Exam.findOne(filter);
@@ -100,7 +100,7 @@ router.post('/', checkPermission('classes', 'create'), validate(createSchema), a
 
 // PUT /api/exams/:id
 router.put('/:id', checkPermission('classes', 'update'), validate(updateSchema), async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const filter: any = { _id: req.params.id };
   Object.assign(filter, getOrgBranchFilter(req));
   const exam = await Exam.findOneAndUpdate(filter, req.body, { new: true, runValidators: true });
@@ -110,7 +110,7 @@ router.put('/:id', checkPermission('classes', 'update'), validate(updateSchema),
 
 // DELETE /api/exams/:id
 router.delete('/:id', checkPermission('classes', 'delete'), async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const filter: any = { _id: req.params.id };
   Object.assign(filter, getOrgBranchFilter(req));
   const exam = await Exam.findOneAndDelete(filter);

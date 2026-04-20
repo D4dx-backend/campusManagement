@@ -253,7 +253,7 @@ const Staff = () => {
       setSalaryHistoryData(res.data);
       setSalaryHistoryDialogOpen(true);
     } catch {
-      toast({ title: 'Error', description: 'Failed to load salary history', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading. Please try again salary history', variant: 'destructive' });
     }
   };
 
@@ -275,7 +275,7 @@ const Staff = () => {
       setCertData(res.data);
       setCertDialogOpen(true);
     } catch {
-      toast({ title: 'Error', description: 'Failed to generate certificate', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while generating. Please try again certificate', variant: 'destructive' });
     }
   };
 

@@ -76,7 +76,7 @@ const FeeDues = () => {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to fetch fee dues',
+        description: error.response?.data?.message || 'Something went wrong while loading data. Please try again fee dues',
         variant: 'destructive',
       });
     } finally {
@@ -126,7 +126,7 @@ const FeeDues = () => {
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to send reminder',
+        description: 'Something went wrong while sending the reminder. Please try again.',
         variant: 'destructive',
       });
     }

@@ -61,7 +61,7 @@ const Submissions = () => {
       setAssessment(aRes.data);
       setSubmissions(sRes.data);
     } catch (err: any) {
-      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to load', variant: 'destructive' });
+      toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong while loading. Please try again', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -92,7 +92,7 @@ const Submissions = () => {
       setGradeOpen(false);
       loadData();
     } catch (err: any) {
-      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to grade', variant: 'destructive' });
+      toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong while grading. Please try again.', variant: 'destructive' });
     } finally {
       setGrading(false);
     }

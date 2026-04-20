@@ -173,19 +173,19 @@ router.get('/articles/:slug', async (req: AuthenticatedRequest, res) => {
     .lean();
 
   if (!article) {
-    res.status(404).json({ success: false, message: 'Article not found' });
+    res.status(404).json({ success: false, message: 'Help article was not found.' });
     return;
   }
 
   // Check feature access
   if (article.featureKey && !enabledFeatures.has(article.featureKey)) {
-    res.status(404).json({ success: false, message: 'Article not found' });
+    res.status(404).json({ success: false, message: 'Help article was not found.' });
     return;
   }
 
   // Check role access
   if (article.roles.length > 0 && !article.roles.includes(role)) {
-    res.status(404).json({ success: false, message: 'Article not found' });
+    res.status(404).json({ success: false, message: 'Help article was not found.' });
     return;
   }
 

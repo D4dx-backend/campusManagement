@@ -36,7 +36,7 @@ export const useCreateDesignation = () => {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || 'Failed to create designation';
+      const errorMessage = error.response?.data?.message || 'Something went wrong while creating the designation. Please try again.';
       const errorDetails = error.response?.data?.error;
       const fullMessage = errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage;
       
@@ -64,7 +64,7 @@ export const useUpdateDesignation = () => {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || 'Failed to update designation';
+      const errorMessage = error.response?.data?.message || 'Something went wrong while updating the designation. Please try again.';
       const errorDetails = error.response?.data?.error;
       const fullMessage = errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage;
       
@@ -91,7 +91,7 @@ export const useDeleteDesignation = () => {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || 'Failed to delete designation';
+      const errorMessage = error.response?.data?.message || 'Something went wrong while deleting the designation. Please try again.';
       const errorDetails = error.response?.data?.error;
       const fullMessage = errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage;
       

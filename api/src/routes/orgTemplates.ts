@@ -12,6 +12,7 @@ import { StaffCategory } from '../models/StaffCategory';
 import { ExpenseCategory } from '../models/ExpenseCategory';
 import { IncomeCategory } from '../models/IncomeCategory';
 import { FeeTypeConfig } from '../models/FeeTypeConfig';
+import { Organization } from '../models/Organization';
 import { authenticate, authorize, checkPermission } from '../middleware/auth';
 import { validate } from '../middleware/validation';
 import { AuthenticatedRequest, ApiResponse } from '../types';
@@ -23,10 +24,13 @@ router.use(authenticate);
 // Only org_admin and platform_admin can manage org-level templates
 const orgAdminOnly = authorize('platform_admin', 'org_admin');
 
-function getOrgId(req: AuthenticatedRequest): mongoose.Types.ObjectId | undefined {
+async function getOrgId(req: AuthenticatedRequest): Promise<mongoose.Types.ObjectId | undefined> {
   if (req.user!.role === 'platform_admin') {
     const id = req.body.organizationId || req.query.organizationId;
-    return id ? new mongoose.Types.ObjectId(String(id)) : undefined;
+    if (id) return new mongoose.Types.ObjectId(String(id));
+    // Auto-resolve: pick the first organization
+    const org = await Organization.findOne().select('_id').lean();
+    return org ? new mongoose.Types.ObjectId(String(org._id)) : undefined;
   }
   return req.user!.organizationId ? new mongoose.Types.ObjectId(String(req.user!.organizationId)) : undefined;
 }
@@ -39,7 +43,7 @@ function getOrgId(req: AuthenticatedRequest): mongoose.Types.ObjectId | undefine
 // @route  GET /api/org-templates/classes
 router.get('/classes', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     const { status, academicYear, search } = req.query;
@@ -68,7 +72,7 @@ const createOrgClassSchema = Joi.object({
 
 router.post('/classes', orgAdminOnly, validate(createOrgClassSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     // Check duplicate
@@ -117,7 +121,7 @@ const updateOrgClassSchema = Joi.object({
 
 router.put('/classes/:id', orgAdminOnly, validate(updateOrgClassSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     const cls = await Class.findOneAndUpdate(
@@ -138,7 +142,7 @@ router.put('/classes/:id', orgAdminOnly, validate(updateOrgClassSchema), async (
 // @route  DELETE /api/org-templates/classes/:id
 router.delete('/classes/:id', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     const cls = await Class.findOneAndDelete({ _id: req.params.id, organizationId: orgId, branchId: null });
@@ -165,7 +169,7 @@ router.delete('/classes/:id', orgAdminOnly, async (req: AuthenticatedRequest, re
 // @route  GET /api/org-templates/subjects
 router.get('/subjects', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     const { status, classId, search } = req.query;
@@ -197,7 +201,7 @@ const createOrgSubjectSchema = Joi.object({
 
 router.post('/subjects', orgAdminOnly, validate(createOrgSubjectSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     // Check duplicate code at org level
@@ -247,7 +251,7 @@ const updateOrgSubjectSchema = Joi.object({
 
 router.put('/subjects/:id', orgAdminOnly, validate(updateOrgSubjectSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     const subj = await Subject.findOneAndUpdate(
@@ -268,7 +272,7 @@ router.put('/subjects/:id', orgAdminOnly, validate(updateOrgSubjectSchema), asyn
 // @route  DELETE /api/org-templates/subjects/:id
 router.delete('/subjects/:id', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     const subj = await Subject.findOneAndDelete({ _id: req.params.id, organizationId: orgId, branchId: null });
@@ -289,7 +293,7 @@ router.delete('/subjects/:id', orgAdminOnly, async (req: AuthenticatedRequest, r
 // @route  GET /api/org-templates/import/preview
 router.get('/import/preview', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     const { academicYear } = req.query;
@@ -408,7 +412,7 @@ const importSchema = Joi.object({
 
 router.post('/import', orgAdminOnly, validate(importSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     const { branchId, classIds, includeSubjects, includeChapters, includeAcademicYears, includeDepartments, includeDesignations, includeStaffCategories, includeExpenseCategories, includeIncomeCategories, includeFeeTypes, divisions } = req.body;
@@ -747,7 +751,7 @@ router.post('/import', orgAdminOnly, validate(importSchema), async (req: Authent
 // @route  GET /api/org-templates/compare/:branchId
 router.get('/compare/:branchId', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     const branchObjId = new mongoose.Types.ObjectId(req.params.branchId);
@@ -825,7 +829,7 @@ router.get('/compare/:branchId', orgAdminOnly, async (req: AuthenticatedRequest,
 
 router.get('/academic-years', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const { status, search } = req.query;
     const filter: any = { organizationId: orgId, branchId: null };
@@ -849,7 +853,7 @@ const createOrgAYSchema = Joi.object({
 });
 router.post('/academic-years', orgAdminOnly, validate(createOrgAYSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const exists = await AcademicYear.findOne({ name: req.body.name, organizationId: orgId, branchId: null });
     if (exists) return res.status(400).json({ success: false, message: 'Academic year already exists at org level' });
@@ -870,7 +874,7 @@ const updateOrgAYSchema = Joi.object({
 });
 router.put('/academic-years/:id', orgAdminOnly, validate(updateOrgAYSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await AcademicYear.findOneAndUpdate(
       { _id: req.params.id, organizationId: orgId, branchId: null },
@@ -885,7 +889,7 @@ router.put('/academic-years/:id', orgAdminOnly, validate(updateOrgAYSchema), asy
 
 router.delete('/academic-years/:id', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await AcademicYear.findOneAndDelete({ _id: req.params.id, organizationId: orgId, branchId: null });
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
@@ -901,7 +905,7 @@ router.delete('/academic-years/:id', orgAdminOnly, async (req: AuthenticatedRequ
 
 router.get('/departments', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const filter: any = { organizationId: orgId, branchId: null };
     if (req.query.status) filter.status = req.query.status;
@@ -926,7 +930,7 @@ const orgDeptSchema = Joi.object({
 });
 router.post('/departments', orgAdminOnly, validate(orgDeptSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const exists = await Department.findOne({ code: req.body.code.toUpperCase(), organizationId: orgId, branchId: null });
     if (exists) return res.status(400).json({ success: false, message: 'Department code already exists at org level' });
@@ -946,7 +950,7 @@ const updateOrgDeptSchema = Joi.object({
 });
 router.put('/departments/:id', orgAdminOnly, validate(updateOrgDeptSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await Department.findOneAndUpdate(
       { _id: req.params.id, organizationId: orgId, branchId: null },
@@ -961,7 +965,7 @@ router.put('/departments/:id', orgAdminOnly, validate(updateOrgDeptSchema), asyn
 
 router.delete('/departments/:id', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await Department.findOneAndDelete({ _id: req.params.id, organizationId: orgId, branchId: null });
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
@@ -977,7 +981,7 @@ router.delete('/departments/:id', orgAdminOnly, async (req: AuthenticatedRequest
 
 router.get('/designations', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const filter: any = { organizationId: orgId, branchId: null };
     if (req.query.status) filter.status = req.query.status;
@@ -997,7 +1001,7 @@ const orgDesigSchema = Joi.object({
 });
 router.post('/designations', orgAdminOnly, validate(orgDesigSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const exists = await Designation.findOne({ name: req.body.name, organizationId: orgId, branchId: null });
     if (exists) return res.status(400).json({ success: false, message: 'Designation already exists at org level' });
@@ -1015,7 +1019,7 @@ const updateOrgDesigSchema = Joi.object({
 });
 router.put('/designations/:id', orgAdminOnly, validate(updateOrgDesigSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await Designation.findOneAndUpdate(
       { _id: req.params.id, organizationId: orgId, branchId: null },
@@ -1030,7 +1034,7 @@ router.put('/designations/:id', orgAdminOnly, validate(updateOrgDesigSchema), as
 
 router.delete('/designations/:id', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await Designation.findOneAndDelete({ _id: req.params.id, organizationId: orgId, branchId: null });
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
@@ -1046,7 +1050,7 @@ router.delete('/designations/:id', orgAdminOnly, async (req: AuthenticatedReques
 
 router.get('/staff-categories', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const filter: any = { organizationId: orgId, branchId: null };
     if (req.query.status) filter.status = req.query.status;
@@ -1066,7 +1070,7 @@ const orgStaffCatSchema = Joi.object({
 });
 router.post('/staff-categories', orgAdminOnly, validate(orgStaffCatSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const exists = await StaffCategory.findOne({ name: req.body.name, organizationId: orgId, branchId: null });
     if (exists) return res.status(400).json({ success: false, message: 'Staff category already exists at org level' });
@@ -1083,7 +1087,7 @@ router.put('/staff-categories/:id', orgAdminOnly, validate(Joi.object({
   status: Joi.string().valid('active', 'inactive').optional()
 })), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await StaffCategory.findOneAndUpdate(
       { _id: req.params.id, organizationId: orgId, branchId: null },
@@ -1098,7 +1102,7 @@ router.put('/staff-categories/:id', orgAdminOnly, validate(Joi.object({
 
 router.delete('/staff-categories/:id', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await StaffCategory.findOneAndDelete({ _id: req.params.id, organizationId: orgId, branchId: null });
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
@@ -1114,7 +1118,7 @@ router.delete('/staff-categories/:id', orgAdminOnly, async (req: AuthenticatedRe
 
 router.get('/expense-categories', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const filter: any = { organizationId: orgId, branchId: null };
     if (req.query.status) filter.status = req.query.status;
@@ -1134,7 +1138,7 @@ const orgExpCatSchema = Joi.object({
 });
 router.post('/expense-categories', orgAdminOnly, validate(orgExpCatSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const exists = await ExpenseCategory.findOne({ name: req.body.name, organizationId: orgId, branchId: null });
     if (exists) return res.status(400).json({ success: false, message: 'Expense category already exists at org level' });
@@ -1151,7 +1155,7 @@ router.put('/expense-categories/:id', orgAdminOnly, validate(Joi.object({
   status: Joi.string().valid('active', 'inactive').optional()
 })), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await ExpenseCategory.findOneAndUpdate(
       { _id: req.params.id, organizationId: orgId, branchId: null },
@@ -1166,7 +1170,7 @@ router.put('/expense-categories/:id', orgAdminOnly, validate(Joi.object({
 
 router.delete('/expense-categories/:id', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await ExpenseCategory.findOneAndDelete({ _id: req.params.id, organizationId: orgId, branchId: null });
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
@@ -1182,7 +1186,7 @@ router.delete('/expense-categories/:id', orgAdminOnly, async (req: Authenticated
 
 router.get('/income-categories', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const filter: any = { organizationId: orgId, branchId: null };
     if (req.query.status) filter.status = req.query.status;
@@ -1202,7 +1206,7 @@ const orgIncCatSchema = Joi.object({
 });
 router.post('/income-categories', orgAdminOnly, validate(orgIncCatSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const exists = await IncomeCategory.findOne({ name: req.body.name, organizationId: orgId, branchId: null });
     if (exists) return res.status(400).json({ success: false, message: 'Income category already exists at org level' });
@@ -1219,7 +1223,7 @@ router.put('/income-categories/:id', orgAdminOnly, validate(Joi.object({
   status: Joi.string().valid('active', 'inactive').optional()
 })), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await IncomeCategory.findOneAndUpdate(
       { _id: req.params.id, organizationId: orgId, branchId: null },
@@ -1234,7 +1238,7 @@ router.put('/income-categories/:id', orgAdminOnly, validate(Joi.object({
 
 router.delete('/income-categories/:id', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await IncomeCategory.findOneAndDelete({ _id: req.params.id, organizationId: orgId, branchId: null });
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
@@ -1250,7 +1254,7 @@ router.delete('/income-categories/:id', orgAdminOnly, async (req: AuthenticatedR
 
 router.get('/fee-types', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const filter: any = { organizationId: orgId, branchId: null };
     if (req.query.search) filter.name = { $regex: req.query.search, $options: 'i' };
@@ -1269,7 +1273,7 @@ const orgFeeTypeSchema = Joi.object({
 });
 router.post('/fee-types', orgAdminOnly, validate(orgFeeTypeSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const exists = await FeeTypeConfig.findOne({ name: req.body.name, organizationId: orgId, branchId: null });
     if (exists) return res.status(400).json({ success: false, message: 'Fee type already exists at org level' });
@@ -1286,7 +1290,7 @@ router.put('/fee-types/:id', orgAdminOnly, validate(Joi.object({
   isActive: Joi.boolean().optional()
 })), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await FeeTypeConfig.findOneAndUpdate(
       { _id: req.params.id, organizationId: orgId, branchId: null },
@@ -1301,7 +1305,7 @@ router.put('/fee-types/:id', orgAdminOnly, validate(Joi.object({
 
 router.delete('/fee-types/:id', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await FeeTypeConfig.findOneAndDelete({ _id: req.params.id, organizationId: orgId, branchId: null });
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
@@ -1339,7 +1343,7 @@ const branchImportSchema = Joi.object({
 // @route  GET /api/org-templates/branch-preview/:sourceBranchId
 router.get('/branch-preview/:sourceBranchId', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     const srcBranchId = new mongoose.Types.ObjectId(req.params.sourceBranchId);
@@ -1370,7 +1374,7 @@ router.get('/branch-preview/:sourceBranchId', orgAdminOnly, async (req: Authenti
 // @route  POST /api/org-templates/import-from-branch
 router.post('/import-from-branch', orgAdminOnly, validate(branchImportSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     const { sourceBranchId, targetBranchId, classIds, includeSubjects, includeChapters, includeAcademicYears, includeDepartments, includeDesignations, includeStaffCategories, includeExpenseCategories, includeIncomeCategories, includeFeeTypes, divisions } = req.body;

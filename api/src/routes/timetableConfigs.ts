@@ -51,7 +51,7 @@ router.get(
         success: true,
         message: 'Timetable configs retrieved successfully',
         data: configs,
-        pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+        pagination: { page, limit, total, pages: (limit > 0 ? Math.ceil(total / limit) : 1) },
       };
       res.json(response);
     } catch (error) {

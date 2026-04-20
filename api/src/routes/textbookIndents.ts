@@ -52,7 +52,7 @@ const returnTextbooksSchema = Joi.object({
 
 const queryTextbookIndentsSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(10),
+  limit: Joi.number().integer().min(0).default(10),
   search: Joi.string().allow('').optional().trim(),
   studentId: Joi.string().allow('').optional().trim(),
   status: Joi.string().valid('pending', 'issued', 'partially_returned', 'returned', 'cancelled', '').optional(),
@@ -200,7 +200,7 @@ router.get('/', checkPermission('textbooks', 'read'), validateQuery(queryTextboo
         page: pageNum,
         limit: limitNum,
         total,
-        pages: Math.ceil(total / limitNum)
+        pages: (limitNum > 0 ? Math.ceil(total / limitNum) : 1)
       }
     };
 

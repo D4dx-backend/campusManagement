@@ -105,7 +105,7 @@ const AttendanceMarking = () => {
         classId: selectedClassId,
         section: selectedSection || undefined,
         status: 'active',
-        limit: 200,
+        limit: 0,
         sortBy: 'name',
         sortOrder: 'asc',
       } as any);

@@ -788,7 +788,7 @@ router.get('/fees', checkPermission('reports', 'read'), validateQuery(dateRangeS
 router.get('/fee-dues', checkPermission('reports', 'read'), async (req: AuthenticatedRequest, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
+    const limit = req.query.limit != null ? parseInt(req.query.limit as string) : 20;
     
     const filter: any = { status: 'pending' };
 
@@ -936,7 +936,7 @@ router.get('/fee-dues', checkPermission('reports', 'read'), async (req: Authenti
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: (limit > 0 ? Math.ceil(total / limit) : 1)
       }
     };
     res.json(response);
@@ -956,7 +956,7 @@ router.get('/fee-dues', checkPermission('reports', 'read'), async (req: Authenti
 router.get('/transport', checkPermission('reports', 'read'), async (req: AuthenticatedRequest, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 50;
+    const limit = req.query.limit != null ? parseInt(req.query.limit as string) : 50;
     const transportType = req.query.transportType as string; // 'school', 'own', 'none'
     
     const filter: any = { status: 'active' };
@@ -1070,7 +1070,7 @@ router.get('/transport', checkPermission('reports', 'read'), async (req: Authent
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: (limit > 0 ? Math.ceil(total / limit) : 1)
       }
     };
     res.json(response);

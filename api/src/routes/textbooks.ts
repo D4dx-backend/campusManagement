@@ -46,7 +46,7 @@ const updateTextBookSchema = Joi.object({
 
 const queryTextBooksSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(10),
+  limit: Joi.number().integer().min(0).default(10),
   search: Joi.string().optional().allow(''),
   class: Joi.string().optional().allow(''),
   subject: Joi.string().optional().allow(''),
@@ -137,7 +137,7 @@ router.get('/', checkPermission('textbooks', 'read'), validateQuery(queryTextBoo
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: (limit > 0 ? Math.ceil(total / limit) : 1)
       }
     };
 

@@ -75,7 +75,7 @@ const chapterUpdateSchema = Joi.object({
 
 const chapterQuerySchema = Joi.object({
   page: Joi.alternatives().try(Joi.number().integer().min(1), Joi.string().pattern(/^\d+$/).custom(v => parseInt(v, 10))).default(1),
-  limit: Joi.alternatives().try(Joi.number().integer().min(1).max(100), Joi.string().pattern(/^\d+$/).custom(v => Math.min(parseInt(v, 10), 100))).default(50),
+  limit: Joi.number().integer().min(0).default(50),
   search: Joi.string().optional().allow(''),
   subjectId: Joi.string().optional().allow(''),
   classId: Joi.string().optional().allow(''),
@@ -114,7 +114,7 @@ router.get('/chapters', checkPermission('classes', 'read'), validateQuery(chapte
     success: true,
     message: 'Chapters fetched',
     data,
-    pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) }
+    pagination: { page: Number(page), limit: Number(limit), total, pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1) }
   };
   res.json(response);
 });
@@ -226,7 +226,7 @@ const contentUpdateSchema = Joi.object({
 
 const contentQuerySchema = Joi.object({
   page: Joi.alternatives().try(Joi.number().integer().min(1), Joi.string().pattern(/^\d+$/).custom(v => parseInt(v, 10))).default(1),
-  limit: Joi.alternatives().try(Joi.number().integer().min(1).max(200), Joi.string().pattern(/^\d+$/).custom(v => Math.min(parseInt(v, 10), 200))).default(50),
+  limit: Joi.number().integer().min(0).default(50),
   search: Joi.string().optional().allow(''),
   chapterId: Joi.string().optional().allow(''),
   subjectId: Joi.string().optional().allow(''),
@@ -270,7 +270,7 @@ router.get('/content', checkPermission('classes', 'read'), validateQuery(content
     success: true,
     message: 'Content fetched',
     data,
-    pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) }
+    pagination: { page: Number(page), limit: Number(limit), total, pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1) }
   };
   res.json(response);
 });
@@ -518,7 +518,7 @@ const assessmentUpdateSchema = Joi.object({
 
 const assessmentQuerySchema = Joi.object({
   page: Joi.alternatives().try(Joi.number().integer().min(1), Joi.string().pattern(/^\d+$/).custom(v => parseInt(v, 10))).default(1),
-  limit: Joi.alternatives().try(Joi.number().integer().min(1).max(200), Joi.string().pattern(/^\d+$/).custom(v => Math.min(parseInt(v, 10), 200))).default(50),
+  limit: Joi.number().integer().min(0).default(50),
   search: Joi.string().optional().allow(''),
   subjectId: Joi.string().optional().allow(''),
   classId: Joi.string().optional().allow(''),
@@ -563,7 +563,7 @@ router.get('/assessments', checkPermission('classes', 'read'), validateQuery(ass
     success: true,
     message: 'Assessments fetched',
     data,
-    pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) }
+    pagination: { page: Number(page), limit: Number(limit), total, pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1) }
   };
   res.json(response);
 });
@@ -707,7 +707,7 @@ router.post('/assessments/:id/duplicate', checkPermission('classes', 'create'), 
 
 const submissionQuerySchema = Joi.object({
   page: Joi.alternatives().try(Joi.number().integer().min(1), Joi.string().pattern(/^\d+$/).custom(v => parseInt(v, 10))).default(1),
-  limit: Joi.alternatives().try(Joi.number().integer().min(1).max(200), Joi.string().pattern(/^\d+$/).custom(v => Math.min(parseInt(v, 10), 200))).default(50),
+  limit: Joi.number().integer().min(0).default(50),
   assessmentId: Joi.string().optional().allow(''),
   studentId: Joi.string().optional().allow(''),
   status: Joi.string().valid('not_started', 'in_progress', 'submitted', 'graded', 'returned').optional(),
@@ -741,7 +741,7 @@ router.get('/submissions', checkPermission('classes', 'read'), validateQuery(sub
     success: true,
     message: 'Submissions fetched',
     data,
-    pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) }
+    pagination: { page: Number(page), limit: Number(limit), total, pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1) }
   };
   res.json(response);
 });
@@ -1007,8 +1007,8 @@ router.get('/assignments', async (req: AuthenticatedRequest, res) => {
     if (search) filter.title = { $regex: search, $options: 'i' };
 
     const pageNum = Math.max(1, parseInt(page));
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
-    const skip = (pageNum - 1) * limitNum;
+    const limitNum = limit != null ? parseInt(limit) : 20;
+    const skip = limitNum > 0 ? (pageNum - 1) * limitNum : 0;
 
     const [assignments, total] = await Promise.all([
       ClassContentAssignment.find(filter)
@@ -1024,7 +1024,7 @@ router.get('/assignments', async (req: AuthenticatedRequest, res) => {
       success: true,
       message: 'Assignments fetched',
       data: assignments,
-      pagination: { page: pageNum, limit: limitNum, total, pages: Math.ceil(total / limitNum) }
+      pagination: { page: pageNum, limit: limitNum, total, pages: (limitNum > 0 ? Math.ceil(total / limitNum) : 1) }
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -2007,7 +2007,7 @@ router.get('/import/available', validateQuery(Joi.object({
   classId: Joi.string(),
   subjectId: Joi.string(),
   page: Joi.number().integer().min(1),
-  limit: Joi.number().integer().min(1).max(100)
+  limit: Joi.number().integer().min(0)
 })), async (req: AuthenticatedRequest, res) => {
   try {
     const orgId = req.user!.organizationId;
@@ -2337,7 +2337,7 @@ const questionPoolItemSchema = Joi.object({
 // GET /question-pools
 router.get('/question-pools', checkPermission('classes', 'read'), validateQuery(Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(50),
+  limit: Joi.number().integer().min(0).default(50),
   search: Joi.string().optional().allow(''),
   subjectId: Joi.string().optional().allow(''),
   classId: Joi.string().optional().allow(''),
@@ -2377,7 +2377,7 @@ router.get('/question-pools', checkPermission('classes', 'read'), validateQuery(
 
     res.json({
       success: true, message: 'Question pools', data: summaries,
-      pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) }
+      pagination: { page: Number(page), limit: Number(limit), total, pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1) }
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });

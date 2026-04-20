@@ -155,7 +155,7 @@ router.get(
         success: true,
         message: 'Timetables retrieved successfully',
         data: timetables,
-        pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+        pagination: { page, limit, total, pages: (limit > 0 ? Math.ceil(total / limit) : 1) },
       };
       res.json(response);
     } catch (error) {

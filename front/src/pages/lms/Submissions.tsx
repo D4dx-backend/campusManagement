@@ -56,7 +56,7 @@ const Submissions = () => {
     try {
       const [aRes, sRes] = await Promise.all([
         assessmentApi.getById(assessmentId),
-        submissionApi.getAll({ assessmentId, limit: 200 })
+        submissionApi.getAll({ assessmentId, limit: 0 })
       ]);
       setAssessment(aRes.data);
       setSubmissions(sRes.data);

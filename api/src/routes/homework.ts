@@ -26,7 +26,7 @@ const createSchema = Joi.object({
 
 const querySchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(50).default(20),
+  limit: Joi.number().integer().min(0).default(20),
   classId: Joi.string().allow(''),
   date: Joi.string().allow(''),
   fromDate: Joi.string().allow(''),
@@ -92,7 +92,7 @@ router.get('/', validateQuery(querySchema), async (req: AuthenticatedRequest, re
     res.json({
       success: true,
       data: items,
-      pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) },
+      pagination: { page: Number(page), limit: Number(limit), total, pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1) },
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });

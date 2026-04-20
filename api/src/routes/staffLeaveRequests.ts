@@ -24,7 +24,7 @@ const reviewSchema = Joi.object({
 
 const querySchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(20),
+  limit: Joi.number().integer().min(0).default(20),
   status: Joi.string().valid('pending', 'approved', 'rejected').allow(''),
   userId: Joi.string().allow(''),
   sortBy: Joi.string().default('createdAt'),
@@ -101,7 +101,7 @@ router.get('/', validateQuery(querySchema), async (req: AuthenticatedRequest, re
     res.json({
       success: true,
       data: requests,
-      pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) },
+      pagination: { page: Number(page), limit: Number(limit), total, pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1) },
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });

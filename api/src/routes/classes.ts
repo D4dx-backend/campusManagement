@@ -128,7 +128,7 @@ router.get('/', checkPermission('classes', 'read'), validateQuery(queryClassesSc
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: (limit > 0 ? Math.ceil(total / limit) : 1)
       }
     };
 

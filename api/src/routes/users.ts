@@ -55,7 +55,8 @@ const updateUserSchema = Joi.object({
 router.get('/', authorize('platform_admin', 'org_admin', 'branch_admin'), async (req: AuthenticatedRequest, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
+    const rawLimit = req.query.limit != null ? parseInt(req.query.limit as string) : 20;
+    const limit = isNaN(rawLimit) ? 20 : rawLimit;
     const search = req.query.search as string || '';
     const branchId = req.query.branchId as string || '';
     const role = req.query.role as string;
@@ -127,7 +128,7 @@ router.get('/', authorize('platform_admin', 'org_admin', 'branch_admin'), async 
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: (limit > 0 ? Math.ceil(total / limit) : 1)
       }
     };
 

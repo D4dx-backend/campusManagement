@@ -17,7 +17,7 @@ export const useUsers = (filters: UserFilters = {}) => {
       const params = new URLSearchParams();
       
       if (filters.page) params.append('page', filters.page.toString());
-      if (filters.limit) params.append('limit', filters.limit.toString());
+      if (filters.limit != null) params.append('limit', filters.limit.toString());
       if (filters.search) params.append('search', filters.search);
       if (filters.branchId) params.append('branchId', filters.branchId);
       if (filters.role) params.append('role', filters.role);

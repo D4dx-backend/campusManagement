@@ -96,7 +96,7 @@ const BranchManagement = () => {
 
   // API hooks
   const { data: branchesResponse, isLoading } = useBranches();
-  const { data: usersResponse } = useUsers({ limit: 1000 });
+  const { data: usersResponse } = useUsers({ limit: 0 });
   const createBranchMutation = useCreateBranch();
   const updateBranchMutation = useUpdateBranch();
   const deleteBranchMutation = useDeleteBranch();

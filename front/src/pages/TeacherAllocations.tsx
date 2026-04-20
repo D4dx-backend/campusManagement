@@ -44,8 +44,8 @@ const TeacherAllocations = () => {
 
   useEffect(() => {
     classesApi.getClasses({ limit: 100, status: 'active' }).then((r) => setClasses(r.data || [])).catch(() => {});
-    staffService.getStaff({ limit: 200, role: 'teacher' }).then((r: any) => setTeachers(r?.data?.data || r?.data || [])).catch(() => {});
-    subjectApi.getAll({ limit: 200 }).then((r) => setSubjects(r.data || [])).catch(() => {});
+    staffService.getStaff({ limit: 0, role: 'teacher' }).then((r: any) => setTeachers(r?.data?.data || r?.data || [])).catch(() => {});
+    subjectApi.getAll({ limit: 0 }).then((r) => setSubjects(r.data || [])).catch(() => {});
   }, []);
 
   const { data, isLoading } = useQuery({
@@ -53,7 +53,7 @@ const TeacherAllocations = () => {
     queryFn: () => teacherAllocationService.getAll({
       classId: filterClassId || undefined,
       academicYear: filterAY || undefined,
-      limit: 200,
+      limit: 0,
     }),
   });
 

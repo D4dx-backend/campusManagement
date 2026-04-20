@@ -85,7 +85,7 @@ const queryExpensesSchema = Joi.object({
     'number.integer': 'Page must be an integer',
     'number.min': 'Page must be at least 1'
   }),
-  limit: Joi.number().integer().min(1).max(100).default(10).messages({
+  limit: Joi.number().integer().min(0).default(10).messages({
     'number.base': 'Limit must be a number',
     'number.integer': 'Limit must be an integer',
     'number.min': 'Limit must be at least 1',
@@ -183,7 +183,7 @@ router.get('/', checkPermission('expenses', 'read'), validateQuery(queryExpenses
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: (limit > 0 ? Math.ceil(total / limit) : 1)
       }
     };
 

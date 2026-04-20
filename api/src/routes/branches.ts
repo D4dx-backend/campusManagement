@@ -16,7 +16,7 @@ router.use(authenticate);
 router.get('/', authorize('platform_admin', 'org_admin'), async (req: AuthenticatedRequest, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
+    const limit = req.query.limit != null ? parseInt(req.query.limit as string) : 20;
     const search = req.query.search as string || '';
     const status = req.query.status as string;
 
@@ -65,7 +65,7 @@ router.get('/', authorize('platform_admin', 'org_admin'), async (req: Authentica
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: (limit > 0 ? Math.ceil(total / limit) : 1)
       }
     };
 

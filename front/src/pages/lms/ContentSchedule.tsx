@@ -120,10 +120,10 @@ const ContentSchedule = () => {
   const loadAvailableContent = async () => {
     try {
       if (form.contentType === 'assessment') {
-        const res = await assessmentApi.getAll({ limit: 200, status: 'published' });
+        const res = await assessmentApi.getAll({ limit: 0, status: 'published' });
         setAvailableContent(res.data || []);
       } else {
-        const res = await contentApi.getAll({ limit: 200, status: 'published' });
+        const res = await contentApi.getAll({ limit: 0, status: 'published' });
         setAvailableContent(res.data || []);
       }
     } catch { /* ignore */ }

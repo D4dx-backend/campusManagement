@@ -461,7 +461,7 @@ const Fees = () => {
   useEffect(() => { setQDivisionName('all'); }, [qClassId]);
 
   const { data: qStudentsResponse, isLoading: qStudentsLoading } = useStudents({
-    limit: 200,
+    limit: 0,
     search: qStudentSearch.trim() || undefined,
     branchId: effectiveBranchId,
     classId: qSelectedClassId || undefined,
@@ -692,7 +692,7 @@ const Fees = () => {
   useEffect(() => { setBDivisionName('all'); }, [bClassId]);
 
   const { data: bStudentsResponse, isLoading: bStudentsLoading } = useStudents({
-    limit: 200,
+    limit: 0,
     search: bStudentSearch.trim() || undefined,
     branchId: effectiveBranchId,
     classId: bSelectedClassId || undefined,

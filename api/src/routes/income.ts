@@ -70,7 +70,7 @@ router.get('/', checkPermission('accounting', 'read'), async (req: Authenticated
         page: Number(page),
         limit: Number(limit),
         total,
-        pages: Math.ceil(total / Number(limit))
+        pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1)
       }
     };
 

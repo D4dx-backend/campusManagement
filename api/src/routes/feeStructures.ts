@@ -30,7 +30,7 @@ const createFeeStructureSchema = Joi.object({
 
 const querySchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(50),
+  limit: Joi.number().integer().min(0).default(50),
   search: Joi.string().allow('').optional(),
   feeTypeId: Joi.string().optional(),
   classId: Joi.string().optional(),
@@ -83,7 +83,7 @@ router.get(
           page: Number(page),
           limit: Number(limit),
           total,
-          pages: Math.ceil(total / Number(limit))
+          pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1)
         }
       });
     } catch (error: any) {

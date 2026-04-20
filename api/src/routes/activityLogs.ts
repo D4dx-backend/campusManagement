@@ -15,7 +15,7 @@ router.use(authenticate);
 // Validation schemas
 const queryActivityLogsSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(20),
+  limit: Joi.number().integer().min(0).default(20),
   search: Joi.string().optional().allow(''),
   userId: Joi.string().optional().allow(''),
   userRole: Joi.string().valid('platform_admin', 'org_admin', 'branch_admin', 'accountant', 'teacher', 'staff').optional(),
@@ -103,7 +103,7 @@ router.get('/', checkPermission('activity_logs', 'read'), validateQuery(queryAct
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: (limit > 0 ? Math.ceil(total / limit) : 1)
       }
     };
 
@@ -296,7 +296,7 @@ router.get('/user/:userId', checkPermission('activity_logs', 'read'), validateQu
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: (limit > 0 ? Math.ceil(total / limit) : 1)
       }
     };
 

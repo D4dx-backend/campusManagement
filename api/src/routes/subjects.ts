@@ -35,7 +35,7 @@ const updateSchema = Joi.object({
 
 const querySchema = Joi.object({
   page: Joi.alternatives().try(Joi.number().integer().min(1), Joi.string().pattern(/^\d+$/).custom(v => parseInt(v, 10))).default(1),
-  limit: Joi.alternatives().try(Joi.number().integer().min(1).max(200), Joi.string().pattern(/^\d+$/).custom(v => Math.min(parseInt(v, 10), 200))).default(50),
+  limit: Joi.number().integer().min(0).default(50),
   search: Joi.string().optional().allow(''),
   classId: Joi.string().optional().allow(''),
   status: Joi.string().valid('active', 'inactive').optional(),
@@ -70,7 +70,7 @@ router.get('/', checkPermission('classes', 'read'), validateQuery(querySchema), 
     success: true,
     message: 'Subjects fetched',
     data,
-    pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) }
+    pagination: { page: Number(page), limit: Number(limit), total, pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1) }
   };
   res.json(response);
 });

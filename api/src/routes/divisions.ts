@@ -39,7 +39,7 @@ const updateDivisionSchema = Joi.object({
 
 const queryDivisionsSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(10),
+  limit: Joi.number().integer().min(0).default(10),
   search: Joi.string().optional().allow(''),
   classId: Joi.string().optional().allow(''),
   status: Joi.string().valid('active', 'inactive').optional(),
@@ -142,7 +142,7 @@ router.get('/', checkPermission('divisions', 'read'), validateQuery(queryDivisio
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: (limit > 0 ? Math.ceil(total / limit) : 1)
       }
     };
 

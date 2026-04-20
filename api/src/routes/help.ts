@@ -93,7 +93,7 @@ router.get('/categories', validateQuery(categoryQuerySchema), async (req: Authen
 // GET /api/help/articles
 const articleQuerySchema = Joi.object({
   page: Joi.alternatives().try(Joi.number().integer().min(1), Joi.string().pattern(/^\d+$/).custom(v => parseInt(v, 10))).default(1),
-  limit: Joi.alternatives().try(Joi.number().integer().min(1).max(100), Joi.string().pattern(/^\d+$/).custom(v => Math.min(parseInt(v, 10), 100))).default(20),
+  limit: Joi.number().integer().min(0).default(20),
   search: Joi.string().optional().allow(''),
   categoryId: Joi.string().optional().allow(''),
   module: Joi.string().optional().allow(''),
@@ -157,7 +157,7 @@ router.get('/articles', validateQuery(articleQuerySchema), async (req: Authentic
       page: Number(page),
       limit: Number(limit),
       total,
-      pages: Math.ceil(total / Number(limit))
+      pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1)
     }
   });
 });

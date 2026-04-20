@@ -91,7 +91,7 @@ router.get('/', checkPermission('students', 'read'), validateQuery(queryStudents
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: (limit > 0 ? Math.ceil(total / limit) : 1)
       }
     };
 

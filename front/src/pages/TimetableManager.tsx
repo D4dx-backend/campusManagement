@@ -145,7 +145,7 @@ export default function TimetableManager() {
       console.error('Something went wrong while loading. Please try again academic years:', err);
       toast({ title: 'Something went wrong while loading academic years', description: err?.response?.data?.message || err.message, variant: 'destructive' });
     });
-    staffService.getStaff({ limit: 500, status: 'active' }).then((res) => {
+    staffService.getStaff({ limit: 0, status: 'active' }).then((res) => {
       if (res.data) setStaffList(res.data);
     }).catch((err) => {
       console.error('Something went wrong while loading. Please try again teachers:', err);

@@ -32,7 +32,7 @@ const createSchema = Joi.object({
 
 const querySchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(50).default(20),
+  limit: Joi.number().integer().min(0).default(20),
   type: Joi.string().valid('general', 'academic', 'event', 'emergency').allow(''),
   sortBy: Joi.string().default('createdAt'),
   sortOrder: Joi.string().valid('asc', 'desc').default('desc'),
@@ -164,7 +164,7 @@ router.get('/', validateQuery(querySchema), async (req: AuthenticatedRequest, re
       readBy: undefined,
     }));
 
-    res.json({ success: true, data, pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) } });
+    res.json({ success: true, data, pagination: { page: Number(page), limit: Number(limit), total, pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1) } });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }

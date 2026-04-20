@@ -34,7 +34,7 @@ const updatePayrollSchema = Joi.object({
 
 const queryPayrollSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(10),
+  limit: Joi.number().integer().min(0).default(10),
   search: Joi.string().optional().allow(''),
   month: Joi.string().optional().allow(''),
   year: Joi.number().integer().optional(),
@@ -102,7 +102,7 @@ router.get('/', checkPermission('payroll', 'read'), validateQuery(queryPayrollSc
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: (limit > 0 ? Math.ceil(total / limit) : 1)
       }
     };
 

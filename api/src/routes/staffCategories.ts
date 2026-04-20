@@ -139,11 +139,11 @@ router.post('/', checkPermission('staff', 'create'), validate(createStaffCategor
 
     await ActivityLog.create({
       userId: req.user!._id,
+      userName: req.user!.name,
+      userRole: req.user!.role,
       action: 'create',
       module: 'staff',
-      description: `Created staff category: ${newCategory.name}`,
-      targetId: newCategory._id,
-      targetModel: 'StaffCategory',
+      details: `Created staff category: ${newCategory.name}`,
       organizationId: req.user!.organizationId,
       branchId
     });
@@ -205,11 +205,11 @@ router.put('/:id', checkPermission('staff', 'update'), validate(updateStaffCateg
 
     await ActivityLog.create({
       userId: req.user!._id,
+      userName: req.user!.name,
+      userRole: req.user!.role,
       action: 'update',
       module: 'staff',
-      description: `Updated staff category: ${category.name}`,
-      targetId: category._id,
-      targetModel: 'StaffCategory',
+      details: `Updated staff category: ${category.name}`,
       organizationId: req.user!.organizationId,
       branchId: req.user!.branchId
     });
@@ -274,11 +274,11 @@ router.delete('/:id', checkPermission('staff', 'delete'), async (req: Authentica
 
     await ActivityLog.create({
       userId: req.user!._id,
+      userName: req.user!.name,
+      userRole: req.user!.role,
       action: 'delete',
       module: 'staff',
-      description: `Deleted staff category: ${category.name}`,
-      targetId: category._id,
-      targetModel: 'StaffCategory',
+      details: `Deleted staff category: ${category.name}`,
       organizationId: req.user!.organizationId,
       branchId: req.user!.branchId
     });

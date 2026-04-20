@@ -47,9 +47,10 @@ router.post('/', validate(createLeaveRequestSchema), async (req: AuthenticatedRe
     await ActivityLog.create({
       action: 'create',
       module: 'leave_requests',
-      description: `Leave request created for ${student.name} (${new Date(fromDate).toISOString().split('T')[0]} to ${new Date(toDate).toISOString().split('T')[0]})`,
+      details: `Leave request created for ${student.name} (${new Date(fromDate).toISOString().split('T')[0]} to ${new Date(toDate).toISOString().split('T')[0]})`,
       userId: req.user!._id,
       userName: req.user!.name,
+      userRole: req.user!.role,
       ...orgBranch,
     });
 
@@ -171,9 +172,10 @@ router.put('/:id/review', checkPermission('attendance', 'update'), validate(revi
     await ActivityLog.create({
       action: 'update',
       module: 'leave_requests',
-      description: `Leave request ${status} for ${leaveRequest.studentName}`,
+      details: `Leave request ${status} for ${leaveRequest.studentName}`,
       userId: req.user!._id,
       userName: req.user!.name,
+      userRole: req.user!.role,
       ...orgBranch,
     });
 

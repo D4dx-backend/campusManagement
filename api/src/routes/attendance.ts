@@ -59,9 +59,10 @@ router.post('/', checkPermission('attendance', 'create'), validate(markAttendanc
     await ActivityLog.create({
       action: existing ? 'update' : 'create',
       module: 'attendance',
-      description: `Attendance ${existing ? 'updated' : 'marked'} for ${attendanceDate.toISOString().split('T')[0]}`,
+      details: `Attendance ${existing ? 'updated' : 'marked'} for ${attendanceDate.toISOString().split('T')[0]}`,
       userId: req.user!._id,
       userName: req.user!.name,
+      userRole: req.user!.role,
       ...orgBranch,
     });
 

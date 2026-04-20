@@ -504,10 +504,10 @@ router.post('/promote', checkPermission('students', 'update'), async (req: Authe
         // Log activity
         await ActivityLog.create({
           userId: req.user!._id,
-          userEmail: req.user!.mobile,
+          userName: req.user!.name,
+          userRole: req.user!.role,
           action: 'promote_student',
-          entity: 'student',
-          entityId: student._id,
+          module: 'student',
           details: `Promoted student ${student.name} from class ${oldClass} to ${targetClassId}`,
           branchId: student.branchId,
           ipAddress: req.ip
@@ -620,10 +620,10 @@ router.post('/:id/transfer', checkPermission('students', 'update'), async (req: 
     // Log activity
     await ActivityLog.create({
       userId: req.user!._id,
-      userEmail: req.user!.mobile,
+      userName: req.user!.name,
+      userRole: req.user!.role,
       action: 'transfer_student',
-      entity: 'student',
-      entityId: student._id,
+      module: 'student',
       details: `TC issued for ${student.name} (TC#: ${finalTcNumber})`,
       branchId: student.branchId,
       ipAddress: req.ip
@@ -687,10 +687,10 @@ router.post('/:id/suspend', checkPermission('students', 'update'), async (req: A
 
     await ActivityLog.create({
       userId: req.user!._id,
-      userEmail: req.user!.mobile,
+      userName: req.user!.name,
+      userRole: req.user!.role,
       action: 'suspend_student',
-      entity: 'student',
-      entityId: student._id,
+      module: 'student',
       details: `Suspended student ${student.name}: ${suspensionReason}`,
       branchId: student.branchId,
       ipAddress: req.ip
@@ -726,10 +726,10 @@ router.post('/:id/revoke-suspension', checkPermission('students', 'update'), asy
 
     await ActivityLog.create({
       userId: req.user!._id,
-      userEmail: req.user!.mobile,
+      userName: req.user!.name,
+      userRole: req.user!.role,
       action: 'revoke_suspension',
-      entity: 'student',
-      entityId: student._id,
+      module: 'student',
       details: `Revoked suspension for ${student.name}`,
       branchId: student.branchId,
       ipAddress: req.ip

@@ -152,8 +152,10 @@ router.post(
     await ActivityLog.create({
       action: 'create',
       module: 'domain-mapping',
-      description: `Domain "${value.domain}" mapped to organization "${org.name}"`,
+      details: `Domain "${value.domain}" mapped to organization "${org.name}"`,
       userId: req.user!._id,
+      userName: req.user!.name,
+      userRole: req.user!.role,
       organizationId: value.organizationId,
     });
 
@@ -202,8 +204,10 @@ router.put(
     await ActivityLog.create({
       action: 'update',
       module: 'domain-mapping',
-      description: `Domain mapping "${domain.domain}" updated`,
+      details: `Domain mapping "${domain.domain}" updated`,
       userId: req.user!._id,
+      userName: req.user!.name,
+      userRole: req.user!.role,
       organizationId: domain.organizationId,
     });
 
@@ -236,8 +240,10 @@ router.delete(
     await ActivityLog.create({
       action: 'delete',
       module: 'domain-mapping',
-      description: `Domain mapping "${domain.domain}" removed`,
+      details: `Domain mapping "${domain.domain}" removed`,
       userId: req.user!._id,
+      userName: req.user!.name,
+      userRole: req.user!.role,
       organizationId: domain.organizationId,
     });
 

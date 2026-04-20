@@ -10,21 +10,89 @@ import { Textarea } from '@/components/ui/textarea';
 import { useConfirmation } from '@/hooks/useConfirmation';
 import { useBranches, useCreateBranch, useUpdateBranch, useDeleteBranch } from '@/hooks/useBranches';
 import { useUsers } from '@/hooks/useUsers';
-import { Branch } from '@/types';
-import { Plus, Search, Edit, Trash2, Building, MapPin, Phone, Mail, User as UserIcon, Calendar, Loader2 } from 'lucide-react';
+import { Branch, FeatureKey, FeatureRegistryItem } from '@/types';
+import { Plus, Search, Edit, Trash2, Building, MapPin, Phone, Mail, User as UserIcon, Calendar, Loader2, Settings2, Save, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { ExportButton } from '@/components/ui/export-button';
+import { formatters } from '@/utils/exportUtils';
+import { pageConfigurations } from '@/utils/pageTemplates';
+import { featureService } from '@/services/featureService';
+import { useFeatureAccess } from '@/contexts/FeatureContext';
 
 const BranchManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
+  const [filterStatus, setFilterStatus] = useState<string>('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingBranch, setEditingBranch] = useState<any>(null);
   const { toast } = useToast();
   const { confirm, ConfirmationComponent } = useConfirmation();
   const { user } = useAuth();
+  const { refetch: refetchFeatures } = useFeatureAccess();
+
+  // Feature settings dialog state
+  const [featureDialogOpen, setFeatureDialogOpen] = useState(false);
+  const [featureBranch, setFeatureBranch] = useState<any>(null);
+  const [featureRegistry, setFeatureRegistry] = useState<FeatureRegistryItem[]>([]);
+  const [orgEnabledFeatures, setOrgEnabledFeatures] = useState<Set<FeatureKey>>(new Set());
+  const [branchEnabledFeatures, setBranchEnabledFeatures] = useState<Set<FeatureKey>>(new Set());
+  const [featureLoading, setFeatureLoading] = useState(false);
+  const [featureSaving, setFeatureSaving] = useState(false);
+
+  const openFeatureDialog = async (branch: any) => {
+    setFeatureBranch(branch);
+    setFeatureDialogOpen(true);
+    setFeatureLoading(true);
+    try {
+      const [regRes, brRes] = await Promise.all([
+        featureService.getRegistry(),
+        featureService.getBranchFeatures(branch._id || branch.id),
+      ]);
+      setFeatureRegistry(regRes.data?.data || []);
+      const data = brRes.data?.data;
+      if (data) {
+        setOrgEnabledFeatures(new Set(data.orgEnabledFeatures));
+        setBranchEnabledFeatures(
+          data.branchEnabledFeatures ? new Set(data.branchEnabledFeatures) : new Set(data.orgEnabledFeatures)
+        );
+      }
+    } catch {
+      toast({ title: 'Error', description: 'Failed to load feature settings', variant: 'destructive' });
+    } finally {
+      setFeatureLoading(false);
+    }
+  };
+
+  const toggleBranchFeature = (key: FeatureKey) => {
+    if (!orgEnabledFeatures.has(key)) return;
+    setBranchEnabledFeatures((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  };
+
+  const saveBranchFeatures = async () => {
+    if (!featureBranch) return;
+    setFeatureSaving(true);
+    try {
+      await featureService.updateBranchFeatures(
+        featureBranch._id || featureBranch.id,
+        [...branchEnabledFeatures] as FeatureKey[]
+      );
+      toast({ title: 'Success', description: 'Branch feature settings updated' });
+      setFeatureDialogOpen(false);
+      refetchFeatures();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to save', variant: 'destructive' });
+    } finally {
+      setFeatureSaving(false);
+    }
+  };
 
   // API hooks
   const { data: branchesResponse, isLoading } = useBranches();
@@ -200,12 +268,14 @@ const BranchManagement = () => {
     };
   };
 
-  const filteredBranches = branches.filter((b: any) =>
-    b.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    b.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    b.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (b.principalName && b.principalName.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredBranches = branches.filter((b: any) => {
+    const matchSearch = b.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (b.principalName && b.principalName.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchStatus = !filterStatus || b.status === filterStatus;
+    return matchSearch && matchStatus;
+  });
 
   // Only super admin can access this page
   if ((user?.role !== 'platform_admin' && user?.role !== 'org_admin')) {
@@ -560,6 +630,22 @@ const BranchManagement = () => {
                   className="pl-10"
                 />
               </div>
+              <Select value={filterStatus || '__all__'} onValueChange={v => setFilterStatus(v === '__all__' ? '' : v)}>
+                <SelectTrigger className="w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+              <ExportButton
+                data={filteredBranches}
+                filename="branches"
+                columns={pageConfigurations.branches.exportColumns.map(col => ({
+                  ...col,
+                  formatter: col.formatter ? formatters[col.formatter] : undefined
+                }))}
+              />
             </div>
           </CardHeader>
           <CardContent>
@@ -645,6 +731,9 @@ const BranchManagement = () => {
                             </td>
                             <td className="p-4">
                               <div className="flex gap-1 justify-end">
+                                <Button size="sm" variant="outline" title="Feature Settings" onClick={() => openFeatureDialog(branch)}>
+                                  <Settings2 className="w-4 h-4" />
+                                </Button>
                                 <Button size="sm" variant="outline" onClick={() => handleEdit(branch)}>
                                   <Edit className="w-4 h-4" />
                                 </Button>
@@ -665,6 +754,81 @@ const BranchManagement = () => {
         </Card>
       </div>
       <ConfirmationComponent />
+
+      {/* Feature Settings Dialog */}
+      <Dialog open={featureDialogOpen} onOpenChange={setFeatureDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings2 className="h-5 w-5" />
+              Feature Settings — {featureBranch?.name}
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              Toggle features for this branch. Features disabled at the organization level cannot be enabled here.
+            </p>
+          </DialogHeader>
+          {featureLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between mb-2">
+                <Badge variant="outline">{branchEnabledFeatures.size}/{orgEnabledFeatures.size} available</Badge>
+                <Button size="sm" variant="outline" onClick={() => setBranchEnabledFeatures(new Set(orgEnabledFeatures))}>
+                  Reset to Org Defaults
+                </Button>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {featureRegistry.map((feature) => {
+                  const isOrgEnabled = orgEnabledFeatures.has(feature.key);
+                  const isBranchEnabled = branchEnabledFeatures.has(feature.key);
+                  return (
+                    <div
+                      key={feature.key}
+                      className={`flex items-start justify-between rounded-lg border p-3 transition-colors ${
+                        !isOrgEnabled
+                          ? 'border-border bg-muted/50 opacity-60'
+                          : isBranchEnabled
+                            ? 'border-primary/30 bg-primary/5'
+                            : 'border-border bg-muted/30'
+                      }`}
+                    >
+                      <div className="space-y-0.5 pr-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm">{feature.label}</span>
+                          {!isOrgEnabled ? (
+                            <Badge variant="secondary" className="text-[10px] gap-1">
+                              <Lock className="h-2.5 w-2.5" /> Not in plan
+                            </Badge>
+                          ) : (
+                            <Badge variant={isBranchEnabled ? 'default' : 'secondary'} className="text-[10px]">
+                              {isBranchEnabled ? 'ON' : 'OFF'}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">{feature.description}</p>
+                      </div>
+                      <Switch
+                        checked={isBranchEnabled}
+                        onCheckedChange={() => toggleBranchFeature(feature.key)}
+                        disabled={!isOrgEnabled}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="outline" onClick={() => setFeatureDialogOpen(false)}>Cancel</Button>
+                <Button onClick={saveBranchFeatures} disabled={featureSaving}>
+                  {featureSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                  Save Changes
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 };

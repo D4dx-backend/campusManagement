@@ -96,6 +96,10 @@ const BranchSchema = new Schema<IBranch>({
     type: String,
     trim: true
   },
+  enabledFeatures: {
+    type: [String],
+    default: undefined
+  },
   createdBy: {
     type: Schema.Types.ObjectId as any,
     ref: 'User',

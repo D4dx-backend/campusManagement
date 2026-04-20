@@ -351,7 +351,7 @@ const StudentPromotion = () => {
             </div>
 
             <Card>
-              <CardContent className="p-0">
+              <CardContent className="p-0 overflow-x-auto">
                 {students.length === 0 ? (
                   <p className="text-center py-10 text-muted-foreground">No active students found in this class/division.</p>
                 ) : (

@@ -18,6 +18,14 @@ export const useOrganization = (id: string) => {
   });
 };
 
+export const useCurrentOrganization = (enabled: boolean = true) => {
+  return useQuery({
+    queryKey: ['organizations', 'current'],
+    queryFn: () => organizationsApi.getCurrentOrganization(),
+    enabled,
+  });
+};
+
 export const useCreateOrganization = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();

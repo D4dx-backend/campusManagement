@@ -10,7 +10,7 @@ export interface ISubject {
   isOptional: boolean;
   status: 'active' | 'inactive';
   organizationId: string;
-  branchId: string;
+  branchId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,16 +58,17 @@ const SubjectSchema = new Schema<ISubject>({
   branchId: {
     type: Schema.Types.ObjectId as any,
     ref: 'Branch',
-    required: true
+    default: null
   }
 }, {
   timestamps: true
 });
 
-SubjectSchema.index({ code: 1, branchId: 1 }, { unique: true });
+SubjectSchema.index({ code: 1, branchId: 1 }, { unique: true, sparse: true });
 SubjectSchema.index({ branchId: 1 });
 SubjectSchema.index({ organizationId: 1 });
 SubjectSchema.index({ classIds: 1 });
 SubjectSchema.index({ status: 1 });
+SubjectSchema.index({ organizationId: 1, branchId: 1 });
 
 export const Subject = mongoose.model<ISubject>('Subject', SubjectSchema);

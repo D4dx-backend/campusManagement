@@ -10,6 +10,9 @@ import { useActivityLogs } from '@/hooks/useActivityLogs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBranches } from '@/hooks/useBranches';
 import { useOrganizations } from '@/hooks/useOrganizations';
+import { ExportButton } from '@/components/ui/export-button';
+import { formatters } from '@/utils/exportUtils';
+import { pageConfigurations } from '@/utils/pageTemplates';
 
 const ROLE_OPTIONS = [
   { value: 'all', label: 'All Roles' },
@@ -123,6 +126,14 @@ const ActivityLog = () => {
             <h1 className="text-3xl font-bold">Activity Log</h1>
             <p className="text-muted-foreground mt-1">Monitor system activities and user actions</p>
           </div>
+          <ExportButton
+            data={activityLogs}
+            filename="activity_logs"
+            columns={pageConfigurations.activityLogs.exportColumns.map(col => ({
+              ...col,
+              formatter: col.formatter ? formatters[col.formatter] : undefined
+            }))}
+          />
         </div>
 
         {/* Stats Cards */}

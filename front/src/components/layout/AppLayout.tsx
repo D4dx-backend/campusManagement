@@ -56,6 +56,22 @@ import {
   CalendarCheck,
   CalendarMinus,
   Globe,
+  School,
+  Download,
+  Clock,
+  Grid3X3,
+  CircleHelp,
+  BookOpenCheck,
+  Layers,
+  ListChecks,
+  Clipboard,
+  Library,
+  Trophy,
+  Copy,
+  DollarSign as WalletIcon,
+  Megaphone,
+  NotebookPen,
+  UserCheck,
 } from 'lucide-react';
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import type { LucideIcon } from 'lucide-react';
@@ -63,7 +79,10 @@ import { useConfirmation } from '@/hooks/useConfirmation';
 import { PermissionAction, userHasAccess } from '@/utils/accessControl';
 import { UserRole } from '@/types';
 import { useOrgBranding } from '@/contexts/OrgBrandingContext';
+import { useFeatureAccess } from '@/contexts/FeatureContext';
 import { apiClient } from '@/lib/api';
+import { HelpButton } from '@/components/help/HelpButton';
+import { NotificationBell } from '@/components/layout/NotificationBell';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -104,6 +123,8 @@ const setStoredBoolean = (key: string, value: boolean) => {
 const platformAdminItems: MenuItem[] = [
   { icon: Building2, label: 'Organizations', path: '/organization-management', permission: { roles: ['platform_admin'] } },
   { icon: GitBranch, label: 'Branch Management', path: '/branch-management', permission: { roles: ['platform_admin'] } },
+  { icon: School, label: 'Org Templates', path: '/org-templates', permission: { roles: ['platform_admin'] } },
+  { icon: Download, label: 'Import to Branch', path: '/branch-import', permission: { roles: ['platform_admin'] } },
   { icon: Globe, label: 'Domain Management', path: '/domain-management', permission: { roles: ['platform_admin'] } },
   { icon: UserCog, label: 'User Access', path: '/user-access', permission: { roles: ['platform_admin'] } },
   { icon: Activity, label: 'Activity Log', path: '/activity-log', permission: { roles: ['platform_admin'] } },
@@ -112,6 +133,8 @@ const platformAdminItems: MenuItem[] = [
 // Org Admin menus (org-level view)
 const orgAdminItems: MenuItem[] = [
   { icon: GitBranch, label: 'Branch Management', path: '/branch-management', permission: { roles: ['org_admin'] } },
+  { icon: School, label: 'Org Templates', path: '/org-templates', permission: { roles: ['org_admin'] } },
+  { icon: Download, label: 'Import to Branch', path: '/branch-import', permission: { roles: ['org_admin'] } },
   { icon: Globe, label: 'Domain Management', path: '/domain-management', permission: { roles: ['org_admin'] } },
   { icon: UserCog, label: 'User Access', path: '/user-access', permission: { roles: ['org_admin'] } },
 ];
@@ -128,8 +151,11 @@ const academicSetupItems: MenuItem[] = [
   { icon: Users, label: 'Divisions', path: '/divisions', permission: { module: 'divisions' } },
   { icon: BookMarked, label: 'Subjects', path: '/subjects', permission: { module: 'classes' } },
   { icon: Calendar, label: 'Academic Years', path: '/academic-years', permission: { module: 'classes' } },
+  { icon: UserCheck, label: 'Teacher Allocations', path: '/teacher-allocations', permission: { roles: ['branch_admin', 'org_admin', 'platform_admin'] } },
   { icon: BookOpen, label: 'Text Books', path: '/textbooks', permission: { module: 'textbooks' } },
   { icon: BookOpen, label: 'Textbook Indents', path: '/textbook-indents', permission: { module: 'textbooks' } },
+  { icon: Clock, label: 'Timetable Configs', path: '/timetable-configs', permission: { roles: ['org_admin', 'branch_admin'] } },
+  { icon: Grid3X3, label: 'Timetable', path: '/timetable', permission: { roles: ['org_admin', 'branch_admin'] } },
 ];
 
 const examItems: MenuItem[] = [
@@ -137,13 +163,48 @@ const examItems: MenuItem[] = [
   { icon: PenLine, label: 'Mark Entry', path: '/mark-entry', permission: { module: 'classes' } },
   { icon: BarChart2, label: 'Exam Score', path: '/exam-score', permission: { module: 'classes' } },
   { icon: FileCheck, label: 'Progress Card', path: '/progress-card', permission: { module: 'classes' } },
-  { icon: ArrowUpCircle, label: 'Promotion', path: '/student-promotion', permission: { module: 'students' } },
+  { icon: ArrowUpCircle, label: 'Promotion', path: '/student-promotion', permission: { roles: ['branch_admin', 'org_admin', 'platform_admin'] } },
 ];
 
 const attendanceItems: MenuItem[] = [
   { icon: CalendarCheck, label: 'Mark Attendance', path: '/attendance', permission: { roles: ['branch_admin', 'org_admin', 'platform_admin', 'teacher'] } },
   { icon: BarChart2, label: 'Attendance Report', path: '/attendance-report', permission: { roles: ['branch_admin', 'org_admin', 'platform_admin', 'teacher'] } },
   { icon: CalendarMinus, label: 'Leave Requests', path: '/leave-requests', permission: { roles: ['branch_admin', 'org_admin', 'platform_admin', 'teacher', 'student'] } },
+  { icon: CalendarMinus, label: 'Staff Leave', path: '/staff-leave-requests', permission: { roles: ['branch_admin', 'org_admin', 'platform_admin'] } },
+  { icon: Clock, label: 'My Leave', path: '/staff-leave-requests', permission: { roles: ['teacher', 'staff'] } },
+  { icon: Grid3X3, label: 'My Schedule', path: '/my-schedule', permission: { roles: ['teacher'] } },
+  { icon: NotebookPen, label: 'Homework', path: '/homework', permission: { roles: ['branch_admin', 'org_admin', 'platform_admin', 'teacher'] } },
+  { icon: Grid3X3, label: 'My Timetable', path: '/my-timetable', permission: { roles: ['student'] } },
+];
+
+// ── FINANCE & ACCOUNTING ─────────────────────────────────────────────
+
+// ── LMS (Learning Management) ────────────────────────────────────────
+
+const lmsTeacherItems: MenuItem[] = [
+  { icon: Layers, label: 'Chapters', path: '/lms/chapters', permission: { module: 'classes' } },
+  { icon: Library, label: 'Content Library', path: '/lms/content-library', permission: { module: 'classes' } },
+  { icon: Calendar, label: 'Schedule', path: '/lms/schedule', permission: { module: 'classes' } },
+  { icon: CalendarCheck, label: 'Calendar', path: '/lms/calendar', permission: { module: 'classes' } },
+  { icon: ListChecks, label: 'Assessments', path: '/lms/assessments', permission: { module: 'classes' } },
+  { icon: Clipboard, label: 'Question Pools', path: '/lms/question-pools', permission: { module: 'classes' } },
+  { icon: FileCheck, label: 'Submissions', path: '/lms/submissions', permission: { module: 'classes' } },
+  { icon: BarChart2, label: 'LMS Reports', path: '/lms/reports', permission: { module: 'classes' } },
+  { icon: Trophy, label: 'Progress Dashboard', path: '/lms/progress', permission: { module: 'classes' } },
+  { icon: Copy, label: 'Clone Content', path: '/lms/clone', permission: { roles: ['platform_admin', 'org_admin', 'branch_admin'] } },
+];
+
+const lmsStudentItems: MenuItem[] = [
+  { icon: BookOpenCheck, label: 'My Learning', path: '/lms/my-learning', permission: { roles: ['student'] } },
+];
+
+// ── STUDENT SELF-SERVICE ─────────────────────────────────────────────
+
+const studentSelfServiceItems: MenuItem[] = [
+  { icon: CalendarCheck, label: 'My Attendance', path: '/my-attendance', permission: { roles: ['student'] } },
+  { icon: BookMarked, label: 'My Marks', path: '/my-marks', permission: { roles: ['student'] } },
+  { icon: WalletIcon, label: 'My Fees', path: '/my-fees', permission: { roles: ['student'] } },
+  { icon: NotebookPen, label: 'My Homework', path: '/my-homework', permission: { roles: ['student'] } },
 ];
 
 // ── FINANCE & ACCOUNTING ─────────────────────────────────────────────
@@ -177,7 +238,8 @@ const adminItems: MenuItem[] = [
   { icon: Building2, label: 'Departments', path: '/departments', permission: { module: 'departments' } },
   { icon: Briefcase, label: 'Designations', path: '/designations', permission: { module: 'designations' } },
   { icon: Tags, label: 'Staff Categories', path: '/staff-categories', permission: { module: 'staff' } },
-  { icon: MapPin, label: 'Transport Routes', path: '/transport-routes', permission: { module: 'classes' } },
+  { icon: MapPin, label: 'Transport Routes', path: '/transport-routes', permission: { roles: ['branch_admin', 'org_admin', 'platform_admin'] } },
+  { icon: UserCog, label: 'User Access', path: '/user-access', permission: { roles: ['branch_admin'] } },
 ];
 
 // ─── COMPONENT ──────────────────────────────────────────────────────
@@ -188,6 +250,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   const { user, logout } = useAuth();
   const { branches, selectedBranch, selectedBranchId, switchBranch } = useBranchContext();
   const { branding } = useOrgBranding();
+  const { isModuleEnabled } = useFeatureAccess();
   const { confirm, ConfirmationComponent } = useConfirmation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => getStoredBoolean('sidebar:isOpen', false));
   const [isPeopleOpen, setIsPeopleOpen] = useState(() => getStoredBoolean('sidebar:people', false));
@@ -198,6 +261,8 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   const [isAccountingOpen, setIsAccountingOpen] = useState(() => getStoredBoolean('sidebar:accounting', false));
   const [isReportsOpen, setIsReportsOpen] = useState(() => getStoredBoolean('sidebar:reports', false));
   const [isAdminOpen, setIsAdminOpen] = useState(() => getStoredBoolean('sidebar:admin', false));
+  const [isLmsOpen, setIsLmsOpen] = useState(() => getStoredBoolean('sidebar:lms', false));
+  const [isStudentSelfOpen, setIsStudentSelfOpen] = useState(() => getStoredBoolean('sidebar:studentSelf', false));
   const [commandOpen, setCommandOpen] = useState(false);
   const sidebarScrollRef = useRef<HTMLDivElement>(null);
 
@@ -285,6 +350,12 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
     if (adminItems.some((i) => i.path === path) && !isAdminOpen) {
       setIsAdminOpen(true); setStoredBoolean('sidebar:admin', true);
     }
+    if ([...lmsTeacherItems, ...lmsStudentItems].some((i) => i.path === path) && !isLmsOpen) {
+      setIsLmsOpen(true); setStoredBoolean('sidebar:lms', true);
+    }
+    if (studentSelfServiceItems.some((i) => i.path === path) && !isStudentSelfOpen) {
+      setIsStudentSelfOpen(true); setStoredBoolean('sidebar:studentSelf', true);
+    }
   }, [location.pathname]);
 
   const isPlatformAdmin = user?.role === 'platform_admin';
@@ -300,23 +371,29 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   };
 
   const filterMenuItems = (items: MenuItem[]) =>
-    items.filter((item) => userHasAccess(user, item.permission));
+    items.filter((item) => {
+      if (!userHasAccess(user, item.permission)) return false;
+      if (item.permission?.module && !isModuleEnabled(item.permission.module)) return false;
+      return true;
+    });
 
-  const filteredPlatformAdminItems = useMemo(() => filterMenuItems(platformAdminItems), [user]);
-  const filteredOrgAdminItems = useMemo(() => filterMenuItems(orgAdminItems), [user]);
-  const filteredPeopleItems = useMemo(() => filterMenuItems(peopleItems), [user]);
-  const filteredAcademicSetupItems = useMemo(() => filterMenuItems(academicSetupItems), [user]);
-  const filteredExamItems = useMemo(() => filterMenuItems(examItems), [user]);
-  const filteredAttendanceItems = useMemo(() => filterMenuItems(attendanceItems), [user]);
-  const filteredFinanceItems = useMemo(() => filterMenuItems(financeItems), [user]);
-  const filteredAccountingItems = useMemo(() => filterMenuItems(accountingItems), [user]);
-  const filteredReportsItems = useMemo(() => filterMenuItems(reportsItems), [user]);
-  const filteredAdminItems = useMemo(() => filterMenuItems(adminItems), [user]);
+  const filteredPlatformAdminItems = useMemo(() => filterMenuItems(platformAdminItems), [user, isModuleEnabled]);
+  const filteredOrgAdminItems = useMemo(() => filterMenuItems(orgAdminItems), [user, isModuleEnabled]);
+  const filteredPeopleItems = useMemo(() => filterMenuItems(peopleItems), [user, isModuleEnabled]);
+  const filteredAcademicSetupItems = useMemo(() => filterMenuItems(academicSetupItems), [user, isModuleEnabled]);
+  const filteredExamItems = useMemo(() => filterMenuItems(examItems), [user, isModuleEnabled]);
+  const filteredAttendanceItems = useMemo(() => filterMenuItems(attendanceItems), [user, isModuleEnabled]);
+  const filteredFinanceItems = useMemo(() => filterMenuItems(financeItems), [user, isModuleEnabled]);
+  const filteredAccountingItems = useMemo(() => filterMenuItems(accountingItems), [user, isModuleEnabled]);
+  const filteredReportsItems = useMemo(() => filterMenuItems(reportsItems), [user, isModuleEnabled]);
+  const filteredAdminItems = useMemo(() => filterMenuItems(adminItems), [user, isModuleEnabled]);
+  const filteredLmsItems = useMemo(() => filterMenuItems([...lmsTeacherItems, ...lmsStudentItems]), [user, isModuleEnabled]);
+  const filteredStudentSelfItems = useMemo(() => filterMenuItems(studentSelfServiceItems), [user, isModuleEnabled]);
 
   // All accessible items for Command dialog
   const allCommandItems = useMemo(() => {
     const groups: { heading: string; items: MenuItem[] }[] = [
-      { heading: 'Dashboard', items: [{ icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' }] },
+      { heading: 'Dashboard', items: [{ icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' }, { icon: Megaphone, label: 'Announcements', path: '/announcements' }] },
     ];
     if (isPlatformAdmin && filteredPlatformAdminItems.length > 0) {
       groups.push({ heading: 'Platform Management', items: filteredPlatformAdminItems });
@@ -329,13 +406,15 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       if (filteredAcademicSetupItems.length > 0) groups.push({ heading: 'Academics', items: filteredAcademicSetupItems });
       if (filteredExamItems.length > 0) groups.push({ heading: 'Exam & Assessment', items: filteredExamItems });
       if (filteredAttendanceItems.length > 0) groups.push({ heading: 'Attendance', items: filteredAttendanceItems });
+      if (filteredLmsItems.length > 0) groups.push({ heading: 'LMS', items: filteredLmsItems });
       if (filteredFinanceItems.length > 0) groups.push({ heading: 'Finance', items: filteredFinanceItems });
       if (filteredAccountingItems.length > 0) groups.push({ heading: 'Accounting', items: filteredAccountingItems });
+      if (filteredStudentSelfItems.length > 0) groups.push({ heading: 'My Academic', items: filteredStudentSelfItems });
       if (filteredReportsItems.length > 0) groups.push({ heading: 'Reports & Analytics', items: filteredReportsItems });
       if (filteredAdminItems.length > 0) groups.push({ heading: 'Administration', items: filteredAdminItems });
     }
     return groups;
-  }, [user, isPlatformAdmin, isOrgAdmin, isInBranchContext, showBranchMenus, filteredPlatformAdminItems, filteredOrgAdminItems, filteredPeopleItems, filteredAcademicSetupItems, filteredExamItems, filteredAttendanceItems, filteredFinanceItems, filteredAccountingItems, filteredReportsItems, filteredAdminItems]);
+  }, [user, isPlatformAdmin, isOrgAdmin, isInBranchContext, showBranchMenus, filteredPlatformAdminItems, filteredOrgAdminItems, filteredPeopleItems, filteredAcademicSetupItems, filteredExamItems, filteredAttendanceItems, filteredLmsItems, filteredFinanceItems, filteredAccountingItems, filteredStudentSelfItems, filteredReportsItems, filteredAdminItems]);
 
   const renderNavButton = (item: MenuItem) => {
     const Icon = item.icon;
@@ -532,6 +611,25 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                   {renderSection('Exam & Assessment', ClipboardList, filteredExamItems, isExamOpen, setIsExamOpen, 'sidebar:exam', isExamOpen)}
                   {renderSection('Attendance', CalendarCheck, filteredAttendanceItems, isAttendanceOpen, setIsAttendanceOpen, 'sidebar:attendance', isAttendanceOpen)}
 
+                  {/* Announcements - standalone link */}
+                  {renderNavButton({ icon: Megaphone, label: 'Announcements', path: '/announcements' })}
+
+                  {/* ── LMS ── */}
+                  {filteredLmsItems.length > 0 && (
+                    <div className="pt-3 border-t border-sidebar-border/20">
+                      <p className="px-3 text-[10px] font-semibold tracking-widest text-sidebar-foreground/50 mb-1">LEARNING</p>
+                    </div>
+                  )}
+                  {renderSection('LMS', BookOpenCheck, filteredLmsItems, isLmsOpen, setIsLmsOpen, 'sidebar:lms', isLmsOpen)}
+
+                  {/* ── STUDENT SELF-SERVICE ── */}
+                  {filteredStudentSelfItems.length > 0 && (
+                    <div className="pt-3 border-t border-sidebar-border/20">
+                      <p className="px-3 text-[10px] font-semibold tracking-widest text-sidebar-foreground/50 mb-1">MY ACADEMIC</p>
+                    </div>
+                  )}
+                  {renderSection('My Academic', BookMarked, filteredStudentSelfItems, isStudentSelfOpen, setIsStudentSelfOpen, 'sidebar:studentSelf', isStudentSelfOpen)}
+
                   {/* ── FINANCE & ACCOUNTING ── */}
                   {(filteredFinanceItems.length > 0 || filteredAccountingItems.length > 0) && (
                     <div className="pt-3 border-t border-sidebar-border/20">
@@ -553,6 +651,21 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               )}
             </nav>
           </ScrollArea>
+
+          {/* Help Link */}
+          <div className="px-3 py-2 border-t border-sidebar-border/20">
+            <button
+              onClick={() => navigatePreservingScroll('/help')}
+              className={`w-full flex items-center justify-start gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors text-left ${
+                location.pathname === '/help'
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                  : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
+              }`}
+            >
+              <CircleHelp className="w-[18px] h-[18px] flex-shrink-0" />
+              <span className="flex-1 text-left">Help Center</span>
+            </button>
+          </div>
 
           {/* User Info & Logout */}
           <div className="px-4 py-3 border-t border-sidebar-border">
@@ -580,10 +693,14 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
-        <div className="container mx-auto p-6 lg:p-8 max-w-7xl">
+        <div className="flex justify-end px-6 lg:px-8 pt-4 pb-0">
+          <NotificationBell />
+        </div>
+        <div className="container mx-auto px-6 lg:px-8 pb-6 max-w-7xl">
           {children}
         </div>
       </main>
+      <HelpButton />
       <ConfirmationComponent />
 
       {/* Command Menu (⌘K) */}

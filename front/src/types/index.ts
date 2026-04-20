@@ -253,3 +253,27 @@ export interface ActivityLog {
   timestamp: string;
   ipAddress?: string;
 }
+
+// ── Feature Registry ──
+
+export const ALL_FEATURE_KEYS = [
+  'students',
+  'staff',
+  'academics',
+  'exams',
+  'lms',
+  'attendance',
+  'finance',
+  'accounting',
+  'transport',
+  'reports',
+] as const;
+
+export type FeatureKey = (typeof ALL_FEATURE_KEYS)[number];
+
+export interface FeatureRegistryItem {
+  key: FeatureKey;
+  label: string;
+  description: string;
+  modules: string[];
+}

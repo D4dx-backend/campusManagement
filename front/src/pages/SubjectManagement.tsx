@@ -2,17 +2,18 @@ import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DataTable } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Pencil, Trash2, Loader2, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, BookOpen } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { subjectApi, Subject } from '@/services/subjectService';
 import { classesApi, Class } from '@/services/classes';
+import { formatters } from '@/utils/exportUtils';
+import { pageConfigurations } from '@/utils/pageTemplates';
 
 const SubjectManagement = () => {
   const { toast } = useToast();
@@ -20,6 +21,9 @@ const SubjectManagement = () => {
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [filterValues, setFilterValues] = useState<any>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Subject | null>(null);
 
@@ -124,6 +128,28 @@ const SubjectManagement = () => {
     return classIds.map(id => classes.find(c => c._id === id)?.name).filter(Boolean).join(', ') || '-';
   };
 
+  const filteredSubjects = subjects.filter(s => {
+    const matchSearch = !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.code.toLowerCase().includes(search.toLowerCase());
+    const matchStatus = !filterValues.status || s.status === filterValues.status;
+    const matchClass = !filterValues.classId || (s.classIds && s.classIds.includes(filterValues.classId));
+    return matchSearch && matchStatus && matchClass;
+  });
+
+  const totalItems = filteredSubjects.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const paginatedSubjects = filteredSubjects.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const config = pageConfigurations.subjects;
+  const dynamicFilters = config.filters.map((f: any) => {
+    if (f.key === 'classId' && classes.length > 0) {
+      return { ...f, options: classes.map(c => ({ label: c.name, value: c._id })) };
+    }
+    return f;
+  });
+
+  const handleFilterChange = (values: any) => { setFilterValues(values); setCurrentPage(1); };
+  const handleFilterReset = () => { setFilterValues({}); setCurrentPage(1); };
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -132,57 +158,74 @@ const SubjectManagement = () => {
           <Button onClick={openCreate}><Plus className="w-4 h-4 mr-2" />Add Subject</Button>
         </div>
 
-        <Card>
-          <CardHeader>
-            <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input className="pl-9" placeholder="Search subjects..." value={search} onChange={e => setSearch(e.target.value)} />
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex justify-center py-10"><Loader2 className="w-8 h-8 animate-spin" /></div>
-            ) : subjects.length === 0 ? (
-              <p className="text-center text-muted-foreground py-10">No subjects found.</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>#</TableHead>
-                    <TableHead>Code</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Classes</TableHead>
-                    <TableHead>Max Mark</TableHead>
-                    <TableHead>Pass Mark</TableHead>
-                    <TableHead>Optional</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {subjects.map((s, i) => (
-                    <TableRow key={s._id}>
-                      <TableCell>{i + 1}</TableCell>
-                      <TableCell className="font-mono">{s.code}</TableCell>
-                      <TableCell className="font-medium">{s.name}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{getClassNames(s.classIds)}</TableCell>
-                      <TableCell>{s.maxMark}</TableCell>
-                      <TableCell>{s.passMark}</TableCell>
-                      <TableCell>{s.isOptional ? <Badge variant="outline">Optional</Badge> : '-'}</TableCell>
-                      <TableCell>
-                        <Badge variant={s.status === 'active' ? 'default' : 'secondary'}>{s.status}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(s)}><Pencil className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(s)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+        <DataTable
+          searchPlaceholder="Search subjects..."
+          searchValue={search}
+          onSearchChange={(v) => { setSearch(v); setCurrentPage(1); }}
+          filters={dynamicFilters}
+          filterValues={filterValues}
+          onFilterChange={handleFilterChange}
+          onFilterReset={handleFilterReset}
+          exportConfig={{
+            filename: 'subjects',
+            columns: config.exportColumns.map(col => ({
+              ...col,
+              formatter: col.formatter ? formatters[col.formatter] : undefined
+            }))
+          }}
+          pagination={{
+            currentPage,
+            totalPages,
+            totalItems,
+            itemsPerPage,
+            onPageChange: setCurrentPage,
+            onItemsPerPageChange: (v) => { setItemsPerPage(v); setCurrentPage(1); }
+          }}
+          data={paginatedSubjects}
+          isLoading={loading}
+          emptyState={{
+            icon: <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />,
+            message: "No subjects found"
+          }}
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="text-left p-3 font-semibold">#</th>
+                  <th className="text-left p-3 font-semibold">Code</th>
+                  <th className="text-left p-3 font-semibold">Name</th>
+                  <th className="text-left p-3 font-semibold">Classes</th>
+                  <th className="text-left p-3 font-semibold">Max Mark</th>
+                  <th className="text-left p-3 font-semibold">Pass Mark</th>
+                  <th className="text-left p-3 font-semibold">Optional</th>
+                  <th className="text-left p-3 font-semibold">Status</th>
+                  <th className="text-right p-3 font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedSubjects.map((s, i) => (
+                  <tr key={s._id} className="border-b hover:bg-muted/30">
+                    <td className="p-3">{(currentPage - 1) * itemsPerPage + i + 1}</td>
+                    <td className="p-3 font-mono">{s.code}</td>
+                    <td className="p-3 font-medium">{s.name}</td>
+                    <td className="p-3 max-w-[200px] truncate">{getClassNames(s.classIds)}</td>
+                    <td className="p-3">{s.maxMark}</td>
+                    <td className="p-3">{s.passMark}</td>
+                    <td className="p-3">{s.isOptional ? <Badge variant="outline">Optional</Badge> : '-'}</td>
+                    <td className="p-3">
+                      <Badge variant={s.status === 'active' ? 'default' : 'secondary'}>{s.status}</Badge>
+                    </td>
+                    <td className="p-3 text-right space-x-2">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(s)}><Pencil className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(s)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </DataTable>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent className="sm:max-w-[600px]">

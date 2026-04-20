@@ -8,7 +8,7 @@ export interface IAcademicYear {
   isCurrent: boolean;
   status: 'active' | 'inactive';
   organizationId: string;
-  branchId: string;
+  branchId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -44,13 +44,13 @@ const AcademicYearSchema = new Schema<IAcademicYear>({
   branchId: {
     type: Schema.Types.ObjectId as any,
     ref: 'Branch',
-    required: true
+    default: null
   }
 }, {
   timestamps: true
 });
 
-AcademicYearSchema.index({ name: 1, branchId: 1 }, { unique: true });
+AcademicYearSchema.index({ name: 1, branchId: 1 }, { unique: true, sparse: true });
 AcademicYearSchema.index({ branchId: 1 });
 AcademicYearSchema.index({ organizationId: 1 });
 AcademicYearSchema.index({ isCurrent: 1, branchId: 1 });

@@ -6,7 +6,7 @@ export interface IStaffCategory {
   description?: string;
   status: 'active' | 'inactive';
   organizationId: string;
-  branchId: string;
+  branchId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,7 +29,7 @@ const StaffCategorySchema = new Schema<IStaffCategory>({
   branchId: {
     type: Schema.Types.ObjectId as any,
     ref: 'Branch',
-    required: true
+    default: null
   },
   organizationId: {
     type: Schema.Types.ObjectId as any,
@@ -40,8 +40,8 @@ const StaffCategorySchema = new Schema<IStaffCategory>({
   timestamps: true
 });
 
-// Compound index to ensure unique category name per branch
-StaffCategorySchema.index({ name: 1, branchId: 1 }, { unique: true });
+// Compound index to ensure unique category name per branch (sparse for org-level templates)
+StaffCategorySchema.index({ name: 1, branchId: 1 }, { unique: true, sparse: true });
 StaffCategorySchema.index({ branchId: 1 });
 StaffCategorySchema.index({ organizationId: 1 });
 StaffCategorySchema.index({ status: 1 });

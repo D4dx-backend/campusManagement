@@ -1,6 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 
+function getSelectedBranchId(): string | null {
+  try { return localStorage.getItem('selected_branch_id'); } catch { return null; }
+}
+
 export interface DashboardStats {
   students: {
     total: number;
@@ -39,8 +43,9 @@ export interface DashboardStats {
 }
 
 export const useDashboardStats = () => {
+  const branchId = getSelectedBranchId();
   return useQuery({
-    queryKey: ['dashboard', 'stats'],
+    queryKey: ['dashboard', 'stats', branchId],
     queryFn: async () => {
       const response = await apiClient.get<DashboardStats>('/reports/dashboard');
       return response.data;

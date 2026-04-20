@@ -39,6 +39,8 @@ interface FeeReceiptData {
   institutionName?: string;
   guardianEmail?: string;
   guardianPhone?: string;
+  currency?: string;
+  currencySymbol?: string;
 }
 
 /**
@@ -50,8 +52,9 @@ export const sendFeeReceiptEmail = async (data: FeeReceiptData): Promise<boolean
       return false;
     }
 
+    const currencyLabel = data.currencySymbol || data.currency || 'BHD';
     const feeItemsList = data.feeItems
-      .map(item => `<li>${item.title}: BHD ${item.amount.toLocaleString()}</li>`)
+      .map(item => `<li>${item.title}: ${currencyLabel} ${Number(item.amount || 0).toFixed(3)}</li>`)
       .join('');
 
     const mailOptions = {
@@ -116,7 +119,7 @@ export const sendFeeReceiptEmail = async (data: FeeReceiptData): Promise<boolean
               </div>
 
               <div class="total">
-                Total Amount Paid: BHD ${data.totalAmount.toLocaleString()}
+                Total Amount Paid: ${currencyLabel} ${Number(data.totalAmount || 0).toFixed(3)}
               </div>
 
               <div class="footer">
@@ -162,8 +165,9 @@ export const sendFeeReceiptWhatsApp = async (data: FeeReceiptData): Promise<bool
       phone = phone.substring(1);
     }
 
+    const currencyLabel = data.currencySymbol || data.currency || 'BHD';
     const feeItemsList = data.feeItems
-      .map(item => `• ${item.title}: BHD ${item.amount.toLocaleString()}`)
+      .map(item => `• ${item.title}: ${currencyLabel} ${Number(item.amount || 0).toFixed(3)}`)
       .join('\n');
 
     const message = `✅ *Fee Payment Receipt*
@@ -177,7 +181,7 @@ export const sendFeeReceiptWhatsApp = async (data: FeeReceiptData): Promise<bool
 📝 *Fee Details:*
 ${feeItemsList}
 
-💰 *Total Paid: BHD ${data.totalAmount.toLocaleString()}*
+💰 *Total Paid: ${currencyLabel} ${Number(data.totalAmount || 0).toFixed(3)}*
 
 Thank you for your payment!
 - ${data.institutionName || 'Campus Management'}`;

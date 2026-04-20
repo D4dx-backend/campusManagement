@@ -6,12 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCurrency } from '@/hooks/useCurrency';
 import { userHasAccess } from '@/utils/accessControl';
 import { useDashboardStats, usePlatformDashboard } from '@/hooks/useDashboard';
 import {
   Users, UserCog, DollarSign, TrendingUp, BookOpen, Receipt,
   Search, Clock, Calendar, ArrowRight, Loader2,
-  Building2, GitBranch, Shield, Activity,
+  Building2, GitBranch, Shield, Activity, ClipboardList, Megaphone, NotebookPen,
 } from 'lucide-react';
 
 // ─── PLATFORM ADMIN DASHBOARD ───────────────────────────────────────
@@ -84,7 +85,7 @@ const PlatformDashboard = () => {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold">Platform Dashboard</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Platform Dashboard</h1>
           <p className="text-muted-foreground mt-1">
             Welcome, {user?.name} — Platform Admin Overview
           </p>
@@ -276,6 +277,7 @@ const BranchDashboard = () => {
   };
 
   const { data: dashboardData, isLoading, error } = useDashboardStats();
+  const { formatCurrency } = useCurrency();
 
   const stats = dashboardData ? [
     {
@@ -294,16 +296,16 @@ const BranchDashboard = () => {
     },
     {
       title: 'Fee Collection',
-      value: `BHD ${(dashboardData.data?.fees?.totalCollection || 0).toFixed(3)}`,
+      value: formatCurrency(dashboardData.data?.fees?.totalCollection || 0),
       icon: DollarSign,
-      trend: `BHD ${(dashboardData.data?.fees?.monthlyCollection || 0).toFixed(3)} this month`,
+      trend: `${formatCurrency(dashboardData.data?.fees?.monthlyCollection || 0)} this month`,
       color: 'text-green-600',
     },
     {
       title: 'Monthly Expenses',
-      value: `BHD ${(dashboardData.data?.expenses?.monthlyExpenses || 0).toFixed(3)}`,
+      value: formatCurrency(dashboardData.data?.expenses?.monthlyExpenses || 0),
       icon: Receipt,
-      trend: `BHD ${(dashboardData.data?.expenses?.totalExpenses || 0).toFixed(3)} total`,
+      trend: `${formatCurrency(dashboardData.data?.expenses?.totalExpenses || 0)} total`,
       color: 'text-orange-600',
     },
     {
@@ -315,7 +317,10 @@ const BranchDashboard = () => {
     },
     {
       title: 'Net Income',
-      value: `BHD ${((dashboardData.data?.fees?.totalCollection || 0) - (dashboardData.data?.expenses?.totalExpenses || 0)).toFixed(3)}`,
+      value: formatCurrency(
+        (dashboardData.data?.fees?.totalCollection || 0) -
+          (dashboardData.data?.expenses?.totalExpenses || 0)
+      ),
       icon: TrendingUp,
       trend: 'Total profit/loss',
       color: 'text-purple-600',
@@ -328,7 +333,7 @@ const BranchDashboard = () => {
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">Dashboard</h1>
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2">
               <p className="text-muted-foreground">{getGreeting()}, {user?.name}!</p>
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -459,6 +464,162 @@ const BranchDashboard = () => {
   );
 };
 
+// ─── TEACHER DASHBOARD ──────────────────────────────────────────────
+
+const TeacherDashboard = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const getGreeting = () => {
+    const hour = currentTime.getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const quickActions = [
+    { label: 'My Schedule', path: '/my-schedule', icon: Calendar, description: 'View your class timetable', color: 'text-blue-600' },
+    { label: 'Mark Attendance', path: '/attendance', icon: Users, description: 'Mark student attendance', color: 'text-green-600' },
+    { label: 'LMS Content', path: '/lms/content', icon: BookOpen, description: 'Manage lessons & content', color: 'text-purple-600' },
+    { label: 'Assessments', path: '/lms/assessments', icon: ClipboardList, description: 'Create quizzes & assignments', color: 'text-indigo-600' },
+    { label: 'Homework', path: '/homework', icon: NotebookPen, description: 'Assign daily homework', color: 'text-teal-600' },
+    { label: 'Announcements', path: '/announcements', icon: Megaphone, description: 'Post announcements', color: 'text-yellow-600' },
+    { label: 'My Leave', path: '/staff-leave-requests', icon: Clock, description: 'Apply for or track leave', color: 'text-orange-600' },
+    { label: 'Attendance Report', path: '/attendance-report', icon: TrendingUp, description: 'View attendance reports', color: 'text-red-600' },
+  ];
+
+  return (
+    <AppLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold">Teacher Dashboard</h1>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2">
+            <p className="text-muted-foreground">{getGreeting()}, {user?.name}!</p>
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                <span>{currentTime.toLocaleDateString()} {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {quickActions.map((action) => {
+                const Icon = action.icon;
+                return (
+                  <Button
+                    key={action.path}
+                    variant="outline"
+                    className="p-6 h-auto flex-col items-start gap-3 hover:bg-accent"
+                    onClick={() => navigate(action.path)}
+                  >
+                    <Icon className={`w-6 h-6 ${action.color}`} />
+                    <div className="text-left">
+                      <p className="text-sm font-medium">{action.label}</p>
+                      <p className="text-xs text-muted-foreground">{action.description}</p>
+                    </div>
+                  </Button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </AppLayout>
+  );
+};
+
+// ─── STUDENT DASHBOARD ──────────────────────────────────────────────
+
+const StudentDashboard = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const getGreeting = () => {
+    const hour = currentTime.getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const quickActions = [
+    { label: 'My Timetable', path: '/my-timetable', icon: Calendar, description: 'View your class schedule', color: 'text-blue-600' },
+    { label: 'My Attendance', path: '/my-attendance', icon: Users, description: 'Check your attendance record', color: 'text-green-600' },
+    { label: 'My Marks', path: '/my-marks', icon: BookOpen, description: 'View your exam results', color: 'text-purple-600' },
+    { label: 'My Fees', path: '/my-fees', icon: DollarSign, description: 'View fee payments & dues', color: 'text-orange-600' },
+    { label: 'My Learning', path: '/lms/my-learning', icon: BookOpen, description: 'Assignments & course content', color: 'text-indigo-600' },
+    { label: 'My Homework', path: '/my-homework', icon: NotebookPen, description: 'View daily homework', color: 'text-teal-600' },
+    { label: 'Announcements', path: '/announcements', icon: Megaphone, description: 'School announcements', color: 'text-yellow-600' },
+    { label: 'Leave Requests', path: '/leave-requests', icon: Clock, description: 'Submit or view leave requests', color: 'text-red-600' },
+  ];
+
+  return (
+    <AppLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold">Student Dashboard</h1>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2">
+            <p className="text-muted-foreground">{getGreeting()}, {user?.name}!</p>
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                <span>{currentTime.toLocaleDateString()} {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {quickActions.map((action) => {
+                const Icon = action.icon;
+                return (
+                  <Button
+                    key={action.path}
+                    variant="outline"
+                    className="p-6 h-auto flex-col items-start gap-3 hover:bg-accent"
+                    onClick={() => navigate(action.path)}
+                  >
+                    <Icon className={`w-6 h-6 ${action.color}`} />
+                    <div className="text-left">
+                      <p className="text-sm font-medium">{action.label}</p>
+                      <p className="text-xs text-muted-foreground">{action.description}</p>
+                    </div>
+                  </Button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </AppLayout>
+  );
+};
+
 // ─── MAIN DASHBOARD (routes based on role) ──────────────────────────
 
 const Dashboard = () => {
@@ -466,6 +627,14 @@ const Dashboard = () => {
 
   if (user?.role === 'platform_admin') {
     return <PlatformDashboard />;
+  }
+
+  if (user?.role === 'student') {
+    return <StudentDashboard />;
+  }
+
+  if (user?.role === 'teacher') {
+    return <TeacherDashboard />;
   }
 
   return <BranchDashboard />;

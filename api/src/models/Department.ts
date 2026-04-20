@@ -29,7 +29,7 @@ const DepartmentSchema = new Schema<IDepartment>({
   branchId: {
     type: Schema.Types.ObjectId as any,
     ref: 'Branch',
-    required: true
+    default: null
   },
   organizationId: {
     type: Schema.Types.ObjectId as any,
@@ -40,8 +40,8 @@ const DepartmentSchema = new Schema<IDepartment>({
   timestamps: true
 });
 
-// Compound index to ensure unique department code per branch
-DepartmentSchema.index({ code: 1, branchId: 1 }, { unique: true });
+// Compound index to ensure unique department code per branch (sparse for org-level templates)
+DepartmentSchema.index({ code: 1, branchId: 1 }, { unique: true, sparse: true });
 DepartmentSchema.index({ branchId: 1 });
 DepartmentSchema.index({ organizationId: 1 });
 DepartmentSchema.index({ status: 1 });

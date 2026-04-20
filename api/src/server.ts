@@ -49,6 +49,16 @@ import promotionRoutes from './routes/promotions';
 import attendanceRoutes from './routes/attendance';
 import leaveRequestRoutes from './routes/leaveRequests';
 import domainRoutes from './routes/domains';
+import helpRoutes from './routes/help';
+import orgTemplateRoutes from './routes/orgTemplates';
+import timetableConfigRoutes from './routes/timetableConfigs';
+import timetableRoutes from './routes/timetables';
+import lmsRoutes from './routes/lms';
+import studentPortalRoutes from './routes/studentPortal';
+import staffLeaveRoutes from './routes/staffLeaveRequests';
+import announcementRoutes from './routes/announcements';
+import homeworkRoutes from './routes/homework';
+import teacherAllocationRoutes from './routes/teacherAllocations';
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -128,6 +138,7 @@ app.get('/api/health', (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/organizations', organizationRoutes);
+app.use('/api/org-templates', orgTemplateRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/branches', branchRoutes);
 app.use('/api/students', studentRoutes);
@@ -161,6 +172,15 @@ app.use('/api/promotions', promotionRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/leave-requests', leaveRequestRoutes);
 app.use('/api/domains', domainRoutes);
+app.use('/api/help', helpRoutes);
+app.use('/api/timetable-configs', timetableConfigRoutes);
+app.use('/api/timetables', timetableRoutes);
+app.use('/api/lms', lmsRoutes);
+app.use('/api/student-portal', studentPortalRoutes);
+app.use('/api/staff-leave-requests', staffLeaveRoutes);
+app.use('/api/announcements', announcementRoutes);
+app.use('/api/homework', homeworkRoutes);
+app.use('/api/teacher-allocations', teacherAllocationRoutes);
 
 // Error handling middleware
 app.use(notFound);

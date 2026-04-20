@@ -2,16 +2,17 @@ import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DataTable } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, ClipboardList } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { examApi, Exam } from '@/services/examService';
 import { academicYearApi, AcademicYear } from '@/services/academicYearService';
+import { formatters } from '@/utils/exportUtils';
+import { pageConfigurations } from '@/utils/pageTemplates';
 
 const examTypeLabels: Record<string, string> = {
   term: 'Term Exam',
@@ -37,6 +38,10 @@ const ExamManagement = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
   const [filterYear, setFilterYear] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterValues, setFilterValues] = useState<any>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -142,68 +147,104 @@ const ExamManagement = () => {
           <Button onClick={openCreate}><Plus className="w-4 h-4 mr-2" />Create Exam</Button>
         </div>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-4">
-              <div>
-                <Label>Academic Year</Label>
-                <Select value={filterYear} onValueChange={setFilterYear}>
-                  <SelectTrigger className="w-[160px]"><SelectValue placeholder="Select Year" /></SelectTrigger>
-                  <SelectContent>
-                    {academicYears.map(y => (
-                      <SelectItem key={y._id} value={y.name}>{y.name}</SelectItem>
+        {(() => {
+          const filteredExams = exams.filter(exam => {
+            const matchSearch = !searchTerm || exam.name.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchType = !filterValues.examType || exam.examType === filterValues.examType;
+            const matchStatus = !filterValues.status || exam.status === filterValues.status;
+            return matchSearch && matchType && matchStatus;
+          });
+
+          const totalItems = filteredExams.length;
+          const totalPages = Math.ceil(totalItems / itemsPerPage);
+          const paginatedExams = filteredExams.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+          const config = pageConfigurations.exams;
+          // Dynamically add academic year options to the filter
+          const filters = config.filters.map((f: any) => {
+            if (f.key === 'academicYear') {
+              return { ...f, options: academicYears.map(y => ({ label: y.name, value: y.name })) };
+            }
+            return f;
+          });
+
+          return (
+            <DataTable
+              searchPlaceholder="Search exams..."
+              searchValue={searchTerm}
+              onSearchChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
+              filters={filters}
+              filterValues={{ ...filterValues, academicYear: filterYear }}
+              onFilterChange={(values) => {
+                if (values.academicYear !== undefined) setFilterYear(values.academicYear);
+                setFilterValues(values);
+                setCurrentPage(1);
+              }}
+              onFilterReset={() => { setFilterValues({}); setFilterYear(''); setCurrentPage(1); }}
+              exportConfig={{
+                filename: 'exams',
+                columns: config.exportColumns.map(col => ({
+                  ...col,
+                  formatter: col.formatter ? formatters[col.formatter] : undefined
+                }))
+              }}
+              pagination={{
+                currentPage,
+                totalPages,
+                totalItems,
+                itemsPerPage,
+                onPageChange: setCurrentPage,
+                onItemsPerPageChange: (v) => { setItemsPerPage(v); setCurrentPage(1); }
+              }}
+              data={paginatedExams}
+              isLoading={loading}
+              emptyState={{
+                icon: <ClipboardList className="w-12 h-12 text-muted-foreground mx-auto mb-4" />,
+                message: "No exams found"
+              }}
+            >
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="text-left p-3 font-semibold">#</th>
+                      <th className="text-left p-3 font-semibold">Name</th>
+                      <th className="text-left p-3 font-semibold">Type</th>
+                      <th className="text-left p-3 font-semibold">Academic Year</th>
+                      <th className="text-left p-3 font-semibold">Start Date</th>
+                      <th className="text-left p-3 font-semibold">End Date</th>
+                      <th className="text-left p-3 font-semibold">Status</th>
+                      <th className="text-right p-3 font-semibold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedExams.map((exam, i) => (
+                      <tr key={exam._id} className="border-b hover:bg-muted/30">
+                        <td className="p-3">{(currentPage - 1) * itemsPerPage + i + 1}</td>
+                        <td className="p-3 font-medium">{exam.name}</td>
+                        <td className="p-3">{examTypeLabels[exam.examType] || exam.examType}</td>
+                        <td className="p-3">{exam.academicYear}</td>
+                        <td className="p-3">{exam.startDate ? new Date(exam.startDate).toLocaleDateString() : '-'}</td>
+                        <td className="p-3">{exam.endDate ? new Date(exam.endDate).toLocaleDateString() : '-'}</td>
+                        <td className="p-3">
+                          <Badge className={statusColors[exam.status]}>{exam.status}</Badge>
+                        </td>
+                        <td className="p-3 text-right space-x-2">
+                          <Button variant="ghost" size="icon" onClick={() => openEdit(exam)}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(exam)}>
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </td>
+                      </tr>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </tbody>
+                </table>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex justify-center py-10"><Loader2 className="w-8 h-8 animate-spin" /></div>
-            ) : exams.length === 0 ? (
-              <p className="text-center text-muted-foreground py-10">No exams found. Create one to get started.</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>#</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Academic Year</TableHead>
-                    <TableHead>Start Date</TableHead>
-                    <TableHead>End Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {exams.map((exam, i) => (
-                    <TableRow key={exam._id}>
-                      <TableCell>{i + 1}</TableCell>
-                      <TableCell className="font-medium">{exam.name}</TableCell>
-                      <TableCell>{examTypeLabels[exam.examType] || exam.examType}</TableCell>
-                      <TableCell>{exam.academicYear}</TableCell>
-                      <TableCell>{exam.startDate ? new Date(exam.startDate).toLocaleDateString() : '-'}</TableCell>
-                      <TableCell>{exam.endDate ? new Date(exam.endDate).toLocaleDateString() : '-'}</TableCell>
-                      <TableCell>
-                        <Badge className={statusColors[exam.status]}>{exam.status}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(exam)}>
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(exam)}>
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+            </DataTable>
+          );
+        })()}
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent className="sm:max-w-[500px]">

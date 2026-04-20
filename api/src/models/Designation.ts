@@ -6,7 +6,7 @@ export interface IDesignation {
   description?: string;
   status: 'active' | 'inactive';
   organizationId: string;
-  branchId: string;
+  branchId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,7 +29,7 @@ const DesignationSchema = new Schema<IDesignation>({
   branchId: {
     type: Schema.Types.ObjectId as any,
     ref: 'Branch',
-    required: true
+    default: null
   },
   organizationId: {
     type: Schema.Types.ObjectId as any,
@@ -40,8 +40,8 @@ const DesignationSchema = new Schema<IDesignation>({
   timestamps: true
 });
 
-// Compound index to ensure unique designation name per branch
-DesignationSchema.index({ name: 1, branchId: 1 }, { unique: true });
+// Compound index to ensure unique designation name per branch (sparse for org-level templates)
+DesignationSchema.index({ name: 1, branchId: 1 }, { unique: true, sparse: true });
 DesignationSchema.index({ branchId: 1 });
 DesignationSchema.index({ organizationId: 1 });
 DesignationSchema.index({ status: 1 });

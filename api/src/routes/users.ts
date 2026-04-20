@@ -196,6 +196,37 @@ router.post('/', authorize('platform_admin', 'org_admin', 'branch_admin'), valid
       return res.status(400).json(response);
     }
 
+    // Auto-grant default permissions based on role
+    let defaultPermissions = permissions || [];
+
+    if (role === 'accountant') {
+      const moduleDefaults = [
+        { module: 'accounting', actions: ['create', 'read', 'update', 'delete'] },
+        { module: 'fees', actions: ['create', 'read', 'update', 'delete'] },
+        { module: 'expenses', actions: ['create', 'read', 'update', 'delete'] },
+        { module: 'reports', actions: ['read'] },
+      ];
+      for (const def of moduleDefaults) {
+        if (!defaultPermissions.some((p: any) => p.module === def.module)) {
+          defaultPermissions.push(def);
+        }
+      }
+    }
+
+    if (role === 'teacher') {
+      const moduleDefaults = [
+        { module: 'classes', actions: ['create', 'read', 'update', 'delete'] },
+        { module: 'students', actions: ['read'] },
+        { module: 'attendance', actions: ['create', 'read', 'update'] },
+        { module: 'timetable', actions: ['read'] },
+      ];
+      for (const def of moduleDefaults) {
+        if (!defaultPermissions.some((p: any) => p.module === def.module)) {
+          defaultPermissions.push(def);
+        }
+      }
+    }
+
     const user = new User({
       email,
       mobile,
@@ -204,7 +235,7 @@ router.post('/', authorize('platform_admin', 'org_admin', 'branch_admin'), valid
       role,
       organizationId: assignedOrgId,
       branchId: assignedBranchId,
-      permissions: permissions || [],
+      permissions: defaultPermissions,
       status: status || 'active'
     });
 

@@ -7,6 +7,7 @@ export interface StudentQueryParams {
   search?: string;
   branchId?: string;
   class?: string;
+  classId?: string;
   section?: string;
   status?: 'active' | 'inactive' | 'suspended' | 'tc_issued';
   transport?: 'school' | 'own' | 'none';
@@ -112,5 +113,4 @@ export const studentService = {
     const response = await apiClient.post(`/students/${id}/revoke-suspension`, {});
     return response.data;
   }
-}
 };

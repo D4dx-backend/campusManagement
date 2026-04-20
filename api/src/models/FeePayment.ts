@@ -27,6 +27,82 @@ const FeeItemSchema = new Schema({
   }
 }, { _id: false });
 
+const FeePaymentChangeSnapshotSchema = new Schema({
+  paymentMethod: {
+    type: String,
+    enum: ['cash', 'bank', 'online'],
+    required: true
+  },
+  paymentDate: {
+    type: Date,
+    required: true
+  },
+  remarks: {
+    type: String,
+    trim: true
+  },
+  academicYear: {
+    type: String,
+    trim: true
+  },
+  feeMonth: {
+    type: String,
+    trim: true
+  }
+}, { _id: false });
+
+const FeePaymentEditHistorySchema = new Schema({
+  editedAt: {
+    type: Date,
+    default: Date.now
+  },
+  editedBy: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'User',
+    required: true
+  },
+  editedByName: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  reason: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  previousValues: {
+    type: FeePaymentChangeSnapshotSchema,
+    required: true
+  },
+  newValues: {
+    type: FeePaymentChangeSnapshotSchema,
+    required: true
+  }
+}, { _id: false });
+
+const FeePaymentCancellationSchema = new Schema({
+  cancelledAt: {
+    type: Date,
+    required: true
+  },
+  cancelledBy: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'User',
+    required: true
+  },
+  cancelledByName: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  reason: {
+    type: String,
+    required: true,
+    trim: true
+  }
+}, { _id: false });
+
 const FeePaymentSchema = new Schema<IFeePayment>({
   receiptNo: {
     type: String,
@@ -86,7 +162,7 @@ const FeePaymentSchema = new Schema<IFeePayment>({
   },
   status: {
     type: String,
-    enum: ['paid', 'partial', 'pending'],
+    enum: ['paid', 'partial', 'pending', 'cancelled'],
     default: 'paid'
   },
   remarks: {
@@ -107,6 +183,21 @@ const FeePaymentSchema = new Schema<IFeePayment>({
     type: Schema.Types.ObjectId as any,
     ref: 'User',
     required: true
+  },
+  academicYear: {
+    type: String,
+    trim: true
+  },
+  feeMonth: {
+    type: String,
+    trim: true
+  },
+  editHistory: {
+    type: [FeePaymentEditHistorySchema],
+    default: []
+  },
+  cancellation: {
+    type: FeePaymentCancellationSchema
   }
 }, {
   timestamps: true
@@ -119,5 +210,7 @@ FeePaymentSchema.index({ organizationId: 1 });
 FeePaymentSchema.index({ paymentDate: 1 });
 FeePaymentSchema.index({ feeType: 1 });
 FeePaymentSchema.index({ status: 1 });
+FeePaymentSchema.index({ academicYear: 1, branchId: 1 });
+FeePaymentSchema.index({ feeMonth: 1 });
 
 export const FeePayment = mongoose.model<IFeePayment>('FeePayment', FeePaymentSchema);

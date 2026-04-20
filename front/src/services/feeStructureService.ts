@@ -3,6 +3,7 @@ import api from '@/lib/api';
 export interface FeeStructure {
   _id: string;
   title: string;
+  feeType?: string;
   feeTypeId: string;
   feeTypeName: string;
   isCommon: boolean;

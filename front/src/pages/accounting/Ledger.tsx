@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useCurrency } from '@/hooks/useCurrency';
 import { useLedger } from '@/hooks/useAccounting';
 import { Download, Printer, BookOpen, TrendingUp, TrendingDown, Wallet, Building2 } from 'lucide-react';
 import { exportToCSV, exportToExcel, formatters } from '@/utils/exportUtils';
@@ -34,6 +35,7 @@ export const Ledger = () => {
   const [paymentMethod, setPaymentMethod] = useState<'all' | 'cash' | 'bank'>('all');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
+  const { currencyCode, formatCurrency } = useCurrency();
 
   const { data: response, isLoading, error } = useLedger({
     accountType,
@@ -61,7 +63,7 @@ export const Ledger = () => {
     const exportColumns = [
       { key: 'accountName', label: 'Account Name' },
       { key: 'accountType', label: 'Type', formatter: formatters.capitalize },
-      { key: 'balance', label: 'Balance', formatter: formatters.currency },
+      { key: 'balance', label: `Balance (${currencyCode})`, formatter: formatCurrency },
       { key: 'transactionCount', label: 'Transactions' },
     ];
 
@@ -76,7 +78,7 @@ export const Ledger = () => {
     const exportColumns = [
       { key: 'accountName', label: 'Account Name' },
       { key: 'accountType', label: 'Type', formatter: formatters.capitalize },
-      { key: 'balance', label: 'Balance', formatter: formatters.currency },
+      { key: 'balance', label: `Balance (${currencyCode})`, formatter: formatCurrency },
       { key: 'transactionCount', label: 'Transactions' },
     ];
 
@@ -166,16 +168,16 @@ export const Ledger = () => {
             <h3>Trial Balance</h3>
             <div class="trial-balance-row">
               <span>Total Credit (Income):</span>
-              <span class="income">BHD \$\{trialBalance.totalCredit.toFixed(3)}</span>
+              <span class="income">${formatCurrency(trialBalance.totalCredit)}</span>
             </div>
             <div class="trial-balance-row">
               <span>Total Debit (Expense):</span>
-              <span class="expense">BHD \$\{trialBalance.totalDebit.toFixed(3)}</span>
+              <span class="expense">${formatCurrency(trialBalance.totalDebit)}</span>
             </div>
             <div class="trial-balance-row" style="border-top: 2px solid #333; font-weight: bold;">
               <span>Difference:</span>
               <span style="color: ${trialBalance.difference >= 0 ? '#16a34a' : '#dc2626'}">
-                BHD \$\{trialBalance.difference.toFixed(3)}
+                ${formatCurrency(trialBalance.difference)}
               </span>
             </div>
           </div>
@@ -199,7 +201,7 @@ export const Ledger = () => {
                 <tr>
                   <td>${acc.accountName}</td>
                   <td><span class="${acc.accountType}">${acc.accountType.toUpperCase()}</span></td>
-                  <td class="${acc.accountType}">BHD \$\{acc.balance.toFixed(3)}</td>
+                  <td class="${acc.accountType}">${formatCurrency(acc.balance)}</td>
                   <td>${acc.transactionCount}</td>
                 </tr>
               `
@@ -265,7 +267,7 @@ export const Ledger = () => {
                       Total Credit (Income)
                     </div>
                     <div className="text-xl font-bold text-green-600">
-                      BHD {trialBalance.totalCredit.toFixed(3)}
+                      {formatCurrency(trialBalance.totalCredit)}
                     </div>
                   </div>
                   <div className="flex justify-between items-center pb-2 border-b">
@@ -274,7 +276,7 @@ export const Ledger = () => {
                       Total Debit (Expense)
                     </div>
                     <div className="text-xl font-bold text-red-600">
-                      BHD {trialBalance.totalDebit.toFixed(3)}
+                      {formatCurrency(trialBalance.totalDebit)}
                     </div>
                   </div>
                   <div className="flex justify-between items-center pt-2">
@@ -284,7 +286,7 @@ export const Ledger = () => {
                         trialBalance.difference >= 0 ? 'text-green-600' : 'text-red-600'
                       }`}
                     >
-                      BHD {trialBalance.difference.toFixed(3)}
+                      {formatCurrency(trialBalance.difference)}
                     </div>
                   </div>
                 </div>
@@ -335,19 +337,22 @@ export const Ledger = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Cash Income</span>
                     <span className="font-semibold text-green-600">
-                      BHD {(trialBalance?.totalCredit * 0.45 || 0).toFixed(3)} {/* Approximate */}
+                      {formatCurrency(trialBalance?.totalCredit * 0.45 || 0)} {/* Approximate */}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Cash Expenses</span>
                     <span className="font-semibold text-red-600">
-                      BHD {(trialBalance?.totalDebit * 0.35 || 0).toFixed(3)} {/* Approximate */}
+                      {formatCurrency(trialBalance?.totalDebit * 0.35 || 0)} {/* Approximate */}
                     </span>
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t font-bold">
                     <span className="text-sm">Cash Balance</span>
                     <span className="text-green-600">
-                      BHD {((trialBalance?.totalCredit * 0.45 || 0) - (trialBalance?.totalDebit * 0.35 || 0)).toFixed(3)}
+                      {formatCurrency(
+                        (trialBalance?.totalCredit * 0.45 || 0) -
+                          (trialBalance?.totalDebit * 0.35 || 0)
+                      )}
                     </span>
                   </div>
                 </TabsContent>
@@ -355,19 +360,22 @@ export const Ledger = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Bank Income</span>
                     <span className="font-semibold text-green-600">
-                      BHD {(trialBalance?.totalCredit * 0.55 || 0).toFixed(3)} {/* Approximate */}
+                      {formatCurrency(trialBalance?.totalCredit * 0.55 || 0)} {/* Approximate */}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Bank Expenses</span>
                     <span className="font-semibold text-red-600">
-                      BHD {(trialBalance?.totalDebit * 0.65 || 0).toFixed(3)} {/* Approximate */}
+                      {formatCurrency(trialBalance?.totalDebit * 0.65 || 0)} {/* Approximate */}
                     </span>
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t font-bold">
                     <span className="text-sm">Bank Balance</span>
                     <span className="text-green-600">
-                      BHD {((trialBalance?.totalCredit * 0.55 || 0) - (trialBalance?.totalDebit * 0.65 || 0)).toFixed(3)}
+                      {formatCurrency(
+                        (trialBalance?.totalCredit * 0.55 || 0) -
+                          (trialBalance?.totalDebit * 0.65 || 0)
+                      )}
                     </span>
                   </div>
                 </TabsContent>
@@ -476,7 +484,7 @@ export const Ledger = () => {
                               account.accountType === 'income' ? 'text-green-600' : 'text-red-600'
                             }`}
                           >
-                            BHD {account.balance.toFixed(3)}
+                            {formatCurrency(account.balance)}
                           </TableCell>
                           <TableCell>{account.transactionCount}</TableCell>
                         </TableRow>

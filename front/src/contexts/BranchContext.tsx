@@ -40,6 +40,7 @@ export const BranchProvider = ({ children }: { children: ReactNode }) => {
     if (!user) {
       setBranches([]);
       setSelectedBranchId(null);
+      localStorage.removeItem(STORAGE_KEY);
       return;
     }
 
@@ -49,6 +50,7 @@ export const BranchProvider = ({ children }: { children: ReactNode }) => {
     if (role === 'platform_admin') {
       setBranches([]);
       setSelectedBranchId(null);
+      localStorage.removeItem(STORAGE_KEY);
       return;
     }
 
@@ -56,6 +58,11 @@ export const BranchProvider = ({ children }: { children: ReactNode }) => {
     if (role !== 'org_admin') {
       setSelectedBranchId(user.branchId || null);
       setBranches([]);
+      if (user.branchId) {
+        localStorage.setItem(STORAGE_KEY, user.branchId);
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
       return;
     }
 

@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useCurrency } from '@/hooks/useCurrency';
 import { useFeeDetails } from '@/hooks/useAccounting';
 import { Download, Printer, DollarSign, Users, CreditCard } from 'lucide-react';
 import { exportToCSV, exportToExcel, formatters } from '@/utils/exportUtils';
@@ -35,6 +36,7 @@ export const FeeDetails = () => {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
+  const { currencyCode, formatCurrency } = useCurrency();
 
   const { data: response, isLoading, error } = useFeeDetails({
     startDate,
@@ -66,9 +68,9 @@ export const FeeDetails = () => {
       { key: 'studentId.rollNumber', label: 'Roll Number' },
       { key: 'classId.name', label: 'Class' },
       { key: 'paymentDate', label: 'Payment Date', formatter: formatters.date },
-      { key: 'tuitionFee', label: 'Tuition Fee', formatter: formatters.currency },
-      { key: 'transportFee', label: 'Transport Fee', formatter: formatters.currency },
-      { key: 'totalAmount', label: 'Total Amount', formatter: formatters.currency },
+      { key: 'tuitionFee', label: `Tuition Fee (${currencyCode})`, formatter: formatCurrency },
+      { key: 'transportFee', label: `Transport Fee (${currencyCode})`, formatter: formatCurrency },
+      { key: 'totalAmount', label: `Total Amount (${currencyCode})`, formatter: formatCurrency },
       { key: 'paymentMethod', label: 'Payment Method', formatter: formatters.capitalize },
       { key: 'status', label: 'Status', formatter: formatters.capitalize },
     ];
@@ -95,13 +97,13 @@ export const FeeDetails = () => {
       { key: 'studentId.rollNumber', label: 'Roll Number' },
       { key: 'classId.name', label: 'Class' },
       { key: 'paymentDate', label: 'Payment Date', formatter: formatters.date },
-      { key: 'tuitionFee', label: 'Tuition Fee', formatter: formatters.currency },
-      { key: 'transportFee', label: 'Transport Fee', formatter: formatters.currency },
-      { key: 'cocurricularFee', label: 'Co-curricular Fee', formatter: formatters.currency },
-      { key: 'maintenanceFee', label: 'Maintenance Fee', formatter: formatters.currency },
-      { key: 'examFee', label: 'Exam Fee', formatter: formatters.currency },
-      { key: 'textbookFee', label: 'Textbook Fee', formatter: formatters.currency },
-      { key: 'totalAmount', label: 'Total Amount', formatter: formatters.currency },
+      { key: 'tuitionFee', label: `Tuition Fee (${currencyCode})`, formatter: formatCurrency },
+      { key: 'transportFee', label: `Transport Fee (${currencyCode})`, formatter: formatCurrency },
+      { key: 'cocurricularFee', label: `Co-curricular Fee (${currencyCode})`, formatter: formatCurrency },
+      { key: 'maintenanceFee', label: `Maintenance Fee (${currencyCode})`, formatter: formatCurrency },
+      { key: 'examFee', label: `Exam Fee (${currencyCode})`, formatter: formatCurrency },
+      { key: 'textbookFee', label: `Textbook Fee (${currencyCode})`, formatter: formatCurrency },
+      { key: 'totalAmount', label: `Total Amount (${currencyCode})`, formatter: formatCurrency },
       { key: 'paymentMethod', label: 'Payment Method', formatter: formatters.capitalize },
       { key: 'status', label: 'Status', formatter: formatters.capitalize },
     ];
@@ -164,7 +166,7 @@ export const FeeDetails = () => {
           <div class="summary">
             <div class="summary-card">
               <label>Total Collected</label>
-              <value>BHD \$\{breakdown.totalPaid?.toFixed(3)}</value>
+              <value>${formatCurrency(breakdown.totalPaid)}</value>
             </div>
             <div class="summary-card">
               <label>Paid Payments</label>
@@ -200,7 +202,7 @@ export const FeeDetails = () => {
                   <td>${payment.studentName || payment.studentId?.name || 'N/A'}</td>
                   <td>${payment.className || payment.classId?.name || 'N/A'}</td>
                   <td>${format(new Date(payment.paymentDate), 'dd MMM yyyy')}</td>
-                  <td>BHD \$\{(payment.totalAmount || 0).toFixed(3)}</td>
+                  <td>${formatCurrency(payment.totalAmount || 0)}</td>
                   <td>${(payment.paymentMethod || '').toUpperCase()}</td>
                   <td>${(payment.status || '').toUpperCase()}</td>
                 </tr>
@@ -263,7 +265,7 @@ export const FeeDetails = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
-                  BHD {breakdown.totalPaid?.toFixed(3)}
+                  {formatCurrency(breakdown.totalPaid)}
                 </div>
               </CardContent>
             </Card>
@@ -310,27 +312,27 @@ export const FeeDetails = () => {
               <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground">Tuition Fee</div>
-                  <div className="text-lg font-semibold">BHD {breakdown.totalTuitionFee?.toFixed(3)}</div>
+                  <div className="text-lg font-semibold">{formatCurrency(breakdown.totalTuitionFee)}</div>
                 </div>
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground">Transport Fee</div>
-                  <div className="text-lg font-semibold">BHD {breakdown.totalTransportFee?.toFixed(3)}</div>
+                  <div className="text-lg font-semibold">{formatCurrency(breakdown.totalTransportFee)}</div>
                 </div>
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground">Co-curricular</div>
-                  <div className="text-lg font-semibold">BHD {breakdown.totalCocurricularFee?.toFixed(3)}</div>
+                  <div className="text-lg font-semibold">{formatCurrency(breakdown.totalCocurricularFee)}</div>
                 </div>
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground">Maintenance</div>
-                  <div className="text-lg font-semibold">BHD {breakdown.totalMaintenanceFee?.toFixed(3)}</div>
+                  <div className="text-lg font-semibold">{formatCurrency(breakdown.totalMaintenanceFee)}</div>
                 </div>
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground">Exam Fee</div>
-                  <div className="text-lg font-semibold">BHD {breakdown.totalExamFee?.toFixed(3)}</div>
+                  <div className="text-lg font-semibold">{formatCurrency(breakdown.totalExamFee)}</div>
                 </div>
                 <div className="space-y-1">
                   <div className="text-sm text-muted-foreground">Textbook Fee</div>
-                  <div className="text-lg font-semibold">BHD {breakdown.totalTextbookFee?.toFixed(3)}</div>
+                  <div className="text-lg font-semibold">{formatCurrency(breakdown.totalTextbookFee)}</div>
                 </div>
               </div>
             </CardContent>
@@ -348,7 +350,7 @@ export const FeeDetails = () => {
                 {paymentMethodBreakdown.map((method: any) => (
                   <div key={method._id} className="space-y-1">
                     <div className="text-sm text-muted-foreground capitalize">{method._id}</div>
-                    <div className="text-lg font-semibold">BHD {method.totalAmount.toFixed(3)}</div>
+                    <div className="text-lg font-semibold">{formatCurrency(method.totalAmount)}</div>
                     <div className="text-xs text-muted-foreground">{method.count} payments</div>
                   </div>
                 ))}
@@ -455,13 +457,13 @@ export const FeeDetails = () => {
                             <div className="space-y-1">
                               {(payment.feeItems || []).map((item: any, idx: number) => (
                                 <div key={idx} className="text-xs text-muted-foreground">
-                                  {item.title}: BHD {(item.amount || 0).toFixed(3)}
+                                  {item.title}: {formatCurrency(item.amount || 0)}
                                 </div>
                               ))}
                             </div>
                           </TableCell>
                           <TableCell className="font-semibold text-green-600">
-                            BHD {(payment.totalAmount || 0).toFixed(3)}
+                            {formatCurrency(payment.totalAmount || 0)}
                           </TableCell>
                           <TableCell className="capitalize">{payment.paymentMethod}</TableCell>
                           <TableCell>

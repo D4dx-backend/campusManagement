@@ -22,6 +22,7 @@ export interface IOrganization extends Document {
   pincode?: string;
   registrationNumber?: string;
   footerText?: string;    // Default receipt footer text
+  enabledFeatures?: string[];  // Feature keys enabled for this org (empty/undefined = all)
   createdBy?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -122,6 +123,10 @@ const OrganizationSchema = new Schema<IOrganization>(
     footerText: {
       type: String,
       trim: true
+    },
+    enabledFeatures: {
+      type: [String],
+      default: undefined
     },
     createdBy: {
       type: Schema.Types.ObjectId,

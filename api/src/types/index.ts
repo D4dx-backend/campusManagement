@@ -60,6 +60,7 @@ export interface IBranch {
   pincode?: string;
   registrationNumber?: string;
   footerText?: string;
+  enabledFeatures?: string[];
   createdAt: Date;
   createdBy: string;
 }
@@ -262,12 +263,40 @@ export interface IFeePayment {
   totalAmount?: number;
   paymentDate: Date;
   paymentMethod: 'cash' | 'bank' | 'online';
-  status: 'paid' | 'partial' | 'pending';
+  status: 'paid' | 'partial' | 'pending' | 'cancelled';
   remarks?: string;
   organizationId: string;
   branchId: string;
   createdBy: string;
   createdAt: Date;
+  academicYear?: string;
+  feeMonth?: string;
+  editHistory?: Array<{
+    editedAt: Date;
+    editedBy: string;
+    editedByName: string;
+    reason: string;
+    previousValues: {
+      paymentMethod?: string;
+      paymentDate?: Date;
+      remarks?: string;
+      academicYear?: string;
+      feeMonth?: string;
+    };
+    newValues: {
+      paymentMethod?: string;
+      paymentDate?: Date;
+      remarks?: string;
+      academicYear?: string;
+      feeMonth?: string;
+    };
+  }>;
+  cancellation?: {
+    cancelledAt: Date;
+    cancelledBy: string;
+    cancelledByName: string;
+    reason: string;
+  };
 }
 
 export interface IPayrollEntry {
@@ -437,7 +466,7 @@ export interface IDepartment {
   headOfDepartment?: string;
   status: 'active' | 'inactive';
   organizationId: string;
-  branchId: string;
+  branchId?: string | null;
   createdAt: Date;
 }
 
@@ -615,4 +644,10 @@ export interface QueryParams {
   subjectId?: string;
   divisionId?: string;
   examType?: string;
+  // Timetable
+  academicYearId?: string;
+  configId?: string;
+  // LMS
+  chapterId?: string;
+  contentType?: string;
 }

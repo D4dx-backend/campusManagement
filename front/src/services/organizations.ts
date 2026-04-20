@@ -9,6 +9,8 @@ export interface CreateOrganizationData {
   email: string;
   website?: string;
   logo?: string;
+  currency?: string;
+  currencySymbol?: string;
   status: 'active' | 'inactive';
   subscriptionPlan?: string;
   maxBranches?: number;
@@ -41,6 +43,14 @@ export const organizationsApi = {
 
   getOrganization: async (id: string): Promise<OrganizationResponse> => {
     const response = await apiClient.get(`/organizations/${id}`);
+    return {
+      success: response.data.success,
+      data: { ...response.data.data, id: response.data.data._id },
+    };
+  },
+
+  getCurrentOrganization: async (): Promise<OrganizationResponse> => {
+    const response = await apiClient.get('/organizations/my-organization');
     return {
       success: response.data.success,
       data: { ...response.data.data, id: response.data.data._id },

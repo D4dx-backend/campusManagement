@@ -429,9 +429,12 @@ const UserAccess = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
+                        {currentUser?.role === 'platform_admin' && (
+                          <SelectItem value="platform_admin">Platform Admin</SelectItem>
+                        )}
                         {(currentUser?.role === 'platform_admin' || currentUser?.role === 'org_admin') && (
                           <>
-                            <SelectItem value="platform_admin">Platform Admin</SelectItem>
+                            <SelectItem value="org_admin">Organization Admin</SelectItem>
                             <SelectItem value="branch_admin">Branch Admin</SelectItem>
                           </>
                         )}

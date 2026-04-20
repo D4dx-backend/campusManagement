@@ -9,6 +9,8 @@ export interface Branch {
   phone: string;
   email: string;
   principalName?: string;
+  currency?: string;
+  currencySymbol?: string;
   establishedDate: string;
   organizationId: string;
   status: 'active' | 'inactive';
@@ -23,6 +25,8 @@ export interface CreateBranchData {
   phone: string;
   email: string;
   principalName?: string;
+  currency?: string;
+  currencySymbol?: string;
   establishedDate: string;
   organizationId?: string;
   status: 'active' | 'inactive';

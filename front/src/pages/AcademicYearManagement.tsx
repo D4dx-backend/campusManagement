@@ -2,16 +2,17 @@ import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DataTable } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Pencil, Trash2, Loader2, Star } from 'lucide-react';
+import { Plus, Pencil, Trash2, Star, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { academicYearApi, AcademicYear } from '@/services/academicYearService';
+import { formatters } from '@/utils/exportUtils';
+import { pageConfigurations } from '@/utils/pageTemplates';
 
 const AcademicYearManagement = () => {
   const { toast } = useToast();
@@ -19,6 +20,10 @@ const AcademicYearManagement = () => {
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<AcademicYear | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterValues, setFilterValues] = useState<any>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -33,7 +38,7 @@ const AcademicYearManagement = () => {
   const loadYears = async () => {
     setLoading(true);
     try {
-      const res = await academicYearApi.getAll({ limit: 50, sortBy: 'name', sortOrder: 'desc' });
+      const res = await academicYearApi.getAll({ limit: 100, sortBy: 'name', sortOrder: 'desc' });
       setYears(res.data || []);
     } catch {
       toast({ title: 'Error', description: 'Failed to load academic years', variant: 'destructive' });
@@ -42,12 +47,26 @@ const AcademicYearManagement = () => {
     }
   };
 
+  const filteredYears = years.filter(y => {
+    const matchSearch = !searchTerm || y.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchStatus = !filterValues.status || y.status === filterValues.status;
+    return matchSearch && matchStatus;
+  });
+
+  const totalItems = filteredYears.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const paginatedYears = filteredYears.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const config = pageConfigurations.academicYears;
+
+  const handleFilterChange = (values: any) => { setFilterValues(values); setCurrentPage(1); };
+  const handleFilterReset = () => { setFilterValues({}); setCurrentPage(1); };
+
   const openCreate = () => {
     setEditing(null);
-    // Auto-suggest next academic year name
     const currentYear = new Date().getFullYear();
     const month = new Date().getMonth();
-    const startYear = month >= 3 ? currentYear : currentYear - 1; // June-based academic year
+    const startYear = month >= 3 ? currentYear : currentYear - 1;
     setFormData({
       name: `${startYear}-${(startYear + 1).toString().slice(-2)}`,
       startDate: `${startYear}-06-01`,
@@ -119,53 +138,76 @@ const AcademicYearManagement = () => {
           <Button onClick={openCreate}><Plus className="w-4 h-4 mr-2" />Add Academic Year</Button>
         </div>
 
-        <Card>
-          <CardContent className="pt-6">
-            {loading ? (
-              <div className="flex justify-center py-10"><Loader2 className="w-8 h-8 animate-spin" /></div>
-            ) : years.length === 0 ? (
-              <p className="text-center text-muted-foreground py-10">No academic years found.</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>#</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Start Date</TableHead>
-                    <TableHead>End Date</TableHead>
-                    <TableHead>Current</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {years.map((y, i) => (
-                    <TableRow key={y._id} className={y.isCurrent ? 'bg-primary/5' : ''}>
-                      <TableCell>{i + 1}</TableCell>
-                      <TableCell className="font-medium">{y.name}</TableCell>
-                      <TableCell>{new Date(y.startDate).toLocaleDateString()}</TableCell>
-                      <TableCell>{new Date(y.endDate).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        {y.isCurrent ? (
-                          <Badge className="bg-green-100 text-green-800"><Star className="w-3 h-3 mr-1" />Current</Badge>
-                        ) : (
-                          <Button variant="ghost" size="sm" onClick={() => setCurrent(y)} className="text-xs">Set as Current</Button>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={y.status === 'active' ? 'default' : 'secondary'}>{y.status}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(y)}><Pencil className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(y)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+        <DataTable
+          searchPlaceholder="Search academic years..."
+          searchValue={searchTerm}
+          onSearchChange={(v) => { setSearchTerm(v); setCurrentPage(1); }}
+          filters={config.filters}
+          filterValues={filterValues}
+          onFilterChange={handleFilterChange}
+          onFilterReset={handleFilterReset}
+          exportConfig={{
+            filename: 'academic_years',
+            columns: config.exportColumns.map(col => ({
+              ...col,
+              formatter: col.formatter ? formatters[col.formatter] : undefined
+            }))
+          }}
+          pagination={{
+            currentPage,
+            totalPages,
+            totalItems,
+            itemsPerPage,
+            onPageChange: setCurrentPage,
+            onItemsPerPageChange: (v) => { setItemsPerPage(v); setCurrentPage(1); }
+          }}
+          data={paginatedYears}
+          isLoading={loading}
+          emptyState={{
+            icon: <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />,
+            message: "No academic years found"
+          }}
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="text-left p-3 font-semibold">#</th>
+                  <th className="text-left p-3 font-semibold">Name</th>
+                  <th className="text-left p-3 font-semibold">Start Date</th>
+                  <th className="text-left p-3 font-semibold">End Date</th>
+                  <th className="text-left p-3 font-semibold">Current</th>
+                  <th className="text-left p-3 font-semibold">Status</th>
+                  <th className="text-right p-3 font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedYears.map((y, i) => (
+                  <tr key={y._id} className={`border-b hover:bg-muted/30 ${y.isCurrent ? 'bg-primary/5' : ''}`}>
+                    <td className="p-3">{(currentPage - 1) * itemsPerPage + i + 1}</td>
+                    <td className="p-3 font-medium">{y.name}</td>
+                    <td className="p-3">{new Date(y.startDate).toLocaleDateString()}</td>
+                    <td className="p-3">{new Date(y.endDate).toLocaleDateString()}</td>
+                    <td className="p-3">
+                      {y.isCurrent ? (
+                        <Badge className="bg-green-100 text-green-800"><Star className="w-3 h-3 mr-1" />Current</Badge>
+                      ) : (
+                        <Button variant="ghost" size="sm" onClick={() => setCurrent(y)} className="text-xs">Set as Current</Button>
+                      )}
+                    </td>
+                    <td className="p-3">
+                      <Badge variant={y.status === 'active' ? 'default' : 'secondary'}>{y.status}</Badge>
+                    </td>
+                    <td className="p-3 text-right space-x-2">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(y)}><Pencil className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(y)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </DataTable>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent className="sm:max-w-[450px]">

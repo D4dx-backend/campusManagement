@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import AppLayout from '@/components/layout/AppLayout';
+import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,12 +25,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Globe, Trash2, CheckCircle, AlertCircle, Clock, Star, RefreshCw } from 'lucide-react';
+import { Plus, Globe, Trash2, CheckCircle, AlertCircle, Clock, Star, RefreshCw, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { domainService, DomainMapping } from '@/services/domainService';
 import { useConfirmation } from '@/hooks/useConfirmation';
+import { ExportButton } from '@/components/ui/export-button';
+import { formatters } from '@/utils/exportUtils';
+import { pageConfigurations } from '@/utils/pageTemplates';
 
 const DomainManagement = () => {
   const { user } = useAuth();
@@ -38,6 +41,9 @@ const DomainManagement = () => {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ domain: '', domainType: 'subdomain' as const, isPrimary: false });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>('');
+  const [filterType, setFilterType] = useState<string>('');
   const { confirm, ConfirmationComponent } = useConfirmation();
 
   const isPlatformAdmin = user?.role === 'platform_admin';
@@ -175,8 +181,55 @@ const DomainManagement = () => {
           </ol>
         </div>
 
+        {/* Search + Filters + Export */}
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Search domains..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={filterType || '__all__'} onValueChange={v => setFilterType(v === '__all__' ? '' : v)}>
+            <SelectTrigger className="w-[150px]"><SelectValue placeholder="Type" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">All Types</SelectItem>
+              <SelectItem value="subdomain">Subdomain</SelectItem>
+              <SelectItem value="custom">Custom</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterStatus || '__all__'} onValueChange={v => setFilterStatus(v === '__all__' ? '' : v)}>
+            <SelectTrigger className="w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">All Status</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="pending_verification">Pending</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+          <ExportButton
+            data={domains}
+            filename="domains"
+            columns={pageConfigurations.domains.exportColumns.map(col => ({
+              ...col,
+              formatter: col.formatter ? formatters[col.formatter] : undefined
+            }))}
+          />
+        </div>
+
         {/* Domain table */}
-        <div className="border rounded-lg">
+        {(() => {
+          const filteredDomains = domains.filter(d => {
+            const matchSearch = !searchTerm || d.domain.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchStatus = !filterStatus || d.status === filterStatus;
+            const matchType = !filterType || d.domainType === filterType;
+            return matchSearch && matchStatus && matchType;
+          });
+
+          return (
+        <div className="border rounded-lg overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -196,14 +249,14 @@ const DomainManagement = () => {
                     Loading...
                   </TableCell>
                 </TableRow>
-              ) : domains.length === 0 ? (
+              ) : filteredDomains.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={isPlatformAdmin ? 7 : 6} className="text-center py-8 text-muted-foreground">
-                    No domains mapped yet. Click "Add Domain" to get started.
+                    No domains found.
                   </TableCell>
                 </TableRow>
               ) : (
-                domains.map((d) => (
+                filteredDomains.map((d) => (
                   <TableRow key={d._id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -260,6 +313,8 @@ const DomainManagement = () => {
             </TableBody>
           </Table>
         </div>
+          );
+        })()}
       </div>
 
       {/* Add Domain Dialog */}

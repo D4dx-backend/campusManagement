@@ -45,6 +45,11 @@ const ExpenseSchema = new Schema<IExpense>({
     type: Schema.Types.ObjectId as any,
     ref: 'Branch',
     required: true
+  },
+  organizationId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'Organization',
+    required: true
   }
 }, {
   timestamps: true
@@ -52,6 +57,7 @@ const ExpenseSchema = new Schema<IExpense>({
 
 // Indexes
 ExpenseSchema.index({ branchId: 1 });
+ExpenseSchema.index({ organizationId: 1 });
 ExpenseSchema.index({ date: 1 });
 ExpenseSchema.index({ category: 1 });
 ExpenseSchema.index({ description: 'text' });

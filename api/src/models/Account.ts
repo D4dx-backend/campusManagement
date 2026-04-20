@@ -11,6 +11,7 @@ export interface IAccount extends Document {
   currentBalance: number;
   description?: string;
   isActive: boolean;
+  organizationId?: mongoose.Types.ObjectId;
   branchId?: mongoose.Types.ObjectId;
   createdBy?: mongoose.Types.ObjectId;
   createdAt: Date;
@@ -70,6 +71,10 @@ const AccountSchema = new Schema<IAccount>(
       type: Schema.Types.ObjectId,
       ref: 'Branch'
     },
+    organizationId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Organization'
+    },
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'User'
@@ -82,7 +87,7 @@ const AccountSchema = new Schema<IAccount>(
 
 // Indexes
 AccountSchema.index({ branchId: 1, accountType: 1 });
-AccountSchema.index({ accountNumber: 1 }, { sparse: true });
+AccountSchema.index({ organizationId: 1 });
 AccountSchema.index({ isActive: 1 });
 
 export const Account = mongoose.model<IAccount>('Account', AccountSchema);

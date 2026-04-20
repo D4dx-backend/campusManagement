@@ -7,6 +7,8 @@ import { validate, validateQuery } from '../middleware/validation';
 import { AuthenticatedRequest, ApiResponse, QueryParams } from '../types';
 import Joi from 'joi';
 
+import { getOrgBranchFilter, getOrgBranchForCreate } from '../utils/orgFilter';
+
 const router = express.Router();
 
 // Apply authentication to all routes
@@ -62,10 +64,8 @@ router.get('/', checkPermission('payroll', 'read'), validateQuery(queryPayrollSc
     // Build filter object
     const filter: any = {};
 
-    // Branch filter (non-super admins can only see their branch data)
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    // Org + Branch filter
+    Object.assign(filter, getOrgBranchFilter(req));
 
     if (search) {
       filter.$or = [
@@ -125,9 +125,7 @@ router.get('/:id', checkPermission('payroll', 'read'), async (req: Authenticated
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const payrollEntry = await PayrollEntry.findOne(filter)
       .populate('staffId', 'name employeeId designation department phone email');
@@ -163,11 +161,13 @@ router.get('/:id', checkPermission('payroll', 'read'), async (req: Authenticated
 router.post('/', checkPermission('payroll', 'create'), validate(createPayrollSchema), async (req: AuthenticatedRequest, res) => {
   try {
     const { staffId, month, year, allowances, deductions, paymentMethod, status } = req.body;
+    const createFilter = getOrgBranchForCreate(req);
 
     // Verify staff exists and belongs to the same branch
     const staff = await Staff.findOne({
       _id: staffId,
-      branchId: req.user!.branchId || req.body.branchId
+      organizationId: createFilter.organizationId,
+      branchId: createFilter.branchId
     });
 
     if (!staff) {
@@ -183,7 +183,8 @@ router.post('/', checkPermission('payroll', 'create'), validate(createPayrollSch
       staffId,
       month,
       year,
-      branchId: req.user!.branchId || req.body.branchId
+      organizationId: createFilter.organizationId,
+      branchId: createFilter.branchId
     });
 
     if (existingEntry) {
@@ -211,7 +212,8 @@ router.post('/', checkPermission('payroll', 'create'), validate(createPayrollSch
       paymentDate: new Date(),
       paymentMethod,
       status: status || 'paid',
-      branchId: req.user!.branchId || req.body.branchId
+      organizationId: createFilter.organizationId,
+      branchId: createFilter.branchId
     };
 
     const payrollEntry = new PayrollEntry(payrollData);
@@ -254,9 +256,7 @@ router.put('/:id', checkPermission('payroll', 'update'), validate(updatePayrollS
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const existingEntry = await PayrollEntry.findOne(filter).populate('staffId', 'salary');
     if (!existingEntry) {
@@ -318,9 +318,7 @@ router.delete('/:id', checkPermission('payroll', 'delete'), async (req: Authenti
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const payrollEntry = await PayrollEntry.findOneAndDelete(filter);
 
@@ -368,9 +366,7 @@ router.get('/stats/overview', checkPermission('payroll', 'read'), async (req: Au
     const filter: any = {};
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const currentDate = new Date();
     const currentMonth = currentDate.toLocaleString('default', { month: 'long' });
@@ -454,20 +450,16 @@ router.get('/pending/:month/:year', checkPermission('payroll', 'read'), async (r
     const { month, year } = req.params;
     const filter: any = {};
 
-    // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    // Org + Branch filter
+    Object.assign(filter, getOrgBranchFilter(req));
 
     // Get all active staff
     const allStaff = await Staff.find({ ...filter, status: 'active' }).select('_id name employeeId designation salary');
 
     // Get staff who already have payroll entries for this month/year
-    const processedStaff = await PayrollEntry.find({
-      month,
-      year: parseInt(year),
-      branchId: req.user!.branchId
-    }).select('staffId');
+    const processedFilter: any = { month, year: parseInt(year) };
+    Object.assign(processedFilter, getOrgBranchFilter(req));
+    const processedStaff = await PayrollEntry.find(processedFilter).select('staffId');
 
     const processedStaffIds = processedStaff.map(entry => entry.staffId.toString());
 

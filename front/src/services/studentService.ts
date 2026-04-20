@@ -7,8 +7,9 @@ export interface StudentQueryParams {
   search?: string;
   branchId?: string;
   class?: string;
+  classId?: string;
   section?: string;
-  status?: 'active' | 'inactive';
+  status?: 'active' | 'inactive' | 'suspended' | 'tc_issued';
   transport?: 'school' | 'own' | 'none';
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
@@ -83,5 +84,33 @@ export const studentService = {
   getNextAdmissionNo: async (classId: string, divisionName: string): Promise<string> => {
     const response = await apiClient.get<{ admissionNo: string }>('/students/next-admission-no', { classId, divisionName });
     return response.data.data.admissionNo;
+  },
+
+  // Issue Transfer Certificate
+  issueTC: async (id: string, data: {
+    transferSchoolName?: string;
+    transferDate?: string;
+    reason?: string;
+    remarks?: string;
+    tcNumber?: string;
+  }) => {
+    const response = await apiClient.post(`/students/${id}/transfer`, data);
+    return response.data;
+  },
+
+  // Suspend student
+  suspendStudent: async (id: string, data: {
+    suspensionReason: string;
+    suspensionDate?: string;
+    suspensionEndDate?: string;
+  }) => {
+    const response = await apiClient.post(`/students/${id}/suspend`, data);
+    return response.data;
+  },
+
+  // Revoke suspension
+  revokeSuspension: async (id: string) => {
+    const response = await apiClient.post(`/students/${id}/revoke-suspension`, {});
+    return response.data;
   }
 };

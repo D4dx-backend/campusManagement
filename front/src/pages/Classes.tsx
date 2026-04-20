@@ -27,7 +27,7 @@ const Classes = () => {
   const { user } = useAuth();
   const { confirm, ConfirmationComponent } = useConfirmation();
 
-  const { data: branchesResponse } = useBranches(user?.role === 'super_admin');
+  const { data: branchesResponse } = useBranches((user?.role === 'platform_admin' || user?.role === 'org_admin'));
   const branches = branchesResponse?.data || [];
   const getBranchName = (branchId: string) => {
     const branch = branches.find((b: any) => (b.id || b._id) === branchId);
@@ -89,7 +89,7 @@ const Classes = () => {
     e.preventDefault();
     
     // Validate branchId for super admin when creating
-    if (user?.role === 'super_admin' && !editingClass && !formData.branchId) {
+    if ((user?.role === 'platform_admin' || user?.role === 'org_admin') && !editingClass && !formData.branchId) {
       toast({
         title: 'Error',
         description: 'Please select a branch',
@@ -217,7 +217,7 @@ const Classes = () => {
                     required
                   />
                 </div>
-                {user?.role === 'super_admin' && (
+                {(user?.role === 'platform_admin' || user?.role === 'org_admin') && (
                   <div className="space-y-2">
                     <Label htmlFor="branchId">Branch {!editingClass && '*'}</Label>
                     <Select
@@ -304,7 +304,7 @@ const Classes = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Branches</SelectItem>
-                    {user?.role === 'super_admin' ? (
+                    {(user?.role === 'platform_admin' || user?.role === 'org_admin') ? (
                       branches.map((branch) => (
                         <SelectItem key={branch.id || branch._id} value={branch.id || branch._id}>
                           {branch.name}

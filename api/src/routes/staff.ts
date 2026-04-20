@@ -1,11 +1,15 @@
 import express from 'express';
 import { Staff } from '../models/Staff';
 import { Department } from '../models/Department';
+import { Branch } from '../models/Branch';
+import { Organization } from '../models/Organization';
 import { ActivityLog } from '../models/ActivityLog';
 import { authenticate, checkPermission } from '../middleware/auth';
 import { validate, validateQuery } from '../middleware/validation';
 import { AuthenticatedRequest, ApiResponse, QueryParams } from '../types';
 import Joi from 'joi';
+
+import { getOrgBranchFilter, getOrgBranchForCreate } from '../utils/orgFilter';
 
 const router = express.Router();
 
@@ -16,6 +20,7 @@ router.use(authenticate);
 const createStaffSchema = Joi.object({
   employeeId: Joi.string().required().trim(),
   name: Joi.string().min(2).max(100).required().trim(),
+  category: Joi.string().optional().allow('').trim(),
   designation: Joi.string().required().trim(),
   department: Joi.string().required().trim(),
   dateOfJoining: Joi.date().required(),
@@ -25,12 +30,13 @@ const createStaffSchema = Joi.object({
   email: Joi.string().email().optional().allow(''),
   address: Joi.string().min(10).max(500).required().trim(),
   salary: Joi.number().min(0).required(),
-  status: Joi.string().valid('active', 'inactive').default('active')
+  status: Joi.string().valid('active', 'inactive', 'terminated', 'resigned').default('active')
 });
 
 const updateStaffSchema = Joi.object({
   employeeId: Joi.string().optional().trim(),
   name: Joi.string().min(2).max(100).optional().trim(),
+  category: Joi.string().optional().allow('').trim(),
   designation: Joi.string().optional().trim(),
   department: Joi.string().optional().trim(),
   dateOfJoining: Joi.date().optional(),
@@ -40,16 +46,17 @@ const updateStaffSchema = Joi.object({
   email: Joi.string().email().optional().allow(''),
   address: Joi.string().min(10).max(500).optional().trim(),
   salary: Joi.number().min(0).optional(),
-  status: Joi.string().valid('active', 'inactive').optional()
+  status: Joi.string().valid('active', 'inactive', 'terminated', 'resigned').optional()
 });
 
 const queryStaffSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(10),
   search: Joi.string().optional().allow(''),
+  category: Joi.string().optional().allow(''),
   department: Joi.string().optional().allow(''),
   designation: Joi.string().optional().allow(''),
-  status: Joi.string().valid('active', 'inactive').optional(),
+  status: Joi.string().valid('active', 'inactive', 'terminated', 'resigned').optional(),
   sortBy: Joi.string().valid('name', 'employeeId', 'designation', 'salary', 'createdAt').default('createdAt'),
   sortOrder: Joi.string().valid('asc', 'desc').default('desc')
 });
@@ -63,6 +70,7 @@ router.get('/', checkPermission('staff', 'read'), validateQuery(queryStaffSchema
       page = 1,
       limit = 10,
       search = '',
+      category = '',
       department = '',
       designation = '',
       status = '',
@@ -73,10 +81,8 @@ router.get('/', checkPermission('staff', 'read'), validateQuery(queryStaffSchema
     // Build filter object
     const filter: any = {};
 
-    // Branch filter (non-super admins can only see their branch data)
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    // Org + Branch filter
+    Object.assign(filter, getOrgBranchFilter(req));
 
     if (search) {
       filter.$or = [
@@ -87,6 +93,7 @@ router.get('/', checkPermission('staff', 'read'), validateQuery(queryStaffSchema
       ];
     }
 
+    if (category) filter.category = category;
     if (department) filter.department = department;
     if (designation) filter.designation = { $regex: designation, $options: 'i' };
     if (status) filter.status = status;
@@ -137,9 +144,7 @@ router.get('/:id', checkPermission('staff', 'read'), async (req: AuthenticatedRe
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const staff = await Staff.findOne(filter);
 
@@ -193,16 +198,12 @@ router.post('/', checkPermission('staff', 'create'), validate(createStaffSchema)
       return res.status(400).json(response);
     }
 
-    // Get the appropriate branchId
-    const { getRequiredBranchId } = require('../utils/branchHelper');
-    let branchId;
-    
-    try {
-      branchId = await getRequiredBranchId(req, req.body.branchId);
-    } catch (error) {
+    const orgBranch = getOrgBranchForCreate(req);
+
+    if (!orgBranch.branchId) {
       const response: ApiResponse = {
         success: false,
-        message: error.message || 'Branch information is required for staff creation'
+        message: 'Branch information is required for staff creation'
       };
       return res.status(400).json(response);
     }
@@ -210,7 +211,8 @@ router.post('/', checkPermission('staff', 'create'), validate(createStaffSchema)
     // Create staff member with branch ID
     const staffData = {
       ...req.body,
-      branchId: branchId
+      organizationId: orgBranch.organizationId,
+      branchId: orgBranch.branchId
     };
 
     const staff = new Staff(staffData);
@@ -252,10 +254,8 @@ router.put('/:id', checkPermission('staff', 'update'), validate(updateStaffSchem
   try {
     const filter: any = { _id: req.params.id };
 
-    // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    // Org + Branch filter
+    Object.assign(filter, getOrgBranchFilter(req));
 
     // Check if email is being updated and already exists
     if (req.body.email) {
@@ -323,9 +323,7 @@ router.delete('/:id', checkPermission('staff', 'delete'), async (req: Authentica
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const staff = await Staff.findOneAndDelete(filter);
 
@@ -373,9 +371,7 @@ router.get('/stats/overview', checkPermission('staff', 'read'), async (req: Auth
     const filter: any = {};
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const [
       totalStaff,
@@ -431,6 +427,203 @@ router.get('/stats/overview', checkPermission('staff', 'read'), async (req: Auth
       message: 'Server error retrieving staff statistics'
     };
     res.status(500).json(response);
+  }
+});
+
+// ── SALARY INCREMENT ────────────────────────────────────────────────
+
+const salaryIncrementSchema = Joi.object({
+  newSalary: Joi.number().min(0).required(),
+  effectiveDate: Joi.date().required(),
+  reason: Joi.string().required().trim()
+});
+
+// @desc    Add salary increment for staff
+// @route   POST /api/staff/:id/salary-increment
+// @access  Private
+router.post('/:id/salary-increment', checkPermission('staff', 'update'), validate(salaryIncrementSchema), async (req: AuthenticatedRequest, res) => {
+  try {
+    const filter: any = { _id: req.params.id };
+    Object.assign(filter, getOrgBranchFilter(req));
+
+    const staff = await Staff.findOne(filter);
+    if (!staff) {
+      return res.status(404).json({ success: false, message: 'Staff member not found' } as ApiResponse);
+    }
+
+    const previousSalary = staff.salary;
+    const { newSalary, effectiveDate, reason } = req.body;
+
+    // Push to salary history
+    staff.salaryHistory = staff.salaryHistory || [];
+    staff.salaryHistory.push({
+      previousSalary,
+      newSalary,
+      effectiveDate,
+      reason,
+      incrementedBy: req.user!.name,
+      createdAt: new Date()
+    });
+
+    staff.salary = newSalary;
+    await staff.save();
+
+    await ActivityLog.create({
+      userId: req.user!._id,
+      userName: req.user!.name,
+      userRole: req.user!.role,
+      action: 'UPDATE',
+      module: 'Staff',
+      details: `Salary increment for ${staff.name}: ${previousSalary} → ${newSalary} (${reason})`,
+      ipAddress: req.ip,
+      branchId: staff.branchId
+    });
+
+    res.json({ success: true, message: 'Salary increment recorded successfully', data: staff } as ApiResponse);
+  } catch (error) {
+    console.error('Salary increment error:', error);
+    res.status(500).json({ success: false, message: 'Server error recording salary increment' } as ApiResponse);
+  }
+});
+
+// @desc    Get salary history for staff
+// @route   GET /api/staff/:id/salary-history
+// @access  Private
+router.get('/:id/salary-history', checkPermission('staff', 'read'), async (req: AuthenticatedRequest, res) => {
+  try {
+    const filter: any = { _id: req.params.id };
+    Object.assign(filter, getOrgBranchFilter(req));
+
+    const staff = await Staff.findOne(filter).select('name employeeId salary salaryHistory');
+    if (!staff) {
+      return res.status(404).json({ success: false, message: 'Staff member not found' } as ApiResponse);
+    }
+
+    res.json({
+      success: true,
+      message: 'Salary history retrieved successfully',
+      data: {
+        name: staff.name,
+        employeeId: staff.employeeId,
+        currentSalary: staff.salary,
+        history: (staff.salaryHistory || []).sort((a: any, b: any) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime())
+      }
+    } as ApiResponse);
+  } catch (error) {
+    console.error('Get salary history error:', error);
+    res.status(500).json({ success: false, message: 'Server error retrieving salary history' } as ApiResponse);
+  }
+});
+
+// ── SEPARATION (TERMINATION / RESIGNATION) ──────────────────────────
+
+const separationSchema = Joi.object({
+  separationType: Joi.string().valid('terminated', 'resigned').required(),
+  separationDate: Joi.date().required(),
+  lastWorkingDate: Joi.date().required(),
+  separationReason: Joi.string().required().trim()
+});
+
+// @desc    Record staff termination or resignation
+// @route   POST /api/staff/:id/separation
+// @access  Private
+router.post('/:id/separation', checkPermission('staff', 'update'), validate(separationSchema), async (req: AuthenticatedRequest, res) => {
+  try {
+    const filter: any = { _id: req.params.id };
+    Object.assign(filter, getOrgBranchFilter(req));
+
+    const staff = await Staff.findOne(filter);
+    if (!staff) {
+      return res.status(404).json({ success: false, message: 'Staff member not found' } as ApiResponse);
+    }
+
+    if (staff.status === 'terminated' || staff.status === 'resigned') {
+      return res.status(400).json({ success: false, message: 'Staff member is already separated' } as ApiResponse);
+    }
+
+    const { separationType, separationDate, lastWorkingDate, separationReason } = req.body;
+
+    staff.status = separationType;
+    staff.separationType = separationType;
+    staff.separationDate = separationDate;
+    staff.lastWorkingDate = lastWorkingDate;
+    staff.separationReason = separationReason;
+    await staff.save();
+
+    const actionLabel = separationType === 'terminated' ? 'Terminated' : 'Resigned';
+
+    await ActivityLog.create({
+      userId: req.user!._id,
+      userName: req.user!.name,
+      userRole: req.user!.role,
+      action: 'UPDATE',
+      module: 'Staff',
+      details: `${actionLabel}: ${staff.name} (${staff.employeeId}) - ${separationReason}`,
+      ipAddress: req.ip,
+      branchId: staff.branchId
+    });
+
+    res.json({ success: true, message: `Staff ${actionLabel.toLowerCase()} successfully`, data: staff } as ApiResponse);
+  } catch (error) {
+    console.error('Staff separation error:', error);
+    res.status(500).json({ success: false, message: 'Server error processing separation' } as ApiResponse);
+  }
+});
+
+// ── EXPERIENCE CERTIFICATE ──────────────────────────────────────────
+
+// @desc    Generate experience certificate data for staff
+// @route   GET /api/staff/:id/experience-certificate
+// @access  Private
+router.get('/:id/experience-certificate', checkPermission('staff', 'read'), async (req: AuthenticatedRequest, res) => {
+  try {
+    const filter: any = { _id: req.params.id };
+    Object.assign(filter, getOrgBranchFilter(req));
+
+    const staff = await Staff.findOne(filter);
+    if (!staff) {
+      return res.status(404).json({ success: false, message: 'Staff member not found' } as ApiResponse);
+    }
+
+    // Get organization and branch info
+    const [org, branch] = await Promise.all([
+      Organization.findById(staff.organizationId),
+      Branch.findById(staff.branchId)
+    ]);
+
+    const endDate = staff.lastWorkingDate || (staff.status === 'active' ? new Date() : staff.separationDate || new Date());
+    const startDate = staff.dateOfJoining;
+
+    // Calculate duration
+    const diffMs = new Date(endDate).getTime() - new Date(startDate).getTime();
+    const diffYears = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 365.25));
+    const diffMonths = Math.floor((diffMs % (1000 * 60 * 60 * 24 * 365.25)) / (1000 * 60 * 60 * 24 * 30.44));
+
+    const certificateData = {
+      staffName: staff.name,
+      employeeId: staff.employeeId,
+      designation: staff.designation,
+      department: staff.department,
+      category: staff.category,
+      dateOfJoining: staff.dateOfJoining,
+      lastWorkingDate: endDate,
+      duration: `${diffYears} year(s) and ${diffMonths} month(s)`,
+      status: staff.status,
+      organizationName: org?.name || '',
+      organizationAddress: org?.address || '',
+      organizationPhone: org?.phone || '',
+      organizationEmail: org?.email || '',
+      organizationLogo: org?.logo || '',
+      branchName: branch?.name || '',
+      branchAddress: branch?.address || '',
+      principalName: branch?.principalName || '',
+      issueDate: new Date(),
+    };
+
+    res.json({ success: true, message: 'Experience certificate data generated', data: certificateData } as ApiResponse);
+  } catch (error) {
+    console.error('Experience certificate error:', error);
+    res.status(500).json({ success: false, message: 'Server error generating experience certificate' } as ApiResponse);
   }
 });
 

@@ -9,6 +9,8 @@ import { AuthenticatedRequest, ApiResponse } from '../types';
 import Joi from 'joi';
 import mongoose from 'mongoose';
 
+import { getOrgBranchFilter, getOrgBranchForCreate } from '../utils/orgFilter';
+
 const router = express.Router();
 
 // Apply authentication to all routes
@@ -122,10 +124,8 @@ router.get('/', checkPermission('textbooks', 'read'), validateQuery(queryTextboo
 
     const filter: any = {};
 
-    // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    // Org + Branch filter
+    Object.assign(filter, getOrgBranchFilter(req));
 
     // Search filter
     if (searchStr) {
@@ -223,9 +223,7 @@ router.get('/stats/overview', checkPermission('textbooks', 'read'), async (req: 
     const filter: any = {};
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const currentDate = new Date();
     const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -325,9 +323,7 @@ router.get('/:id', checkPermission('textbooks', 'read'), async (req: Authenticat
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const indent = await TextbookIndent.findOne(filter);
 
@@ -362,9 +358,10 @@ router.get('/:id', checkPermission('textbooks', 'read'), async (req: Authenticat
 router.post('/', checkPermission('textbooks', 'create'), validate(createTextbookIndentSchema), async (req: AuthenticatedRequest, res) => {
   try {
     const { studentId, items, paymentMethod, paidAmount = 0, expectedReturnDate, remarks } = req.body;
+    const createFilter = getOrgBranchForCreate(req);
 
-    // Validate user has branchId
-    if (!req.user!.branchId && req.user!.role !== 'super_admin') {
+    // Validate branchId is resolvable
+    if (!createFilter.branchId && !['platform_admin', 'org_admin'].includes(req.user!.role)) {
       const response: ApiResponse = {
         success: false,
         message: 'User branch information is missing. Please contact administrator.'
@@ -375,10 +372,8 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextbook
     // Get student details
     const studentFilter: any = { _id: studentId };
     
-    // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      studentFilter.branchId = req.user!.branchId;
-    }
+    // Org + Branch filter
+    Object.assign(studentFilter, getOrgBranchFilter(req));
     
     const student = await Student.findOne(studentFilter);
     
@@ -394,10 +389,8 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextbook
     const textbookIds = items.map((item: any) => item.textbookId);
     const textbookFilter: any = { _id: { $in: textbookIds } };
     
-    // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      textbookFilter.branchId = req.user!.branchId;
-    }
+    // Org + Branch filter
+    Object.assign(textbookFilter, getOrgBranchFilter(req));
     
     const textbooks = await TextBook.find(textbookFilter);
 
@@ -443,7 +436,8 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextbook
     }
 
     // Generate indent number
-    const indentNo = await generateIndentNo(req.user!.branchId!.toString());
+    const indentBranchId = createFilter.branchId?.toString() || 'GLOBAL';
+    const indentNo = await generateIndentNo(indentBranchId);
 
     // Calculate balance amount
     const balanceAmount = totalAmount - paidAmount;
@@ -471,7 +465,8 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextbook
       issuedByName: req.user!.name,
       remarks,
       receiptGenerated: false,
-      branchId: req.user!.branchId || req.user!._id // Fallback to user ID if branchId is not set
+      organizationId: createFilter.organizationId,
+      branchId: createFilter.branchId
     };
 
     
@@ -487,6 +482,7 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextbook
       action: 'CREATE',
       module: 'textbook_indents',
       details: `Created textbook indent ${indentNo} for student ${student.name}`,
+      organizationId: req.user!.organizationId,
       branchId: req.user!.branchId
     });
 
@@ -550,9 +546,7 @@ router.put('/:id/issue', checkPermission('textbooks', 'update'), async (req: Aut
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const indent = await TextbookIndent.findOne(filter);
 
@@ -592,6 +586,7 @@ router.put('/:id/issue', checkPermission('textbooks', 'update'), async (req: Aut
       action: 'UPDATE',
       module: 'textbook_indents',
       details: `Issued textbook indent ${indent.indentNo}`,
+      organizationId: req.user!.organizationId,
       branchId: req.user!.branchId
     });
 
@@ -628,9 +623,7 @@ router.put('/:id/return', checkPermission('textbooks', 'update'), validate(retur
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const indent = await TextbookIndent.findOne(filter);
 
@@ -718,6 +711,7 @@ router.put('/:id/return', checkPermission('textbooks', 'update'), validate(retur
       action: 'UPDATE',
       module: 'textbook_indents',
       details: `Processed return for textbook indent ${indent.indentNo}`,
+      organizationId: req.user!.organizationId,
       branchId: req.user!.branchId
     });
 
@@ -757,9 +751,7 @@ router.put('/:id/cancel', checkPermission('textbooks', 'update'), async (req: Au
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const indent = await TextbookIndent.findOne(filter);
 
@@ -792,6 +784,7 @@ router.put('/:id/cancel', checkPermission('textbooks', 'update'), async (req: Au
       action: 'UPDATE',
       module: 'textbook_indents',
       details: `Cancelled textbook indent ${indent.indentNo}. Reason: ${reason}`,
+      organizationId: req.user!.organizationId,
       branchId: req.user!.branchId
     });
 
@@ -837,9 +830,7 @@ router.post('/:id/receipt', checkPermission('textbooks', 'read'), async (req: Au
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const indent = await TextbookIndent.findOne(filter);
 
@@ -902,6 +893,7 @@ router.post('/:id/receipt', checkPermission('textbooks', 'read'), async (req: Au
       action: 'CREATE',
       module: 'textbook_indents',
       details: `Generated receipt for textbook indent ${indent.indentNo}`,
+      organizationId: req.user!.organizationId,
       branchId: req.user!.branchId
     });
 

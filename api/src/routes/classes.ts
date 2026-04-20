@@ -9,6 +9,8 @@ import { validate, validateQuery } from '../middleware/validation';
 import { AuthenticatedRequest, ApiResponse, QueryParams } from '../types';
 import Joi from 'joi';
 
+import { getOrgBranchFilter, getOrgBranchForCreate } from '../utils/orgFilter';
+
 const router = express.Router();
 
 // Apply authentication to all routes
@@ -67,19 +69,8 @@ router.get('/', checkPermission('classes', 'read'), validateQuery(queryClassesSc
     // Build filter object
     const filter: any = {};
 
-    // Branch filter (non-super admins can only see their branch data)
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    } else if (branchId) {
-      if (!Types.ObjectId.isValid(branchId)) {
-        const response: ApiResponse = {
-          success: false,
-          message: 'Invalid branch ID format'
-        };
-        return res.status(400).json(response);
-      }
-      filter.branchId = new Types.ObjectId(branchId);
-    }
+    // Organization & Branch filter
+    Object.assign(filter, getOrgBranchFilter(req));
 
     if (search) {
       filter.$or = [
@@ -160,9 +151,7 @@ router.get('/:id', checkPermission('classes', 'read'), async (req: Authenticated
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const classData = await Class.aggregate([
       { $match: filter },
@@ -219,16 +208,12 @@ router.get('/:id', checkPermission('classes', 'read'), async (req: Authenticated
 // @access  Private
 router.post('/', checkPermission('classes', 'create'), validate(createClassSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    // Get the appropriate branchId
-    const { getRequiredBranchId } = require('../utils/branchHelper');
-    let branchId;
-    
-    try {
-      branchId = await getRequiredBranchId(req, req.body.branchId);
-    } catch (error) {
+    const orgBranch = getOrgBranchForCreate(req);
+
+    if (!orgBranch.branchId) {
       const response: ApiResponse = {
         success: false,
-        message: error.message || 'Branch information is required for class creation'
+        message: 'Branch information is required for class creation'
       };
       return res.status(400).json(response);
     }
@@ -238,7 +223,8 @@ router.post('/', checkPermission('classes', 'create'), validate(createClassSchem
       ...(req.body.description && { description: req.body.description }),
       academicYear: req.body.academicYear,
       status: req.body.status,
-      branchId: branchId
+      organizationId: orgBranch.organizationId,
+      branchId: orgBranch.branchId
     };
     
 
@@ -282,9 +268,7 @@ router.put('/:id', checkPermission('classes', 'update'), validate(updateClassSch
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const updatedClass = await Class.findOneAndUpdate(
       filter,
@@ -336,10 +320,8 @@ router.delete('/:id', checkPermission('classes', 'delete'), async (req: Authenti
   try {
     const filter: any = { _id: req.params.id };
 
-    // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    // Org + Branch filter
+    Object.assign(filter, getOrgBranchFilter(req));
 
     // Check if class has divisions
     const divisionsCount = await Division.countDocuments({ classId: req.params.id });
@@ -407,9 +389,7 @@ router.get('/stats/overview', checkPermission('classes', 'read'), async (req: Au
     const filter: any = {};
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const [
       totalClasses,

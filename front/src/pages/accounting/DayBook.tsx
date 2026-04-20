@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useCurrency } from '@/hooks/useCurrency';
 import { useDayBook } from '@/hooks/useAccounting';
 import { Download, Printer, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import { exportToCSV, exportToExcel, formatters } from '@/utils/exportUtils';
@@ -36,6 +37,7 @@ export const DayBook = () => {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
+  const { currencyCode, formatCurrency } = useCurrency();
 
   const { data: response, isLoading, error } = useDayBook({
     startDate,
@@ -57,7 +59,7 @@ export const DayBook = () => {
       { key: 'type', label: 'Type', formatter: formatters.capitalize },
       { key: 'category', label: 'Category' },
       { key: 'description', label: 'Description' },
-      { key: 'amount', label: 'Amount', formatter: formatters.currency },
+      { key: 'amount', label: `Amount (${currencyCode})`, formatter: formatCurrency },
       { key: 'paymentMethod', label: 'Payment Method', formatter: formatters.capitalize },
       { key: 'referenceNumber', label: 'Reference No.' },
     ];
@@ -75,7 +77,7 @@ export const DayBook = () => {
       { key: 'type', label: 'Type', formatter: formatters.capitalize },
       { key: 'category', label: 'Category' },
       { key: 'description', label: 'Description' },
-      { key: 'amount', label: 'Amount', formatter: formatters.currency },
+      { key: 'amount', label: `Amount (${currencyCode})`, formatter: formatCurrency },
       { key: 'paymentMethod', label: 'Payment Method', formatter: formatters.capitalize },
       { key: 'referenceNumber', label: 'Reference No.' },
     ];
@@ -192,16 +194,16 @@ export const DayBook = () => {
           <div class="summary">
             <div class="summary-item">
               <label>Total Income</label>
-              <value class="income">BHD \$\{summary?.totalIncome.toFixed(3)}</value>
+              <value class="income">${formatCurrency(summary?.totalIncome)}</value>
             </div>
             <div class="summary-item">
               <label>Total Expense</label>
-              <value class="expense">BHD \$\{summary?.totalExpense.toFixed(3)}</value>
+              <value class="expense">${formatCurrency(summary?.totalExpense)}</value>
             </div>
             <div class="summary-item">
               <label>Net Balance</label>
               <value style="color: ${(summary?.netBalance || 0) >= 0 ? '#16a34a' : '#dc2626'}">
-                BHD \$\{summary?.netBalance.toFixed(3)}
+                ${formatCurrency(summary?.netBalance)}
               </value>
             </div>
           </div>
@@ -227,7 +229,7 @@ export const DayBook = () => {
                   <td><span class="${t.type}">${t.type.toUpperCase()}</span></td>
                   <td>${t.category}</td>
                   <td>${t.description}</td>
-                  <td class="${t.type}">BHD \$\{t.amount.toFixed(3)}</td>
+                  <td class="${t.type}">${formatCurrency(t.amount)}</td>
                   <td>${t.paymentMethod.toUpperCase()}</td>
                   <td>${t.referenceNumber}</td>
                 </tr>
@@ -290,7 +292,7 @@ export const DayBook = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
-                  BHD {summary.totalIncome.toFixed(3)}
+                  {formatCurrency(summary.totalIncome)}
                 </div>
               </CardContent>
             </Card>
@@ -302,7 +304,7 @@ export const DayBook = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-red-600">
-                  BHD {summary.totalExpense.toFixed(3)}
+                  {formatCurrency(summary.totalExpense)}
                 </div>
               </CardContent>
             </Card>
@@ -318,7 +320,7 @@ export const DayBook = () => {
                     summary.netBalance >= 0 ? 'text-green-600' : 'text-red-600'
                   }`}
                 >
-                  BHD {summary.netBalance.toFixed(3)}
+                  {formatCurrency(summary.netBalance)}
                 </div>
               </CardContent>
             </Card>
@@ -433,7 +435,7 @@ export const DayBook = () => {
                               transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
                             }`}
                           >
-                            BHD {transaction.amount.toFixed(3)}
+                            {formatCurrency(transaction.amount)}
                           </TableCell>
                           <TableCell className="capitalize">{transaction.paymentMethod}</TableCell>
                           <TableCell>{transaction.referenceNumber}</TableCell>

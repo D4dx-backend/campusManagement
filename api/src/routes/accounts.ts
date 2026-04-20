@@ -5,6 +5,8 @@ import { ActivityLog } from '../models/ActivityLog';
 import { authenticate, checkPermission } from '../middleware/auth';
 import { AuthenticatedRequest, ApiResponse } from '../types';
 
+import { getOrgBranchFilter, getOrgBranchForCreate } from '../utils/orgFilter';
+
 const router = express.Router();
 
 // Apply authentication to all routes
@@ -20,11 +22,7 @@ router.get('/', checkPermission('accounting', 'read'), async (req: Authenticated
     const filter: any = {};
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    } else if (req.query.branchId) {
-      filter.branchId = req.query.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     if (accountType) filter.accountType = accountType;
     if (isActive) filter.isActive = isActive === 'true';
@@ -92,6 +90,7 @@ router.post('/', checkPermission('accounting', 'create'), async (req: Authentica
       openingBalance,
       currentBalance: openingBalance,
       description,
+      organizationId: req.user!.organizationId,
       branchId: req.user!.branchId,
       createdBy: req.user!._id
     });
@@ -109,6 +108,7 @@ router.post('/', checkPermission('accounting', 'create'), async (req: Authentica
         description: `Opening balance for ${accountName}`,
         balanceBefore: 0,
         balanceAfter: openingBalance,
+        organizationId: req.user!.organizationId,
         branchId: req.user!.branchId,
         createdBy: req.user!._id
       });
@@ -160,8 +160,15 @@ router.get('/:id/transactions', checkPermission('accounting', 'read'), async (re
       return res.status(404).json(response);
     }
 
-    // Check branch access
-    if (req.user!.role !== 'super_admin' && req.user!.branchId?.toString() !== account.branchId?.toString()) {
+    // Check org + branch access
+    if (req.user!.role === 'org_admin' && account.organizationId?.toString() !== req.user!.organizationId?.toString()) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'Access denied to this account'
+      };
+      return res.status(403).json(response);
+    }
+    if (!['platform_admin', 'org_admin'].includes(req.user!.role) && req.user!.branchId?.toString() !== account.branchId?.toString()) {
       const response: ApiResponse = {
         success: false,
         message: 'Access denied to this account'
@@ -243,6 +250,16 @@ router.post('/:id/reconcile', checkPermission('accounting', 'update'), async (re
       return res.status(404).json(response);
     }
 
+    // Check org + branch access
+    if (req.user!.role === 'org_admin' && account.organizationId?.toString() !== req.user!.organizationId?.toString()) {
+      const response: ApiResponse = { success: false, message: 'Access denied to this account' };
+      return res.status(403).json(response);
+    }
+    if (!['platform_admin', 'org_admin'].includes(req.user!.role) && req.user!.branchId?.toString() !== account.branchId?.toString()) {
+      const response: ApiResponse = { success: false, message: 'Access denied to this account' };
+      return res.status(403).json(response);
+    }
+
     // Update transactions
     const result = await AccountTransaction.updateMany(
       {
@@ -299,7 +316,10 @@ router.put('/:id', checkPermission('accounting', 'update'), async (req: Authenti
     delete updateData.currentBalance;
     delete updateData.openingBalance;
 
-    const account = await Account.findByIdAndUpdate(id, updateData, { new: true });
+    const updateFilter: any = { _id: id };
+    Object.assign(updateFilter, getOrgBranchFilter(req));
+
+    const account = await Account.findOneAndUpdate(updateFilter, updateData, { new: true });
 
     if (!account) {
       const response: ApiResponse = {

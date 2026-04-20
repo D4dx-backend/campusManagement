@@ -5,7 +5,8 @@ export interface IIncomeCategory {
   name: string;
   description?: string;
   status: 'active' | 'inactive';
-  branchId: string;
+  organizationId: string;
+  branchId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,15 +29,21 @@ const IncomeCategorySchema = new Schema<IIncomeCategory>({
   branchId: {
     type: Schema.Types.ObjectId as any,
     ref: 'Branch',
+    default: null
+  },
+  organizationId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'Organization',
     required: true
   }
 }, {
   timestamps: true
 });
 
-// Compound index to ensure unique category name per branch
-IncomeCategorySchema.index({ name: 1, branchId: 1 }, { unique: true });
+// Compound index to ensure unique category name per branch (sparse for org-level templates)
+IncomeCategorySchema.index({ name: 1, branchId: 1 }, { unique: true, sparse: true });
 IncomeCategorySchema.index({ branchId: 1 });
+IncomeCategorySchema.index({ organizationId: 1 });
 IncomeCategorySchema.index({ status: 1 });
 
 export const IncomeCategory = mongoose.model<IIncomeCategory>('IncomeCategory', IncomeCategorySchema);

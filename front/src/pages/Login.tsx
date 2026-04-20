@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrgBranding } from '@/contexts/OrgBrandingContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +13,7 @@ const Login = () => {
   const [pin, setPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
+  const { branding } = useOrgBranding();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,12 +33,16 @@ const Login = () => {
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="space-y-4 text-center">
           <div className="mx-auto flex justify-center">
-            <img src="/logoo.png" alt="Friends Academy" className="h-20 w-auto object-contain" />
+            {branding.organizationLogo ? (
+              <img src={branding.organizationLogo} alt={branding.organizationName} className="h-20 w-auto object-contain" />
+            ) : (
+              <img src="/logoo.png" alt={branding.organizationName} className="h-20 w-auto object-contain" />
+            )}
           </div>
           <div>
-            <CardTitle className="text-3xl font-bold">CampusWise</CardTitle>
+            <CardTitle className="text-3xl font-bold">{branding.organizationName}</CardTitle>
             <CardDescription className="text-base mt-2">
-              D4Media Institution Management System
+              {branding.tagline || 'Institution Management System'}
             </CardDescription>
           </div>
         </CardHeader>

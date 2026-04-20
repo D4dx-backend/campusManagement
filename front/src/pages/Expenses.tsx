@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useExpenses, useCreateExpense, useDeleteExpense, useExpenseStats } from '@/hooks/useExpenses';
 import { useExpenseCategories } from '@/hooks/useExpenseCategories';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { useCurrency } from '@/hooks/useCurrency';
 import { formatters } from '@/utils/exportUtils';
 import { ExpenseVoucher } from '@/components/receipt/ExpenseVoucher';
 import html2canvas from 'html2canvas';
@@ -33,6 +34,7 @@ const ExpensesContent = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { confirm, ConfirmationComponent } = useConfirmation();
+  const { currencyCode, currencySymbol, formatCurrency } = useCurrency();
 
   // Debounce search to prevent excessive API calls
   const debounceSearch = useCallback((term: string) => {
@@ -259,7 +261,7 @@ const ExpensesContent = () => {
     { key: 'date', label: 'Date', formatter: formatters.date },
     { key: 'category', label: 'Category', formatter: formatters.capitalize },
     { key: 'description', label: 'Description' },
-    { key: 'amount', label: 'Amount', formatter: formatters.currency },
+    { key: 'amount', label: `Amount (${currencyCode})`, formatter: formatCurrency },
     { key: 'paymentMethod', label: 'Payment Method', formatter: formatters.capitalize },
     { key: 'approvedBy', label: 'Approved By' },
     { key: 'remarks', label: 'Remarks' }
@@ -358,7 +360,7 @@ const ExpensesContent = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="amount">Amount *</Label>
+                  <Label htmlFor="amount">Amount ({currencyCode}) *</Label>
                   <Input
                     id="amount"
                     type="number"
@@ -413,7 +415,7 @@ const ExpensesContent = () => {
               <p className="text-sm font-medium text-muted-foreground">Total Expenses</p>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">BHD {(stats.totalExpenses?.total || 0).toFixed(3)}</div>
+              <div className="text-3xl font-bold">{formatCurrency(stats.totalExpenses?.total || 0)}</div>
               <p className="text-xs text-muted-foreground mt-2">{stats.totalExpenses?.count || 0} transactions</p>
             </CardContent>
           </Card>
@@ -423,7 +425,7 @@ const ExpensesContent = () => {
               <p className="text-sm font-medium text-muted-foreground">This Month</p>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">BHD {(stats.monthlyExpenses?.total || 0).toFixed(3)}</div>
+              <div className="text-3xl font-bold">{formatCurrency(stats.monthlyExpenses?.total || 0)}</div>
               <p className="text-xs text-muted-foreground mt-2">{stats.monthlyExpenses?.count || 0} expenses</p>
             </CardContent>
           </Card>
@@ -433,7 +435,13 @@ const ExpensesContent = () => {
               <p className="text-sm font-medium text-muted-foreground">Average Expense</p>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">BHD {stats.totalExpenses?.count > 0 ? (((stats.totalExpenses?.total || 0) / stats.totalExpenses?.count)).toFixed(3) : '0.000'}</div>
+              <div className="text-3xl font-bold">
+                {formatCurrency(
+                  stats.totalExpenses?.count > 0
+                    ? (stats.totalExpenses?.total || 0) / stats.totalExpenses.count
+                    : 0
+                )}
+              </div>
               <p className="text-xs text-muted-foreground mt-2">per transaction</p>
             </CardContent>
           </Card>
@@ -486,7 +494,9 @@ const ExpensesContent = () => {
                         </div>
                         <div>
                           <span className="text-muted-foreground">Amount:</span>
-                          <span className="ml-2 font-medium text-destructive">BHD {(expense.amount || 0).toFixed(3)}</span>
+                          <span className="ml-2 font-medium text-destructive">
+                            {formatCurrency(expense.amount || 0)}
+                          </span>
                         </div>
                         <div>
                           <span className="text-muted-foreground">Method:</span>
@@ -545,6 +555,8 @@ const ExpensesContent = () => {
             paymentMethod={selectedExpense.paymentMethod}
             approvedBy={selectedExpense.approvedBy}
             remarks={selectedExpense.remarks}
+            currency={currencyCode}
+            currencySymbol={currencySymbol}
           />
         </div>
       )}

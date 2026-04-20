@@ -14,10 +14,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import feeTypeConfigService, { FeeTypeConfig } from '@/services/feeTypeConfigService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBranches } from '@/hooks/useBranches';
+import { ExportButton } from '@/components/ui/export-button';
+import { formatters } from '@/utils/exportUtils';
+import { pageConfigurations } from '@/utils/pageTemplates';
 
 const FeeTypeConfigs = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingType, setEditingType] = useState<FeeTypeConfig | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Page-level branch filter (for listing)
   const [filterBranchId, setFilterBranchId] = useState<string>('all');
@@ -33,7 +37,7 @@ const FeeTypeConfigs = () => {
   const { data: branchesResponse } = useBranches();
   const branches = branchesResponse?.data || [];
 
-  const isSuperAdmin = user?.role === 'super_admin';
+  const isSuperAdmin = (user?.role === 'platform_admin' || user?.role === 'org_admin');
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['feeTypeConfigs', filterBranchId],
@@ -137,6 +141,15 @@ const FeeTypeConfigs = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            <ExportButton
+              data={feeTypes}
+              filename="fee_types"
+              columns={pageConfigurations.feeTypeConfigs.exportColumns.map(col => ({
+                ...col,
+                formatter: col.formatter ? formatters[col.formatter] : undefined
+              }))}
+            />
+
             {/* Page-level filter for super_admin */}
             {isSuperAdmin && branches.length > 0 && (
               <Select value={filterBranchId} onValueChange={setFilterBranchId}>
@@ -262,8 +275,15 @@ const FeeTypeConfigs = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {feeTypes.map((ft) => (
+          <div className="space-y-4">
+            <Input
+              placeholder="Search fee types..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="max-w-sm"
+            />
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {feeTypes.filter(ft => !searchTerm || ft.name.toLowerCase().includes(searchTerm.toLowerCase())).map((ft) => (
               <Card key={ft._id} className={!ft.isActive ? 'opacity-60' : ''}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-3">
@@ -301,6 +321,7 @@ const FeeTypeConfigs = () => {
                 </CardContent>
               </Card>
             ))}
+            </div>
           </div>
         )}
       </div>

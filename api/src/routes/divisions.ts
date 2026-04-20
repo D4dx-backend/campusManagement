@@ -10,6 +10,8 @@ import { validate, validateQuery } from '../middleware/validation';
 import { AuthenticatedRequest, ApiResponse, QueryParams } from '../types';
 import Joi from 'joi';
 
+import { getOrgBranchFilter, getOrgBranchForCreate } from '../utils/orgFilter';
+
 const router = express.Router();
 
 // Apply authentication to all routes
@@ -63,10 +65,8 @@ router.get('/', checkPermission('divisions', 'read'), validateQuery(queryDivisio
     // Build filter object
     const filter: any = {};
 
-    // Branch filter (non-super admins can only see their branch data)
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    // Org + Branch filter
+    Object.assign(filter, getOrgBranchFilter(req));
 
     if (search) {
       filter.$or = [
@@ -165,9 +165,7 @@ router.get('/:id', checkPermission('divisions', 'read'), async (req: Authenticat
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const divisionData = await Division.aggregate([
       { $match: filter },
@@ -241,11 +239,9 @@ router.post('/', checkPermission('divisions', 'create'), validate(createDivision
   try {
     const { classId, name, capacity, classTeacherId } = req.body;
 
-    // Verify class exists and belongs to the same branch (super admin can access any branch)
+    // Verify class exists and belongs to the same org/branch
     const classFilter: any = { _id: classId };
-    if (req.user!.role !== 'super_admin') {
-      classFilter.branchId = req.user!.branchId;
-    }
+    Object.assign(classFilter, getOrgBranchFilter(req));
     const classExists = await Class.findOne(classFilter);
 
     if (!classExists) {
@@ -258,7 +254,7 @@ router.post('/', checkPermission('divisions', 'create'), validate(createDivision
 
     // Check if division name already exists for the same class
     const divisionFilter: any = { classId, name };
-    if (req.user!.role !== 'super_admin') {
+    if (!['platform_admin', 'org_admin'].includes(req.user!.role)) {
       divisionFilter.branchId = req.user!.branchId;
     } else {
       // For super admin, use the class's branchId
@@ -278,7 +274,7 @@ router.post('/', checkPermission('divisions', 'create'), validate(createDivision
     let classTeacherName = '';
     if (classTeacherId) {
       const teacherFilter: any = { _id: classTeacherId };
-      if (req.user!.role !== 'super_admin') {
+      if (!['platform_admin', 'org_admin'].includes(req.user!.role)) {
         teacherFilter.branchId = req.user!.branchId;
       } else {
         // For super admin, use the class's branchId
@@ -304,7 +300,8 @@ router.post('/', checkPermission('divisions', 'create'), validate(createDivision
       capacity,
       classTeacherId: classTeacherId || undefined,
       classTeacherName: classTeacherName || undefined,
-      branchId: req.user!.role !== 'super_admin' ? req.user!.branchId : classExists.branchId
+      branchId: !['platform_admin', 'org_admin'].includes(req.user!.role) ? req.user!.branchId : classExists.branchId,
+      organizationId: req.user!.organizationId || classExists.organizationId
     };
 
     const division = new Division(divisionData);
@@ -319,6 +316,7 @@ router.post('/', checkPermission('divisions', 'create'), validate(createDivision
       module: 'Divisions',
       details: `Created division: ${classExists.name}-${name}`,
       ipAddress: req.ip,
+      organizationId: req.user!.organizationId,
       branchId: division.branchId
     });
 
@@ -347,9 +345,7 @@ router.put('/:id', checkPermission('divisions', 'update'), validate(updateDivisi
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const existingDivision = await Division.findOne(filter);
     if (!existingDivision) {
@@ -442,9 +438,7 @@ router.delete('/:id', checkPermission('divisions', 'delete'), async (req: Authen
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const division = await Division.findOne(filter);
     if (!division) {
@@ -522,10 +516,8 @@ router.get('/class/:classId', checkPermission('divisions', 'read'), async (req: 
     
     const filter: any = { classId: classIdFilter };
 
-    // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    // Org + Branch filter
+    Object.assign(filter, getOrgBranchFilter(req));
 
     let divisions = await Division.find(filter)
       .populate('classTeacherId', 'name designation')
@@ -535,10 +527,7 @@ router.get('/class/:classId', checkPermission('divisions', 'read'), async (req: 
     // If no divisions found by classId, try searching by className as fallback
     if (divisions.length === 0) {
       const fallbackFilter: any = { className: classInfo.name };
-      
-      if (req.user!.role !== 'super_admin') {
-        fallbackFilter.branchId = req.user!.branchId;
-      }
+      Object.assign(fallbackFilter, getOrgBranchFilter(req));
       
       divisions = await Division.find(fallbackFilter)
         .populate('classTeacherId', 'name designation')
@@ -575,123 +564,6 @@ router.get('/class/:classId', checkPermission('divisions', 'read'), async (req: 
     const response: ApiResponse = {
       success: false,
       message: 'Server error retrieving divisions'
-    };
-    res.status(500).json(response);
-  }
-});
-
-// @desc    Debug endpoint - Test specific class divisions
-// @route   GET /api/divisions/debug/class/:classId
-// @access  Private
-router.get('/debug/class/:classId', checkPermission('divisions', 'read'), async (req: AuthenticatedRequest, res) => {
-  try {
-    const classId = req.params.classId;
-    
-    // Convert to ObjectId
-    let classIdFilter;
-    if (mongoose.Types.ObjectId.isValid(classId)) {
-      classIdFilter = new mongoose.Types.ObjectId(classId);
-    } else {
-      classIdFilter = classId;
-    }
-    
-    // Test different queries
-    const allDivisions = await Division.find({});
-    const divisionsByClassId = await Division.find({ classId: classIdFilter });
-    const divisionsByClassIdString = await Division.find({ classId: classId });
-    const userBranch = req.user!.branchId;
-    const divisionsByBranch = await Division.find({ branchId: userBranch });
-    const divisionsByClassAndBranch = await Division.find({ classId: classIdFilter, branchId: userBranch });
-    
-    const response: ApiResponse = {
-      success: true,
-      message: 'Debug class divisions test',
-      data: {
-        requestedClassId: classId,
-        convertedClassId: classIdFilter,
-        userBranchId: userBranch,
-        results: {
-          totalDivisions: allDivisions.length,
-          divisionsByClassId: divisionsByClassId.length,
-          divisionsByClassIdString: divisionsByClassIdString.length,
-          divisionsByBranch: divisionsByBranch.length,
-          divisionsByClassAndBranch: divisionsByClassAndBranch.length
-        },
-        sampleDivisions: allDivisions.slice(0, 3).map(d => ({
-          _id: d._id,
-          classId: d.classId,
-          className: d.className,
-          name: d.name,
-          branchId: d.branchId
-        })),
-        matchingDivisions: divisionsByClassId.map(d => ({
-          _id: d._id,
-          classId: d.classId,
-          className: d.className,
-          name: d.name,
-          branchId: d.branchId
-        }))
-      }
-    };
-
-    res.json(response);
-  } catch (error) {
-    console.error('Debug class endpoint error:', error);
-    const response: ApiResponse = {
-      success: false,
-      message: 'Server error in debug class endpoint'
-    };
-    res.status(500).json(response);
-  }
-});
-
-// @desc    Debug endpoint - Get all divisions with class info
-// @route   GET /api/divisions/debug/all
-// @access  Private
-router.get('/debug/all', checkPermission('divisions', 'read'), async (req: AuthenticatedRequest, res) => {
-  try {
-    const divisions = await Division.find({})
-      .populate('classId', 'name academicYear')
-      .sort({ className: 1, name: 1 });
-
-    const classes = await Class.find({}).sort({ name: 1 });
-
-    // Show detailed mapping
-    const divisionClassMapping = divisions.map(div => ({
-      divisionId: div._id,
-      divisionName: div.name,
-      classId: div.classId,
-      className: div.className,
-      branchId: div.branchId,
-      populatedClass: div.classId
-    }));
-
-    const response: ApiResponse = {
-      success: true,
-      message: 'Debug data retrieved successfully',
-      data: {
-        divisions: divisionClassMapping,
-        classes: classes.map(cls => ({
-          _id: cls._id,
-          name: cls.name,
-          academicYear: cls.academicYear,
-          branchId: cls.branchId
-        })),
-        totalDivisions: divisions.length,
-        totalClasses: classes.length,
-        userInfo: {
-          role: req.user!.role,
-          branchId: req.user!.branchId
-        }
-      }
-    };
-
-    res.json(response);
-  } catch (error) {
-    console.error('Debug endpoint error:', error);
-    const response: ApiResponse = {
-      success: false,
-      message: 'Server error retrieving debug data'
     };
     res.status(500).json(response);
   }

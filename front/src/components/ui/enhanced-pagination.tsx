@@ -57,9 +57,9 @@ export const EnhancedPagination = ({
   if (totalPages <= 1) return null;
 
   return (
-    <div className={`flex items-center justify-between ${className}`}>
-      <div className="flex items-center gap-4">
-        <p className="text-sm text-muted-foreground">
+    <div className={`flex flex-col sm:flex-row items-center justify-between gap-3 ${className}`}>
+      <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+        <p className="text-sm text-muted-foreground whitespace-nowrap">
           Showing {startItem} to {endItem} of {totalItems} results
         </p>
         
@@ -104,6 +104,12 @@ export const EnhancedPagination = ({
           <ChevronLeft className="w-4 h-4" />
         </Button>
 
+        <span className="flex items-center gap-1 sm:hidden">
+          <Button variant="default" size="sm" className="min-w-[40px]">{currentPage}</Button>
+          <span className="text-xs text-muted-foreground">/ {totalPages}</span>
+        </span>
+
+        <span className="hidden sm:flex items-center gap-1">
         {getVisiblePages().map((page, index) => (
           <Button
             key={index}
@@ -116,6 +122,7 @@ export const EnhancedPagination = ({
             {page}
           </Button>
         ))}
+        </span>
 
         <Button
           variant="outline"

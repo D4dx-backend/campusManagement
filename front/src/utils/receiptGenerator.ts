@@ -3,6 +3,10 @@ import jsPDF from 'jspdf';
 import { ReceiptData } from '@/types/receipt';
 
 export const generateReceiptPDF = async (receiptData: ReceiptData): Promise<Blob> => {
+  const lineItems = receiptData.feeItems || [];
+  const effectiveAmount = receiptData.totalAmount ?? receiptData.amount ?? lineItems.reduce((sum, item) => sum + (item.amount || 0), 0);
+  const currencyLabel = receiptData.config.currencySymbol || receiptData.config.currency || 'BHD';
+
   // Create a temporary container for the receipt
   const container = document.createElement('div');
   container.style.position = 'absolute';
@@ -34,6 +38,13 @@ export const generateReceiptPDF = async (receiptData: ReceiptData): Promise<Blob
         </div>
       </div>
 
+      ${receiptData.status === 'cancelled' ? `
+      <div style="margin-bottom: 24px; padding: 14px 16px; border: 1px solid #dc2626; background: #fef2f2; border-radius: 8px; color: #991b1b;">
+        <div style="font-size: 16px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;">Cancelled Receipt</div>
+        <div style="font-size: 13px; margin-top: 6px;">This payment was cancelled${receiptData.cancelledAt ? ` on ${new Date(receiptData.cancelledAt).toLocaleDateString()}` : ''}${receiptData.cancellationReason ? `: ${receiptData.cancellationReason}` : '.'}</div>
+      </div>
+      ` : ''}
+
       <!-- Student Details -->
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; padding: 16px; background: #f9f9f9; border-radius: 8px;">
         <div>
@@ -47,19 +58,38 @@ export const generateReceiptPDF = async (receiptData: ReceiptData): Promise<Blob
         <div>
           <h3 style="font-weight: 600; color: #333; margin: 0 0 12px 0;">Payment Details</h3>
           <div style="font-size: 14px; line-height: 1.6;">
-            <div><span style="color: #666;">Fee Type:</span> <strong style="text-transform: capitalize;">${receiptData.feeType}</strong></div>
+            <div><span style="color: #666;">Fee Type:</span> <strong style="text-transform: capitalize;">${receiptData.feeType || 'Fee Payment'}</strong></div>
             <div><span style="color: #666;">Payment Method:</span> <strong style="text-transform: capitalize;">${receiptData.paymentMethod}</strong></div>
-            <div><span style="color: #666;">Amount:</span> <strong style="color: #16a34a;">BHD ${receiptData.amount.toFixed(3)}</strong></div>
+            <div><span style="color: #666;">Amount:</span> <strong style="color: #16a34a;">${currencyLabel} ${effectiveAmount.toFixed(3)}</strong></div>
           </div>
         </div>
       </div>
+
+      ${lineItems.length > 0 ? `
+      <div style="margin-bottom: 24px; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+        <div style="display: grid; grid-template-columns: 1fr 120px; background: #f3f4f6; padding: 12px 16px; font-size: 13px; font-weight: 600; color: #374151;">
+          <div>Fee Item</div>
+          <div style="text-align: right;">Amount</div>
+        </div>
+        ${lineItems.map((item) => `
+          <div style="display: grid; grid-template-columns: 1fr 120px; padding: 12px 16px; font-size: 14px; border-top: 1px solid #f3f4f6;">
+            <div>${item.title}${item.transportDistanceGroup ? ` <span style=\"color: #6b7280;\">(${item.transportDistanceGroup})</span>` : ''}</div>
+            <div style="text-align: right; font-weight: 600;">${currencyLabel} ${item.amount.toFixed(3)}</div>
+          </div>
+        `).join('')}
+        <div style="display: grid; grid-template-columns: 1fr 120px; padding: 12px 16px; background: #f9fafb; font-size: 14px; font-weight: 700; border-top: 1px solid #e5e7eb;">
+          <div>Total</div>
+          <div style="text-align: right;">${currencyLabel} ${effectiveAmount.toFixed(3)}</div>
+        </div>
+      </div>
+      ` : ''}
 
       <!-- Amount in Words -->
       <div style="margin-bottom: 24px; padding: 16px; border: 1px solid #ccc; border-radius: 8px;">
         <div style="font-size: 14px;">
           <span style="color: #666;">Amount in Words:</span>
           <div style="margin-top: 4px; font-weight: 500; color: #333;">
-            BHD ${receiptData.amount.toLocaleString()} Only
+            ${currencyLabel} ${effectiveAmount.toLocaleString()} Only
           </div>
         </div>
       </div>

@@ -16,7 +16,8 @@ const createUserSchema = Joi.object({
   mobile: Joi.string().pattern(/^[0-9]{10}$/).required(),
   pin: Joi.string().min(4).max(6).required(),
   name: Joi.string().min(2).max(50).required(),
-  role: Joi.string().valid('super_admin', 'branch_admin', 'accountant', 'teacher', 'staff').required(),
+  role: Joi.string().valid('platform_admin', 'org_admin', 'branch_admin', 'accountant', 'teacher', 'staff').required(),
+  organizationId: Joi.string().optional().allow(''),
   branchId: Joi.string().optional().allow(''),
   permissions: Joi.array()
     .items(
@@ -34,7 +35,8 @@ const updateUserSchema = Joi.object({
   mobile: Joi.string().pattern(/^[0-9]{10}$/).optional(),
   pin: Joi.string().min(4).max(6).optional(),
   name: Joi.string().min(2).max(50).optional(),
-  role: Joi.string().valid('super_admin', 'branch_admin', 'accountant', 'teacher', 'staff').optional(),
+  role: Joi.string().valid('platform_admin', 'org_admin', 'branch_admin', 'accountant', 'teacher', 'staff').optional(),
+  organizationId: Joi.string().optional().allow(''),
   branchId: Joi.string().optional().allow(''),
   permissions: Joi.array()
     .items(
@@ -50,7 +52,7 @@ const updateUserSchema = Joi.object({
 // @desc    Get all users
 // @route   GET /api/users
 // @access  Private (Super Admin and Branch Admin)
-router.get('/', authorize('super_admin', 'branch_admin'), async (req: AuthenticatedRequest, res) => {
+router.get('/', authorize('platform_admin', 'org_admin', 'branch_admin'), async (req: AuthenticatedRequest, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
@@ -70,9 +72,19 @@ router.get('/', authorize('super_admin', 'branch_admin'), async (req: Authentica
       ];
     }
 
-    if (req.user!.role !== 'super_admin') {
+    // Organization isolation
+    if (req.user!.role === 'platform_admin') {
+      // Platform admin can see all users, optionally filter by org
+      const orgFilter = req.query.organizationId as string;
+      if (orgFilter) filter.organizationId = orgFilter;
+    } else if (req.user!.role === 'org_admin') {
+      filter.organizationId = req.user!.organizationId;
+    } else {
+      filter.organizationId = req.user!.organizationId;
       filter.branchId = req.user!.branchId;
-    } else if (branchId) {
+    }
+
+    if (req.user!.role !== 'branch_admin' && branchId) {
       if (!Types.ObjectId.isValid(branchId)) {
         const response: ApiResponse = {
           success: false,
@@ -99,6 +111,7 @@ router.get('/', authorize('super_admin', 'branch_admin'), async (req: Authentica
       User.find(filter)
         .select('-pin')
         .populate('branchId', 'name code')
+        .populate('organizationId', 'name code')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -132,11 +145,11 @@ router.get('/', authorize('super_admin', 'branch_admin'), async (req: Authentica
 // @desc    Create user
 // @route   POST /api/users
 // @access  Private (Super Admin and Branch Admin)
-router.post('/', authorize('super_admin', 'branch_admin'), validate(createUserSchema), async (req: AuthenticatedRequest, res) => {
+router.post('/', authorize('platform_admin', 'org_admin', 'branch_admin'), validate(createUserSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const { email, mobile, pin, name, role, branchId, permissions, status } = req.body;
+    const { email, mobile, pin, name, role, branchId, organizationId, permissions, status } = req.body;
 
-    if (req.user!.role === 'branch_admin' && (role === 'super_admin' || role === 'branch_admin')) {
+    if (req.user!.role === 'branch_admin' && ['platform_admin', 'org_admin', 'branch_admin'].includes(role)) {
       const response: ApiResponse = {
         success: false,
         message: 'Branch admins cannot create admin accounts'
@@ -156,21 +169,62 @@ router.post('/', authorize('super_admin', 'branch_admin'), validate(createUserSc
       return res.status(400).json(response);
     }
 
+    // Determine organizationId
+    let assignedOrgId;
+    if (role === 'platform_admin') {
+      assignedOrgId = undefined;
+    } else if (req.user!.role === 'platform_admin') {
+      assignedOrgId = organizationId;
+    } else {
+      assignedOrgId = req.user!.organizationId;
+    }
+
     let assignedBranchId;
-    if (role === 'super_admin') {
+    if (['platform_admin', 'org_admin'].includes(role)) {
       assignedBranchId = undefined;
-    } else if (req.user!.role === 'super_admin') {
+    } else if (['platform_admin', 'org_admin'].includes(req.user!.role)) {
       assignedBranchId = branchId;
     } else {
       assignedBranchId = req.user!.branchId;
     }
 
-    if (role !== 'super_admin' && !assignedBranchId) {
+    if (!['platform_admin', 'org_admin'].includes(role) && !assignedBranchId) {
       const response: ApiResponse = {
         success: false,
-        message: 'Branch ID is required for non-super admin users'
+        message: 'Branch ID is required for branch-level users'
       };
       return res.status(400).json(response);
+    }
+
+    // Auto-grant default permissions based on role
+    let defaultPermissions = permissions || [];
+
+    if (role === 'accountant') {
+      const moduleDefaults = [
+        { module: 'accounting', actions: ['create', 'read', 'update', 'delete'] },
+        { module: 'fees', actions: ['create', 'read', 'update', 'delete'] },
+        { module: 'expenses', actions: ['create', 'read', 'update', 'delete'] },
+        { module: 'reports', actions: ['read'] },
+      ];
+      for (const def of moduleDefaults) {
+        if (!defaultPermissions.some((p: any) => p.module === def.module)) {
+          defaultPermissions.push(def);
+        }
+      }
+    }
+
+    if (role === 'teacher') {
+      const moduleDefaults = [
+        { module: 'classes', actions: ['create', 'read', 'update', 'delete'] },
+        { module: 'students', actions: ['read'] },
+        { module: 'attendance', actions: ['create', 'read', 'update'] },
+        { module: 'timetable', actions: ['read'] },
+      ];
+      for (const def of moduleDefaults) {
+        if (!defaultPermissions.some((p: any) => p.module === def.module)) {
+          defaultPermissions.push(def);
+        }
+      }
     }
 
     const user = new User({
@@ -179,8 +233,9 @@ router.post('/', authorize('super_admin', 'branch_admin'), validate(createUserSc
       pin,
       name,
       role,
+      organizationId: assignedOrgId,
       branchId: assignedBranchId,
-      permissions: permissions || [],
+      permissions: defaultPermissions,
       status: status || 'active'
     });
 
@@ -206,7 +261,7 @@ router.post('/', authorize('super_admin', 'branch_admin'), validate(createUserSc
 // @desc    Update user
 // @route   PUT /api/users/:id
 // @access  Private (Super Admin and Branch Admin)
-router.put('/:id', authorize('super_admin', 'branch_admin'), validate(updateUserSchema), async (req: AuthenticatedRequest, res) => {
+router.put('/:id', authorize('platform_admin', 'org_admin', 'branch_admin'), validate(updateUserSchema), async (req: AuthenticatedRequest, res) => {
   try {
     const userToUpdate = await User.findById(req.params.id).select('+pin');
     if (!userToUpdate) {
@@ -217,7 +272,13 @@ router.put('/:id', authorize('super_admin', 'branch_admin'), validate(updateUser
       return res.status(404).json(response);
     }
 
-    if (req.user!.role !== 'super_admin') {
+    // Org isolation check
+    if (req.user!.role === 'org_admin' && userToUpdate.organizationId?.toString() !== req.user!.organizationId?.toString()) {
+      const response: ApiResponse = { success: false, message: 'Access denied for this user' };
+      return res.status(403).json(response);
+    }
+
+    if (req.user!.role === 'branch_admin') {
       if (!req.user!.branchId || userToUpdate.branchId?.toString() !== req.user!.branchId.toString()) {
         const response: ApiResponse = {
           success: false,
@@ -226,7 +287,7 @@ router.put('/:id', authorize('super_admin', 'branch_admin'), validate(updateUser
         return res.status(403).json(response);
       }
 
-      if (req.body.role && (req.body.role === 'super_admin' || req.body.role === 'branch_admin')) {
+      if (req.body.role && ['platform_admin', 'org_admin', 'branch_admin'].includes(req.body.role)) {
         const response: ApiResponse = {
           success: false,
           message: 'Branch admins cannot assign admin roles'
@@ -274,12 +335,15 @@ router.put('/:id', authorize('super_admin', 'branch_admin'), validate(updateUser
 
     if (req.body.role !== undefined) {
       userToUpdate.role = req.body.role;
-      if (req.body.role === 'super_admin') {
+      if (['platform_admin', 'org_admin'].includes(req.body.role)) {
         userToUpdate.branchId = undefined;
+      }
+      if (req.body.role === 'platform_admin') {
+        userToUpdate.organizationId = undefined;
       }
     }
 
-    if (req.body.branchId && req.user!.role === 'super_admin') {
+    if (req.body.branchId && ['platform_admin', 'org_admin'].includes(req.user!.role)) {
       userToUpdate.branchId = req.body.branchId || undefined;
     }
 
@@ -305,7 +369,7 @@ router.put('/:id', authorize('super_admin', 'branch_admin'), validate(updateUser
 // @desc    Delete user
 // @route   DELETE /api/users/:id
 // @access  Private (Super Admin and Branch Admin)
-router.delete('/:id', authorize('super_admin', 'branch_admin'), async (req: AuthenticatedRequest, res) => {
+router.delete('/:id', authorize('platform_admin', 'org_admin', 'branch_admin'), async (req: AuthenticatedRequest, res) => {
   try {
     const userToDelete = await User.findById(req.params.id);
     if (!userToDelete) {
@@ -316,7 +380,13 @@ router.delete('/:id', authorize('super_admin', 'branch_admin'), async (req: Auth
       return res.status(404).json(response);
     }
 
-    if (req.user!.role !== 'super_admin') {
+    // Org isolation
+    if (req.user!.role === 'org_admin' && userToDelete.organizationId?.toString() !== req.user!.organizationId?.toString()) {
+      const response: ApiResponse = { success: false, message: 'Access denied for this user' };
+      return res.status(403).json(response);
+    }
+
+    if (req.user!.role === 'branch_admin') {
       if (!req.user!.branchId || userToDelete.branchId?.toString() !== req.user!.branchId.toString()) {
         const response: ApiResponse = {
           success: false,
@@ -325,7 +395,7 @@ router.delete('/:id', authorize('super_admin', 'branch_admin'), async (req: Auth
         return res.status(403).json(response);
       }
 
-      if (userToDelete.role === 'super_admin' || userToDelete.role === 'branch_admin') {
+      if (['platform_admin', 'org_admin', 'branch_admin'].includes(userToDelete.role)) {
         const response: ApiResponse = {
           success: false,
           message: 'Branch admins cannot delete admin accounts'
@@ -349,6 +419,41 @@ router.delete('/:id', authorize('super_admin', 'branch_admin'), async (req: Auth
       message: 'Server error deleting user'
     };
     res.status(500).json(response);
+  }
+});
+
+// @desc    Reset user PIN
+// @route   POST /api/users/:id/reset-pin
+// @access  Private (Platform Admin, Org Admin, Branch Admin)
+router.post('/:id/reset-pin', authorize('platform_admin', 'org_admin', 'branch_admin'), async (req: AuthenticatedRequest, res) => {
+  try {
+    const userToReset = await User.findById(req.params.id);
+    if (!userToReset) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Org isolation
+    if (req.user!.role === 'org_admin' && userToReset.organizationId?.toString() !== req.user!.organizationId?.toString()) {
+      return res.status(403).json({ success: false, message: 'Access denied for this user' });
+    }
+    if (req.user!.role === 'branch_admin') {
+      if (!req.user!.branchId || userToReset.branchId?.toString() !== req.user!.branchId.toString()) {
+        return res.status(403).json({ success: false, message: 'Access denied for this user' });
+      }
+      if (['platform_admin', 'org_admin', 'branch_admin'].includes(userToReset.role)) {
+        return res.status(403).json({ success: false, message: 'Branch admins cannot reset admin PINs' });
+      }
+    }
+
+    // Generate random 4-digit PIN
+    const newPin = Math.floor(1000 + Math.random() * 9000).toString();
+    userToReset.pin = newPin;
+    await userToReset.save();
+
+    res.json({ success: true, message: 'PIN reset successfully', data: { pin: newPin } });
+  } catch (error) {
+    console.error('Reset PIN error:', error);
+    res.status(500).json({ success: false, message: 'Server error resetting PIN' });
   }
 });
 

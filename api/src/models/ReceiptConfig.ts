@@ -2,6 +2,11 @@ import mongoose, { Schema } from 'mongoose';
 import { IReceiptConfig } from '../types';
 
 const ReceiptConfigSchema = new Schema<IReceiptConfig>({
+  organizationId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'Organization',
+    required: true
+  },
   branchId: {
     type: Schema.Types.ObjectId as any,
     ref: 'Branch',
@@ -67,6 +72,7 @@ const ReceiptConfigSchema = new Schema<IReceiptConfig>({
 
 // Indexes
 ReceiptConfigSchema.index({ branchId: 1 });
+ReceiptConfigSchema.index({ organizationId: 1 });
 ReceiptConfigSchema.index({ isActive: 1 });
 
 // Ensure only one active config per branch

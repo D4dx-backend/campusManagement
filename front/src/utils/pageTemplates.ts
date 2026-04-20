@@ -290,5 +290,229 @@ export const pageConfigurations = {
       { key: 'lastLogin', label: 'Last Login', formatter: 'date' },
       { key: 'createdAt', label: 'Created Date', formatter: 'date' }
     ]
-  }
+  },
+
+  academicYears: {
+    filters: [
+      {
+        key: 'status',
+        label: 'Status',
+        type: 'select' as const,
+        options: [
+          { value: 'active', label: 'Active' },
+          { value: 'inactive', label: 'Inactive' }
+        ]
+      }
+    ],
+    exportColumns: [
+      { key: 'name', label: 'Academic Year' },
+      { key: 'startDate', label: 'Start Date', formatter: 'date' },
+      { key: 'endDate', label: 'End Date', formatter: 'date' },
+      { key: 'isCurrent', label: 'Current', formatter: 'boolean' },
+      { key: 'status', label: 'Status', formatter: 'capitalize' }
+    ]
+  },
+
+  subjects: {
+    filters: [
+      {
+        key: 'classId',
+        label: 'Class',
+        type: 'select' as const,
+        options: []
+      },
+      {
+        key: 'status',
+        label: 'Status',
+        type: 'select' as const,
+        options: [
+          { value: 'active', label: 'Active' },
+          { value: 'inactive', label: 'Inactive' }
+        ]
+      }
+    ],
+    exportColumns: [
+      { key: 'code', label: 'Subject Code' },
+      { key: 'name', label: 'Subject Name' },
+      { key: 'maxMark', label: 'Max Mark' },
+      { key: 'passMark', label: 'Pass Mark' },
+      { key: 'isOptional', label: 'Optional', formatter: 'boolean' },
+      { key: 'status', label: 'Status', formatter: 'capitalize' }
+    ]
+  },
+
+  exams: {
+    filters: [
+      {
+        key: 'academicYear',
+        label: 'Academic Year',
+        type: 'select' as const,
+        options: []
+      },
+      {
+        key: 'examType',
+        label: 'Exam Type',
+        type: 'select' as const,
+        options: [
+          { value: 'term', label: 'Term Exam' },
+          { value: 'quarterly', label: 'Quarterly Exam' },
+          { value: 'half_yearly', label: 'Half Yearly Exam' },
+          { value: 'annual', label: 'Annual Exam' },
+          { value: 'class_test', label: 'Class Test' },
+          { value: 'other', label: 'Other' }
+        ]
+      },
+      {
+        key: 'status',
+        label: 'Status',
+        type: 'select' as const,
+        options: [
+          { value: 'upcoming', label: 'Upcoming' },
+          { value: 'ongoing', label: 'Ongoing' },
+          { value: 'completed', label: 'Completed' },
+          { value: 'cancelled', label: 'Cancelled' }
+        ]
+      }
+    ],
+    exportColumns: [
+      { key: 'name', label: 'Exam Name' },
+      { key: 'examType', label: 'Exam Type' },
+      { key: 'academicYear', label: 'Academic Year' },
+      { key: 'startDate', label: 'Start Date', formatter: 'date' },
+      { key: 'endDate', label: 'End Date', formatter: 'date' },
+      { key: 'status', label: 'Status', formatter: 'capitalize' }
+    ]
+  },
+
+  leaveRequests: {
+    filters: [
+      {
+        key: 'status',
+        label: 'Status',
+        type: 'select' as const,
+        options: [
+          { value: 'pending', label: 'Pending' },
+          { value: 'approved', label: 'Approved' },
+          { value: 'rejected', label: 'Rejected' }
+        ]
+      },
+      {
+        key: 'classId',
+        label: 'Class',
+        type: 'select' as const,
+        options: []
+      }
+    ],
+    exportColumns: [
+      { key: 'studentName', label: 'Student Name' },
+      { key: 'className', label: 'Class' },
+      { key: 'section', label: 'Section' },
+      { key: 'fromDate', label: 'From Date', formatter: 'date' },
+      { key: 'toDate', label: 'To Date', formatter: 'date' },
+      { key: 'reason', label: 'Reason' },
+      { key: 'status', label: 'Status', formatter: 'capitalize' },
+      { key: 'reviewNote', label: 'Review Note' }
+    ]
+  },
+
+  feeTypeConfigs: {
+    exportColumns: [
+      { key: 'name', label: 'Fee Type Name' },
+      { key: 'isCommon', label: 'Common for All Classes', formatter: 'boolean' },
+      { key: 'isActive', label: 'Active', formatter: 'boolean' }
+    ]
+  },
+
+  feeStructures: {
+    exportColumns: [
+      { key: 'title', label: 'Title' },
+      { key: 'feeTypeName', label: 'Fee Type' },
+      { key: 'isCommon', label: 'Common', formatter: 'boolean' },
+      { key: 'className', label: 'Class' },
+      { key: 'amount', label: 'Amount (BHD)', formatter: 'currency' },
+      { key: 'staffDiscountPercent', label: 'Staff Discount (%)' },
+      { key: 'academicYear', label: 'Academic Year' },
+      { key: 'isActive', label: 'Active', formatter: 'boolean' }
+    ]
+  },
+
+  branches: {
+    filters: [
+      {
+        key: 'status',
+        label: 'Status',
+        type: 'select' as const,
+        options: [
+          { value: 'active', label: 'Active' },
+          { value: 'inactive', label: 'Inactive' }
+        ]
+      }
+    ],
+    exportColumns: [
+      { key: 'name', label: 'Branch Name' },
+      { key: 'code', label: 'Code' },
+      { key: 'address', label: 'Address' },
+      { key: 'phone', label: 'Phone' },
+      { key: 'email', label: 'Email' },
+      { key: 'principalName', label: 'Principal' },
+      { key: 'status', label: 'Status', formatter: 'capitalize' },
+      { key: 'establishedDate', label: 'Established', formatter: 'date' }
+    ]
+  },
+
+  organizations: {
+    filters: [
+      {
+        key: 'status',
+        label: 'Status',
+        type: 'select' as const,
+        options: [
+          { value: 'active', label: 'Active' },
+          { value: 'inactive', label: 'Inactive' }
+        ]
+      }
+    ],
+    exportColumns: [
+      { key: 'name', label: 'Organization Name' },
+      { key: 'code', label: 'Code' },
+      { key: 'phone', label: 'Phone' },
+      { key: 'email', label: 'Email' },
+      { key: 'website', label: 'Website' },
+      { key: 'subscriptionPlan', label: 'Plan' },
+      { key: 'currency', label: 'Currency' },
+      { key: 'maxBranches', label: 'Max Branches' },
+      { key: 'status', label: 'Status', formatter: 'capitalize' }
+    ]
+  },
+
+  domains: {
+    exportColumns: [
+      { key: 'domain', label: 'Domain' },
+      { key: 'domainType', label: 'Type' },
+      { key: 'status', label: 'Status', formatter: 'capitalize' },
+      { key: 'sslStatus', label: 'SSL Status' },
+      { key: 'isPrimary', label: 'Primary', formatter: 'boolean' }
+    ]
+  },
+
+  transportRoutes: {
+    exportColumns: [
+      { key: 'routeCode', label: 'Route Code' },
+      { key: 'routeName', label: 'Route Name' },
+      { key: 'description', label: 'Description' },
+      { key: 'status', label: 'Status', formatter: 'capitalize' }
+    ]
+  },
+
+  activityLogs: {
+    exportColumns: [
+      { key: 'userName', label: 'User' },
+      { key: 'userRole', label: 'Role' },
+      { key: 'action', label: 'Action' },
+      { key: 'module', label: 'Module' },
+      { key: 'details', label: 'Details' },
+      { key: 'ipAddress', label: 'IP Address' },
+      { key: 'timestamp', label: 'Timestamp', formatter: 'date' }
+    ]
+  },
 };

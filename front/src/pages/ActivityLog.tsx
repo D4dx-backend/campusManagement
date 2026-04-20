@@ -3,17 +3,46 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Activity, User, Calendar, Filter, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Activity, User, Calendar, Filter, Loader2, ChevronLeft, ChevronRight, Building2, GitBranch } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useActivityLogs } from '@/hooks/useActivityLogs';
+import { useAuth } from '@/contexts/AuthContext';
+import { useBranches } from '@/hooks/useBranches';
+import { useOrganizations } from '@/hooks/useOrganizations';
+import { ExportButton } from '@/components/ui/export-button';
+import { formatters } from '@/utils/exportUtils';
+import { pageConfigurations } from '@/utils/pageTemplates';
+
+const ROLE_OPTIONS = [
+  { value: 'all', label: 'All Roles' },
+  { value: 'platform_admin', label: 'Platform Admin' },
+  { value: 'org_admin', label: 'Org Admin' },
+  { value: 'branch_admin', label: 'Branch Admin' },
+  { value: 'accountant', label: 'Accountant' },
+  { value: 'teacher', label: 'Teacher' },
+  { value: 'staff', label: 'Staff' },
+];
 
 const ActivityLog = () => {
+  const { user: currentUser } = useAuth();
+  const isPlatformAdmin = currentUser?.role === 'platform_admin';
+  const isOrgAdmin = currentUser?.role === 'org_admin';
+
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterModule, setFilterModule] = useState('all');
   const [filterAction, setFilterAction] = useState('all');
+  const [filterRole, setFilterRole] = useState('all');
+  const [filterOrgId, setFilterOrgId] = useState('all');
+  const [filterBranchId, setFilterBranchId] = useState('all');
+
+  // Fetch orgs for platform_admin, branches for platform_admin/org_admin
+  const { data: orgsData } = useOrganizations(isPlatformAdmin);
+  const { data: branchesData } = useBranches(isPlatformAdmin || isOrgAdmin);
+  const organizations = orgsData?.data || [];
+  const branches = (branchesData?.data || []).filter((b: any) => b.status === 'active');
 
   const { data: response, isLoading, error } = useActivityLogs({
     page: currentPage,
@@ -21,6 +50,9 @@ const ActivityLog = () => {
     search: searchTerm,
     module: filterModule !== 'all' ? filterModule : undefined,
     action: filterAction !== 'all' ? filterAction : undefined,
+    userRole: filterRole !== 'all' ? filterRole : undefined,
+    organizationId: filterOrgId !== 'all' ? filterOrgId : undefined,
+    branchId: filterBranchId !== 'all' ? filterBranchId : undefined,
   });
 
   const activityLogs = response?.data || [];
@@ -61,7 +93,7 @@ const ActivityLog = () => {
 
   const getRoleColor = (role: string) => {
     switch (role.toLowerCase()) {
-      case 'super_admin':
+      case 'platform_admin': case 'org_admin':
         return 'bg-purple-100 text-purple-800';
       case 'branch_admin':
         return 'bg-red-100 text-red-800';
@@ -94,6 +126,14 @@ const ActivityLog = () => {
             <h1 className="text-3xl font-bold">Activity Log</h1>
             <p className="text-muted-foreground mt-1">Monitor system activities and user actions</p>
           </div>
+          <ExportButton
+            data={activityLogs}
+            filename="activity_logs"
+            columns={pageConfigurations.activityLogs.exportColumns.map(col => ({
+              ...col,
+              formatter: col.formatter ? formatters[col.formatter] : undefined
+            }))}
+          />
         </div>
 
         {/* Stats Cards */}
@@ -151,18 +191,64 @@ const ActivityLog = () => {
         {/* Filters */}
         <Card>
           <CardHeader>
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
                   placeholder="Search by user, action, module, or details..."
                   value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
+                  onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                   className="pl-10"
                 />
               </div>
-              <div className="flex gap-2">
-                <Select value={filterModule} onValueChange={setFilterModule}>
+              <div className="flex flex-wrap gap-2">
+                {/* Organization filter — platform_admin only */}
+                {isPlatformAdmin && organizations.length > 0 && (
+                  <Select value={filterOrgId} onValueChange={(v) => { setFilterOrgId(v); setCurrentPage(1); }}>
+                    <SelectTrigger className="w-48">
+                      <Building2 className="w-4 h-4 mr-2" />
+                      <SelectValue placeholder="Organization" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Organizations</SelectItem>
+                      {organizations.map((org: any) => (
+                        <SelectItem key={org._id || org.id} value={org._id || org.id}>{org.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {/* Branch filter — platform_admin & org_admin */}
+                {(isPlatformAdmin || isOrgAdmin) && branches.length > 0 && (
+                  <Select value={filterBranchId} onValueChange={(v) => { setFilterBranchId(v); setCurrentPage(1); }}>
+                    <SelectTrigger className="w-44">
+                      <GitBranch className="w-4 h-4 mr-2" />
+                      <SelectValue placeholder="Branch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Branches</SelectItem>
+                      {branches.map((b: any) => (
+                        <SelectItem key={b._id || b.id} value={b._id || b.id}>{b.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {/* Role filter */}
+                <Select value={filterRole} onValueChange={(v) => { setFilterRole(v); setCurrentPage(1); }}>
+                  <SelectTrigger className="w-40">
+                    <User className="w-4 h-4 mr-2" />
+                    <SelectValue placeholder="Role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ROLE_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Module filter */}
+                <Select value={filterModule} onValueChange={(v) => { setFilterModule(v); setCurrentPage(1); }}>
                   <SelectTrigger className="w-40">
                     <Filter className="w-4 h-4 mr-2" />
                     <SelectValue placeholder="Module" />
@@ -175,7 +261,8 @@ const ActivityLog = () => {
                   </SelectContent>
                 </Select>
                 
-                <Select value={filterAction} onValueChange={setFilterAction}>
+                {/* Action filter */}
+                <Select value={filterAction} onValueChange={(v) => { setFilterAction(v); setCurrentPage(1); }}>
                   <SelectTrigger className="w-40">
                     <Activity className="w-4 h-4 mr-2" />
                     <SelectValue placeholder="Action" />
@@ -233,11 +320,17 @@ const ActivityLog = () => {
                                   <p className="text-sm text-muted-foreground mb-2">
                                     {log.details}
                                   </p>
-                                  {log.ipAddress && (
-                                    <p className="text-xs text-muted-foreground">
-                                      IP: {log.ipAddress}
-                                    </p>
-                                  )}
+                                  <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                                    {log.organizationId?.name && (
+                                      <span>Org: <strong>{log.organizationId.name}</strong></span>
+                                    )}
+                                    {log.branchId?.name && (
+                                      <span>Branch: <strong>{log.branchId.name}</strong></span>
+                                    )}
+                                    {log.ipAddress && (
+                                      <span>IP: {log.ipAddress}</span>
+                                    )}
+                                  </div>
                                 </div>
                                 <div className="text-right text-sm text-muted-foreground ml-4">
                                   <div className="flex items-center gap-1">

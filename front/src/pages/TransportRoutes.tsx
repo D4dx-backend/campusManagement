@@ -20,6 +20,8 @@ import { Vehicle } from '@/services/transportRouteService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { formatters } from '@/utils/exportUtils';
+import { pageConfigurations } from '@/utils/pageTemplates';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBranches } from '@/hooks/useBranches';
 
@@ -33,7 +35,7 @@ const TransportRoutes = () => {
   const { toast } = useToast();
   const { confirm, ConfirmationComponent } = useConfirmation();
   const { user } = useAuth();
-  const isSuperAdmin = user?.role === 'super_admin';
+  const isSuperAdmin = (user?.role === 'platform_admin' || user?.role === 'org_admin');
 
   const { data: branchesResponse } = useBranches();
   const branches = branchesResponse?.data || [];
@@ -515,6 +517,13 @@ const TransportRoutes = () => {
           searchPlaceholder="Search by route name or code..."
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
+          exportConfig={{
+            filename: 'transport_routes',
+            columns: pageConfigurations.transportRoutes.exportColumns.map(col => ({
+              ...col,
+              formatter: col.formatter ? formatters[col.formatter] : undefined
+            }))
+          }}
           pagination={{
             currentPage,
             totalPages: pagination?.pages || 1,

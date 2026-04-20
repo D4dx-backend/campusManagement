@@ -80,10 +80,10 @@ export const createStudentSchema = Joi.object({
     .trim(),
   isStaffChild: Joi.boolean().optional().default(false),
   status: Joi.string()
-    .valid('active', 'inactive')
+    .valid('active', 'inactive', 'suspended', 'tc_issued')
     .default('active')
     .messages({
-      'any.only': 'Status must be either active or inactive'
+      'any.only': 'Status must be one of: active, inactive, suspended, tc_issued'
     })
 });
 
@@ -150,22 +150,22 @@ export const updateStudentSchema = Joi.object({
     .trim(),
   isStaffChild: Joi.boolean().optional(),
   status: Joi.string()
-    .valid('active', 'inactive')
+    .valid('active', 'inactive', 'suspended', 'tc_issued')
     .optional()
     .messages({
-      'any.only': 'Status must be either active or inactive'
+      'any.only': 'Status must be one of: active, inactive, suspended, tc_issued'
     })
 });
 
 export const queryStudentsSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(10),
+  limit: Joi.number().integer().min(1).max(500).default(10),
   search: Joi.string().optional().allow(''),
   branchId: Joi.string().optional().allow(''),
   class: Joi.string().optional().allow(''),
   classId: Joi.string().optional().allow(''),
   section: Joi.string().optional().allow(''),
-  status: Joi.string().valid('active', 'inactive').optional(),
+  status: Joi.string().valid('active', 'inactive', 'suspended', 'tc_issued').optional(),
   transport: Joi.string().valid('school', 'own', 'none').optional(),
   gender: Joi.string().valid('male', 'female').optional(),
   sortBy: Joi.string().valid('name', 'admissionNo', 'class', 'createdAt').default('createdAt'),

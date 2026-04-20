@@ -9,6 +9,8 @@ import {
 } from '../validations/transportRoute';
 import { AuthenticatedRequest, ApiResponse } from '../types';
 
+import { getOrgBranchFilter, getOrgBranchForCreate } from '../utils/orgFilter';
+
 const router = Router();
 
 // Apply authentication to all routes
@@ -24,12 +26,8 @@ router.get('/', checkPermission('classes', 'read'), validateQuery(queryTransport
     // Build query
     const query: any = {};
     
-    // Branch filter - super_admin sees all (or filtered by branchId param), others see only their branch
-    if (req.user!.role !== 'super_admin') {
-      query.branchId = req.user!.branchId;
-    } else if (branchId) {
-      query.branchId = branchId;
-    }
+    // Branch filter - with org isolation
+    Object.assign(query, getOrgBranchFilter(req));
 
     // Status filter
     if (status) {
@@ -86,9 +84,7 @@ router.get('/:id', checkPermission('classes', 'read'), async (req: Authenticated
     const filter: any = { _id: req.params.id };
     
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const route = await TransportRoute.findOne(filter);
 
@@ -124,7 +120,7 @@ router.post('/', checkPermission('classes', 'create'), validate(createTransportR
   try {
     const { routeName, routeCode, description, classFees, useDistanceGroups, vehicles, status, branchId: bodyBranchId } = req.body;
 
-    const resolvedBranchId = req.user!.role === 'super_admin' ? bodyBranchId : req.user!.branchId;
+    const resolvedBranchId = ['platform_admin', 'org_admin'].includes(req.user!.role) ? bodyBranchId : req.user!.branchId;
 
     if (!resolvedBranchId) {
       const response: ApiResponse = {
@@ -148,6 +144,7 @@ router.post('/', checkPermission('classes', 'create'), validate(createTransportR
       return res.status(400).json(response);
     }
 
+    const orgBranch = getOrgBranchForCreate(req);
     const route = new TransportRoute({
       routeName,
       routeCode: routeCode.toUpperCase(),
@@ -156,6 +153,7 @@ router.post('/', checkPermission('classes', 'create'), validate(createTransportR
       useDistanceGroups: useDistanceGroups || false,
       vehicles: vehicles || [],
       status,
+      organizationId: orgBranch.organizationId,
       branchId: resolvedBranchId
     });
 
@@ -185,14 +183,12 @@ router.put('/:id', checkPermission('classes', 'update'), validate(updateTranspor
   try {
     const filter: any = { _id: req.params.id };
     
-    // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    // Organization & Branch filter
+    Object.assign(filter, getOrgBranchFilter(req));
 
     // If route code is being updated, check for duplicates
     if (req.body.routeCode) {
-      const dupBranchId = req.user!.role === 'super_admin' ? req.body.branchId : req.user!.branchId;
+      const dupBranchId = ['platform_admin', 'org_admin'].includes(req.user!.role) ? req.body.branchId : req.user!.branchId;
       const existingRoute = await TransportRoute.findOne({
         routeCode: req.body.routeCode.toUpperCase(),
         branchId: dupBranchId,
@@ -249,9 +245,7 @@ router.delete('/:id', checkPermission('classes', 'delete'), async (req: Authenti
     const filter: any = { _id: req.params.id };
     
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const route = await TransportRoute.findOneAndDelete(filter);
 

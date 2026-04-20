@@ -1,7 +1,9 @@
 import express from 'express';
 import { Branch } from '../models/Branch';
+import { Organization } from '../models/Organization';
 import { authenticate, authorize } from '../middleware/auth';
 import { AuthenticatedRequest, ApiResponse } from '../types';
+import { resolveSettings } from '../utils/resolveSettings';
 
 const router = express.Router();
 
@@ -11,7 +13,7 @@ router.use(authenticate);
 // @desc    Get all branches
 // @route   GET /api/branches
 // @access  Private (Super Admin only)
-router.get('/', authorize('super_admin'), async (req: AuthenticatedRequest, res) => {
+router.get('/', authorize('platform_admin', 'org_admin'), async (req: AuthenticatedRequest, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
@@ -21,6 +23,13 @@ router.get('/', authorize('super_admin'), async (req: AuthenticatedRequest, res)
     // Build filter
     const filter: any = {};
     
+    // Organization isolation
+    if (req.user!.role === 'org_admin') {
+      filter.organizationId = req.user!.organizationId;
+    } else if (req.query.organizationId) {
+      filter.organizationId = req.query.organizationId;
+    }
+
     if (search) {
       filter.$or = [
         { name: { $regex: search, $options: 'i' } },
@@ -74,9 +83,23 @@ router.get('/', authorize('super_admin'), async (req: AuthenticatedRequest, res)
 // @desc    Create branch
 // @route   POST /api/branches
 // @access  Private (Super Admin only)
-router.post('/', authorize('super_admin'), async (req: AuthenticatedRequest, res) => {
+router.post('/', authorize('platform_admin', 'org_admin'), async (req: AuthenticatedRequest, res) => {
   try {
-    const { name, code, address, phone, email, principalName, establishedDate, status } = req.body;
+    const { name, code, address, phone, email, principalName, establishedDate, status, organizationId,
+      logo, website, taxId, taxLabel, currency, currencySymbol, country, state, city, pincode,
+      registrationNumber, footerText } = req.body;
+
+    // Determine organizationId
+    let assignedOrgId;
+    if (req.user!.role === 'platform_admin') {
+      assignedOrgId = organizationId;
+      if (!assignedOrgId) {
+        const response: ApiResponse = { success: false, message: 'Organization ID is required' };
+        return res.status(400).json(response);
+      }
+    } else {
+      assignedOrgId = req.user!.organizationId;
+    }
 
     // Validate required fields
     if (!name || !code || !address || !phone || !email || !establishedDate) {
@@ -87,8 +110,8 @@ router.post('/', authorize('super_admin'), async (req: AuthenticatedRequest, res
       return res.status(400).json(response);
     }
 
-    // Check if branch code already exists
-    const existingBranch = await Branch.findOne({ code: code.toUpperCase() });
+    // Check if branch code already exists within organization
+    const existingBranch = await Branch.findOne({ code: code.toUpperCase(), organizationId: assignedOrgId });
     if (existingBranch) {
       const response: ApiResponse = {
         success: false,
@@ -97,8 +120,8 @@ router.post('/', authorize('super_admin'), async (req: AuthenticatedRequest, res
       return res.status(400).json(response);
     }
 
-    // Check if email already exists
-    const existingEmail = await Branch.findOne({ email: email.toLowerCase() });
+    // Check if email already exists within organization
+    const existingEmail = await Branch.findOne({ email: email.toLowerCase(), organizationId: assignedOrgId });
     if (existingEmail) {
       const response: ApiResponse = {
         success: false,
@@ -115,7 +138,10 @@ router.post('/', authorize('super_admin'), async (req: AuthenticatedRequest, res
       email: email.toLowerCase(),
       principalName,
       establishedDate,
+      organizationId: assignedOrgId,
       status: status || 'active',
+      logo, website, taxId, taxLabel, currency, currencySymbol, country, state, city, pincode,
+      registrationNumber, footerText,
       createdBy: req.user!._id
     });
 
@@ -162,7 +188,7 @@ router.post('/', authorize('super_admin'), async (req: AuthenticatedRequest, res
 // @desc    Get single branch
 // @route   GET /api/branches/:id
 // @access  Private (Super Admin only)
-router.get('/:id', authorize('super_admin'), async (req: AuthenticatedRequest, res) => {
+router.get('/:id', authorize('platform_admin', 'org_admin'), async (req: AuthenticatedRequest, res) => {
   try {
     const branch = await Branch.findById(req.params.id)
       .populate('createdBy', 'name email')
@@ -174,6 +200,15 @@ router.get('/:id', authorize('super_admin'), async (req: AuthenticatedRequest, r
         message: 'Branch not found'
       };
       return res.status(404).json(response);
+    }
+
+    // Org isolation: org_admin can only see own org's branches
+    if (req.user!.role === 'org_admin' && branch.organizationId?.toString() !== req.user!.organizationId?.toString()) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'Access denied to this branch'
+      };
+      return res.status(403).json(response);
     }
 
     const response: ApiResponse = {
@@ -196,7 +231,7 @@ router.get('/:id', authorize('super_admin'), async (req: AuthenticatedRequest, r
 // @desc    Update branch
 // @route   PUT /api/branches/:id
 // @access  Private (Super Admin only)
-router.put('/:id', authorize('super_admin'), async (req: AuthenticatedRequest, res) => {
+router.put('/:id', authorize('platform_admin', 'org_admin'), async (req: AuthenticatedRequest, res) => {
   try {
     const branch = await Branch.findById(req.params.id);
     
@@ -206,6 +241,15 @@ router.put('/:id', authorize('super_admin'), async (req: AuthenticatedRequest, r
         message: 'Branch not found'
       };
       return res.status(404).json(response);
+    }
+
+    // Org isolation: org_admin can only update own org's branches
+    if (req.user!.role === 'org_admin' && branch.organizationId?.toString() !== req.user!.organizationId?.toString()) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'Access denied to this branch'
+      };
+      return res.status(403).json(response);
     }
 
     // Check if code is being updated and if it already exists
@@ -287,7 +331,7 @@ router.put('/:id', authorize('super_admin'), async (req: AuthenticatedRequest, r
 // @desc    Delete branch
 // @route   DELETE /api/branches/:id
 // @access  Private (Super Admin only)
-router.delete('/:id', authorize('super_admin'), async (req: AuthenticatedRequest, res) => {
+router.delete('/:id', authorize('platform_admin', 'org_admin'), async (req: AuthenticatedRequest, res) => {
   try {
     const branch = await Branch.findById(req.params.id);
     
@@ -314,6 +358,31 @@ router.delete('/:id', authorize('super_admin'), async (req: AuthenticatedRequest
       message: 'Server error deleting branch'
     };
     res.status(500).json(response);
+  }
+});
+
+// @desc    Get resolved settings for a branch (branch overrides + org defaults merged)
+// @route   GET /api/branches/:id/settings
+// @access  Private
+router.get('/:id/settings', async (req: AuthenticatedRequest, res) => {
+  try {
+    const branch = await Branch.findById(req.params.id).lean();
+    if (!branch) {
+      return res.status(404).json({ success: false, message: 'Branch not found' });
+    }
+
+    // Org isolation
+    if (req.user!.role === 'org_admin' && branch.organizationId?.toString() !== req.user!.organizationId?.toString()) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    const org = await Organization.findById(branch.organizationId).lean();
+    const settings = resolveSettings(org, branch);
+
+    res.json({ success: true, data: settings });
+  } catch (error) {
+    console.error('Get branch settings error:', error);
+    res.status(500).json({ success: false, message: 'Server error retrieving settings' });
   }
 });
 

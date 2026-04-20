@@ -40,7 +40,7 @@ export const userHasModulePermission = (
 ): boolean => {
   if (!moduleName) return true;
   if (!user) return false;
-  if (user.role === 'super_admin' || user.role === 'branch_admin') return true;
+  if (user.role === 'platform_admin' || user.role === 'org_admin' || user.role === 'branch_admin') return true;
   const targetModule = normalizeModule(moduleName);
   return (user.permissions || []).some((permission: Permission) => {
     return normalizeModule(permission.module) === targetModule && permission.actions?.includes(action);

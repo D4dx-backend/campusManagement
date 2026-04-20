@@ -57,6 +57,11 @@ const TextBookSchema = new Schema<ITextBook>({
     type: Schema.Types.ObjectId as any,
     ref: 'Branch',
     required: true
+  },
+  organizationId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'Organization',
+    required: true
   }
 }, {
   timestamps: true
@@ -64,6 +69,7 @@ const TextBookSchema = new Schema<ITextBook>({
 
 // Indexes
 TextBookSchema.index({ branchId: 1 });
+TextBookSchema.index({ organizationId: 1 });
 TextBookSchema.index({ classId: 1 });
 TextBookSchema.index({ class: 1 });
 TextBookSchema.index({ subject: 1 });

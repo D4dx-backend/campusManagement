@@ -1,6 +1,23 @@
 import { Request } from 'express';
 
-export type UserRole = 'super_admin' | 'branch_admin' | 'accountant' | 'teacher' | 'staff';
+export type UserRole = 'platform_admin' | 'org_admin' | 'branch_admin' | 'accountant' | 'teacher' | 'staff' | 'student';
+
+export interface IOrganization {
+  _id: string;
+  name: string;
+  code: string;
+  address: string;
+  phone: string;
+  email: string;
+  website?: string;
+  logo?: string;
+  status: 'active' | 'inactive';
+  subscriptionPlan?: string;
+  maxBranches?: number;
+  createdBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export interface IUser {
   _id: string;
@@ -9,8 +26,10 @@ export interface IUser {
   pin: string;
   name: string;
   role: UserRole;
+  organizationId?: string;
   branchId?: string;
   permissions: IPermission[];
+  studentId?: string;
   status: 'active' | 'inactive';
   createdAt: Date;
   lastLogin?: Date;
@@ -26,7 +45,22 @@ export interface IBranch {
   email: string;
   principalName?: string;
   establishedDate: Date;
+  organizationId: string;
   status: 'active' | 'inactive';
+  // Override fields (if set, override the org-level defaults)
+  logo?: string;
+  website?: string;
+  taxId?: string;
+  taxLabel?: string;
+  currency?: string;
+  currencySymbol?: string;
+  country?: string;
+  state?: string;
+  city?: string;
+  pincode?: string;
+  registrationNumber?: string;
+  footerText?: string;
+  enabledFeatures?: string[];
   createdAt: Date;
   createdBy: string;
 }
@@ -61,8 +95,18 @@ export interface IStudent {
   address: string;
   transport: 'school' | 'own' | 'none';
   transportRoute?: string;
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'suspended' | 'tc_issued';
+  // TC fields
+  tcIssued?: boolean;
+  tcNumber?: string;
+  tcDate?: Date;
+  tcReason?: string;
+  // Suspension fields
+  suspensionDate?: Date;
+  suspensionReason?: string;
+  suspensionEndDate?: Date;
   isStaffChild?: boolean;
+  organizationId: string;
   branchId: string;
   createdAt: Date;
 }
@@ -72,6 +116,7 @@ export interface IExpenseCategory {
   name: string;
   description?: string;
   status: 'active' | 'inactive';
+  organizationId: string;
   branchId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -82,6 +127,7 @@ export interface IIncomeCategory {
   name: string;
   description?: string;
   status: 'active' | 'inactive';
+  organizationId: string;
   branchId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -108,8 +154,17 @@ export interface ITransportRoute {
     vehicleNumber: string;
     driverName: string;
     driverPhone: string;
+    driverLicenseNo?: string;
+    driverHistory?: Array<{
+      driverName: string;
+      driverPhone: string;
+      fromDate: Date;
+      toDate: Date;
+      reason?: string;
+    }>;
   }>;
   status: 'active' | 'inactive';
+  organizationId: string;
   branchId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -120,6 +175,7 @@ export interface IDesignation {
   name: string;
   description?: string;
   status: 'active' | 'inactive';
+  organizationId: string;
   branchId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -129,6 +185,7 @@ export interface IStaff {
   _id: string;
   employeeId: string;
   name: string;
+  category: string;
   designation: string;
   department: string;
   dateOfJoining: Date;
@@ -136,7 +193,20 @@ export interface IStaff {
   email: string;
   address: string;
   salary: number;
-  status: 'active' | 'inactive';
+  salaryHistory: Array<{
+    previousSalary: number;
+    newSalary: number;
+    effectiveDate: Date;
+    reason: string;
+    incrementedBy?: string;
+    createdAt: Date;
+  }>;
+  status: 'active' | 'inactive' | 'terminated' | 'resigned';
+  separationDate?: Date;
+  separationReason?: string;
+  lastWorkingDate?: Date;
+  separationType?: 'terminated' | 'resigned';
+  organizationId: string;
   branchId: string;
   createdAt: Date;
 }
@@ -146,6 +216,7 @@ export interface IFeeTypeConfig {
   name: string;
   isCommon: boolean;
   isActive: boolean;
+  organizationId: string;
   branchId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -162,6 +233,7 @@ export interface IFeeStructure {
   classId?: string;
   amount: number;
   academicYear: string;
+  organizationId: string;
   branchId: string;
   isActive?: boolean;
   staffDiscountPercent?: number;
@@ -191,11 +263,40 @@ export interface IFeePayment {
   totalAmount?: number;
   paymentDate: Date;
   paymentMethod: 'cash' | 'bank' | 'online';
-  status: 'paid' | 'partial' | 'pending';
+  status: 'paid' | 'partial' | 'pending' | 'cancelled';
   remarks?: string;
+  organizationId: string;
   branchId: string;
   createdBy: string;
   createdAt: Date;
+  academicYear?: string;
+  feeMonth?: string;
+  editHistory?: Array<{
+    editedAt: Date;
+    editedBy: string;
+    editedByName: string;
+    reason: string;
+    previousValues: {
+      paymentMethod?: string;
+      paymentDate?: Date;
+      remarks?: string;
+      academicYear?: string;
+      feeMonth?: string;
+    };
+    newValues: {
+      paymentMethod?: string;
+      paymentDate?: Date;
+      remarks?: string;
+      academicYear?: string;
+      feeMonth?: string;
+    };
+  }>;
+  cancellation?: {
+    cancelledAt: Date;
+    cancelledBy: string;
+    cancelledByName: string;
+    reason: string;
+  };
 }
 
 export interface IPayrollEntry {
@@ -211,6 +312,7 @@ export interface IPayrollEntry {
   paymentDate: Date;
   paymentMethod: 'cash' | 'bank';
   status: 'paid' | 'pending';
+  organizationId: string;
   branchId: string;
   createdAt: Date;
 }
@@ -227,6 +329,7 @@ export interface IExpense {
   paymentMethod: 'cash' | 'bank';
   approvedBy: string;
   remarks?: string;
+  organizationId: string;
   branchId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -244,6 +347,7 @@ export interface ITextBook {
   quantity: number;
   available: number;
   academicYear: string;
+  organizationId: string;
   branchId: string;
   createdAt: Date;
 }
@@ -287,6 +391,7 @@ export interface ITextbookIndent {
   issuedByName: string;
   remarks?: string;
   receiptGenerated: boolean;
+  organizationId: string;
   branchId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -301,6 +406,7 @@ export interface IBookIssue {
   issueDate: Date;
   returnDate?: Date;
   status: 'issued' | 'returned';
+  organizationId: string;
   branchId: string;
   createdAt: Date;
 }
@@ -311,6 +417,7 @@ export interface IClass {
   description?: string;
   academicYear: string;
   status: 'active' | 'inactive';
+  organizationId: string;
   branchId: string;
   createdAt: Date;
 }
@@ -324,6 +431,7 @@ export interface IDivision {
   classTeacherId?: string;
   classTeacherName?: string;
   status: 'active' | 'inactive';
+  organizationId: string;
   branchId: string;
   createdAt: Date;
 }
@@ -334,6 +442,7 @@ export interface IExpenseCategory {
   description?: string;
   code: string;
   status: 'active' | 'inactive';
+  organizationId: string;
   branchId: string;
   createdAt: Date;
 }
@@ -344,6 +453,7 @@ export interface IIncomeCategory {
   description?: string;
   code: string;
   status: 'active' | 'inactive';
+  organizationId: string;
   branchId: string;
   createdAt: Date;
 }
@@ -355,12 +465,14 @@ export interface IDepartment {
   code: string;
   headOfDepartment?: string;
   status: 'active' | 'inactive';
-  branchId: string;
+  organizationId: string;
+  branchId?: string | null;
   createdAt: Date;
 }
 
 export interface IReceiptConfig {
   _id: string;
+  organizationId: string;
   branchId: string;
   branchName: string;
   schoolName: string;
@@ -388,7 +500,83 @@ export interface IActivityLog {
   details: string;
   timestamp: Date;
   ipAddress?: string;
+  organizationId?: string;
   branchId?: string;
+}
+
+export interface IAcademicYear {
+  _id: string;
+  name: string;
+  startDate: Date;
+  endDate: Date;
+  isCurrent: boolean;
+  status: 'active' | 'inactive';
+  organizationId: string;
+  branchId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ISubject {
+  _id: string;
+  name: string;
+  code: string;
+  classIds: string[];
+  maxMark: number;
+  passMark: number;
+  isOptional: boolean;
+  status: 'active' | 'inactive';
+  organizationId: string;
+  branchId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IExam {
+  _id: string;
+  name: string;
+  academicYear: string;
+  examType: 'term' | 'quarterly' | 'half_yearly' | 'annual' | 'class_test' | 'other';
+  startDate?: Date;
+  endDate?: Date;
+  status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
+  organizationId: string;
+  branchId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IMarkEntry {
+  studentId: string;
+  studentName: string;
+  admissionNo: string;
+  mark: number | null;
+  grade: string;
+  remarks?: string;
+}
+
+export interface IMarkSheet {
+  _id: string;
+  examId: string;
+  examName: string;
+  subjectId: string;
+  subjectName: string;
+  classId: string;
+  className: string;
+  divisionId?: string;
+  divisionName?: string;
+  academicYear: string;
+  maxMark: number;
+  passMark: number;
+  examDate?: Date;
+  entries: IMarkEntry[];
+  isFinalized: boolean;
+  organizationId: string;
+  branchId: string;
+  createdBy: string;
+  updatedBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // Express Request with authenticated user
@@ -451,4 +639,15 @@ export interface QueryParams {
   // Textbooks
   subject?: string;
   availability?: string;
+  // Exams & Marks
+  examId?: string;
+  subjectId?: string;
+  divisionId?: string;
+  examType?: string;
+  // Timetable
+  academicYearId?: string;
+  configId?: string;
+  // LMS
+  chapterId?: string;
+  contentType?: string;
 }

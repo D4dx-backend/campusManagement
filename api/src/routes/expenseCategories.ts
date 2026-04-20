@@ -6,6 +6,8 @@ import { validate, validateQuery } from '../middleware/validation';
 import { AuthenticatedRequest, ApiResponse, QueryParams } from '../types';
 import Joi from 'joi';
 
+import { getOrgBranchFilter, getOrgBranchForCreate } from '../utils/orgFilter';
+
 const router = express.Router();
 
 // Apply authentication to all routes
@@ -50,10 +52,8 @@ router.get('/', checkPermission('expenses', 'read'), validateQuery(queryExpenseC
     // Build filter object
     const filter: any = {};
 
-    // Branch filter (non-super admins can only see their branch data)
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    // Org + Branch filter
+    Object.assign(filter, getOrgBranchFilter(req));
 
     if (search) {
       filter.$or = [
@@ -106,16 +106,12 @@ router.get('/', checkPermission('expenses', 'read'), validateQuery(queryExpenseC
 // @access  Private
 router.post('/', checkPermission('expenses', 'create'), validate(createExpenseCategorySchema), async (req: AuthenticatedRequest, res) => {
   try {
-    // Get the appropriate branchId
-    const { getRequiredBranchId } = require('../utils/branchHelper');
-    let branchId;
-    
-    try {
-      branchId = await getRequiredBranchId(req, req.body.branchId);
-    } catch (error) {
+    const orgBranch = getOrgBranchForCreate(req);
+
+    if (!orgBranch.branchId) {
       const response: ApiResponse = {
         success: false,
-        message: error.message || 'Branch information is required for expense category creation'
+        message: 'Branch information is required for expense category creation'
       };
       return res.status(400).json(response);
     }
@@ -123,7 +119,8 @@ router.post('/', checkPermission('expenses', 'create'), validate(createExpenseCa
     // Check if category name already exists for the same branch
     const existingCategory = await ExpenseCategory.findOne({
       name: req.body.name,
-      branchId: branchId
+      organizationId: orgBranch.organizationId,
+      branchId: orgBranch.branchId
     });
 
     if (existingCategory) {
@@ -137,7 +134,8 @@ router.post('/', checkPermission('expenses', 'create'), validate(createExpenseCa
     // Create category with branch ID
     const categoryData = {
       ...req.body,
-      branchId: branchId
+      organizationId: orgBranch.organizationId,
+      branchId: orgBranch.branchId
     };
 
     const newCategory = new ExpenseCategory(categoryData);
@@ -186,9 +184,7 @@ router.put('/:id', checkPermission('expenses', 'update'), validate(updateExpense
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const updatedCategory = await ExpenseCategory.findOneAndUpdate(
       filter,
@@ -241,9 +237,7 @@ router.delete('/:id', checkPermission('expenses', 'delete'), async (req: Authent
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const deletedCategory = await ExpenseCategory.findOneAndDelete(filter);
 

@@ -12,6 +12,7 @@ export interface IFeeStructure extends Document {
   transportDistanceGroup?: 'group1' | 'group2' | 'group3' | 'group4';
   distanceRange?: string;
   isActive: boolean;
+  organizationId: mongoose.Types.ObjectId;
   branchId: mongoose.Types.ObjectId;
   academicYear: string;
   createdAt: Date;
@@ -74,6 +75,11 @@ const FeeStructureSchema = new Schema<IFeeStructure>({
     ref: 'Branch',
     required: true
   },
+  organizationId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'Organization',
+    required: true
+  },
   academicYear: {
     type: String,
     required: true,
@@ -84,6 +90,7 @@ const FeeStructureSchema = new Schema<IFeeStructure>({
 });
 
 FeeStructureSchema.index({ branchId: 1, academicYear: 1 });
+FeeStructureSchema.index({ organizationId: 1 });
 FeeStructureSchema.index({ classId: 1, feeTypeId: 1 });
 FeeStructureSchema.index({ isActive: 1 });
 FeeStructureSchema.index({ isCommon: 1 });

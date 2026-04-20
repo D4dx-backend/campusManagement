@@ -9,6 +9,8 @@ export interface ActivityLogFilters {
   action?: string;
   userId?: string;
   userRole?: string;
+  organizationId?: string;
+  branchId?: string;
   startDate?: string;
   endDate?: string;
   sortBy?: 'timestamp' | 'userName' | 'module' | 'action';
@@ -27,7 +29,9 @@ export const useActivityLogs = (filters: ActivityLogFilters = {}) => {
       if (filters.module && filters.module !== 'all') params.append('module', filters.module);
       if (filters.action && filters.action !== 'all') params.append('action', filters.action);
       if (filters.userId) params.append('userId', filters.userId);
-      if (filters.userRole) params.append('userRole', filters.userRole);
+      if (filters.userRole && filters.userRole !== 'all') params.append('userRole', filters.userRole);
+      if (filters.organizationId && filters.organizationId !== 'all') params.append('organizationId', filters.organizationId);
+      if (filters.branchId && filters.branchId !== 'all') params.append('branchId', filters.branchId);
       if (filters.startDate) params.append('startDate', filters.startDate);
       if (filters.endDate) params.append('endDate', filters.endDate);
       if (filters.sortBy) params.append('sortBy', filters.sortBy);

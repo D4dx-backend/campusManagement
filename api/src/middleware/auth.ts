@@ -64,8 +64,25 @@ export const authenticate = async (
 
     req.user = user;
 
-    // Enforce branch-level isolation for non-super-admin users whenever a branchId is provided.
-    if (req.user.role !== 'super_admin') {
+    // Enforce organization-level isolation 
+    if (!['platform_admin'].includes(req.user.role)) {
+      const userOrgId = toComparableId(req.user.organizationId);
+      const requestedOrgId =
+        toComparableId(req.params?.organizationId) ||
+        toComparableId(req.query?.organizationId) ||
+        toComparableId(req.body?.organizationId);
+
+      if (requestedOrgId && userOrgId && requestedOrgId !== userOrgId) {
+        res.status(403).json({
+          success: false,
+          message: 'Access denied. You can only access your assigned organization data.'
+        });
+        return;
+      }
+    }
+
+    // Enforce branch-level isolation for non-org-admin users whenever a branchId is provided.
+    if (!['platform_admin', 'org_admin'].includes(req.user.role)) {
       const userBranchId = toComparableId(req.user.branchId);
       const requestedBranchId =
         toComparableId(req.params?.branchId) ||
@@ -122,8 +139,8 @@ export const checkPermission = (module: string, action: 'create' | 'read' | 'upd
       return;
     }
 
-    // Super admin and branch admin have all permissions
-    if (req.user.role === 'super_admin' || req.user.role === 'branch_admin') {
+    // Platform admin, org admin, and branch admin have all permissions
+    if (['platform_admin', 'org_admin', 'branch_admin'].includes(req.user.role)) {
       next();
       return;
     }

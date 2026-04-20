@@ -8,6 +8,8 @@ import { validate, validateQuery } from '../middleware/validation';
 import { createStudentSchema, updateStudentSchema, queryStudentsSchema } from '../validations/student';
 import { AuthenticatedRequest, ApiResponse, QueryParams } from '../types';
 
+import { getOrgBranchFilter, getOrgBranchForCreate } from '../utils/orgFilter';
+
 const router = express.Router();
 
 // Apply authentication to all routes
@@ -36,10 +38,11 @@ router.get('/', checkPermission('students', 'read'), validateQuery(queryStudents
     // Build filter object
     const filter: any = {};
 
-    // Branch filter (non-super admins can only see their branch data)
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    } else if (branchId) {
+    // Organization & Branch filter
+    Object.assign(filter, getOrgBranchFilter(req));
+
+    // Override branch if explicitly requested (for org/platform admins)
+    if (['platform_admin', 'org_admin'].includes(req.user!.role) && branchId) {
       if (!Types.ObjectId.isValid(branchId)) {
         const response: ApiResponse = {
           success: false,
@@ -165,10 +168,8 @@ router.get('/:id', checkPermission('students', 'read'), async (req: Authenticate
   try {
     const filter: any = { _id: req.params.id };
 
-    // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    // Organization & branch filter
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const student = await Student.findOne(filter);
 
@@ -222,27 +223,24 @@ router.post('/', checkPermission('students', 'create'), validate(createStudentSc
       return res.status(400).json(response);
     }
 
-    // Get the appropriate branchId
-    const { getRequiredBranchId } = require('../utils/branchHelper');
-    let branchId;
-    
-    try {
-      // For students, prefer the class's branchId if available
-      const preferredBranchId = classInfo.branchId || req.body.branchId;
-      branchId = await getRequiredBranchId(req, preferredBranchId);
-    } catch (error) {
+    // Use class's branchId if available, otherwise use selected branch context
+    const orgBranch = getOrgBranchForCreate(req);
+    const branchId = classInfo.branchId || orgBranch.branchId;
+
+    if (!branchId) {
       const response: ApiResponse = {
         success: false,
-        message: error.message || 'Branch information is required for student creation'
+        message: 'Branch information is required for student creation'
       };
       return res.status(400).json(response);
     }
 
-    // Create student with branch ID and class information
+    // Create student with branch ID, organization ID and class information
     const studentData = {
       ...req.body,
       classId: req.body.class,
       class: classInfo.name,
+      organizationId: orgBranch.organizationId || classInfo.organizationId,
       branchId: branchId
     };
 
@@ -258,6 +256,7 @@ router.post('/', checkPermission('students', 'create'), validate(createStudentSc
       module: 'Students',
       details: `Created student: ${student.name} (${student.admissionNo})`,
       ipAddress: req.ip,
+      organizationId: student.organizationId,
       branchId: student.branchId
     });
 
@@ -285,10 +284,8 @@ router.put('/:id', checkPermission('students', 'update'), validate(updateStudent
   try {
     const filter: any = { _id: req.params.id };
 
-    // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    // Org + Branch filter
+    Object.assign(filter, getOrgBranchFilter(req));
 
     // Handle class update if provided
     let updateData = { ...req.body };
@@ -355,10 +352,8 @@ router.delete('/:id', checkPermission('students', 'delete'), async (req: Authent
   try {
     const filter: any = { _id: req.params.id };
 
-    // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    // Org + Branch filter
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const student = await Student.findOneAndDelete(filter);
 
@@ -405,10 +400,8 @@ router.get('/stats/overview', checkPermission('students', 'read'), async (req: A
   try {
     const filter: any = {};
 
-    // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    // Org + Branch filter
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const [
       totalStudents,
@@ -492,7 +485,9 @@ router.post('/promote', checkPermission('students', 'update'), async (req: Authe
 
     for (const studentId of studentIds) {
       try {
-        const student = await Student.findById(studentId);
+        const studentFilter: any = { _id: studentId };
+        Object.assign(studentFilter, getOrgBranchFilter(req));
+        const student = await Student.findOne(studentFilter);
         if (!student) {
           failed.push({ studentId, reason: 'Student not found' });
           continue;
@@ -558,12 +553,14 @@ router.post('/promote', checkPermission('students', 'update'), async (req: Authe
 // @access  Private
 router.post('/:id/transfer', checkPermission('students', 'update'), async (req: AuthenticatedRequest, res) => {
   try {
-    const { transferSchoolName, transferDate, reason, remarks } = req.body;
+    const { transferSchoolName, transferDate, reason, remarks, tcNumber } = req.body;
 
-    const student = await Student.findById(req.params.id)
+    const transferFilter: any = { _id: req.params.id };
+    Object.assign(transferFilter, getOrgBranchFilter(req));
+
+    const student = await Student.findOne(transferFilter)
       .populate('classId', 'name')
-      .populate('divisionId', 'name')
-      .populate('branchId', 'name address');
+      .populate('branchId', 'name address phone email');
 
     if (!student) {
       const response: ApiResponse = {
@@ -573,30 +570,51 @@ router.post('/:id/transfer', checkPermission('students', 'update'), async (req: 
       return res.status(404).json(response);
     }
 
+    // Get org info for TC header
+    const org = await require('../models/Organization').Organization.findById(student.organizationId);
+
+    // Generate TC number if not provided
+    const finalTcNumber = tcNumber || `TC-${student.admissionNo}-${Date.now()}`;
+
     // Create transfer certificate data
     const transferCertificate = {
+      tcNumber: finalTcNumber,
       studentName: student.name,
       admissionNo: student.admissionNo,
       class: student.class,
       section: student.section,
+      gender: student.gender,
       dateOfBirth: student.dateOfBirth,
       dateOfAdmission: student.dateOfAdmission,
       transferDate: transferDate || new Date(),
       transferSchoolName: transferSchoolName || 'Not Specified',
       reason: reason || '',
       remarks: remarks || '',
+      fatherName: student.fatherName,
+      motherName: student.motherName,
       guardianName: student.guardianName,
-      guardianContact: student.guardianPhone,
-      currentSchool: {
+      guardianContact: student.fatherPhone || student.guardianPhone,
+      address: student.address,
+      school: {
         name: (student.branchId as any)?.name || 'School Name',
-        address: (student.branchId as any)?.address || ''
+        address: (student.branchId as any)?.address || '',
+        phone: (student.branchId as any)?.phone || '',
+        email: (student.branchId as any)?.email || '',
+      },
+      organization: {
+        name: org?.name || '',
+        logo: org?.logo || '',
       },
       generatedDate: new Date(),
       generatedBy: req.user!.name || req.user!.mobile
     };
 
-    // Update student status to transferred
-    student.status = 'inactive';
+    // Update student with TC fields
+    student.status = 'tc_issued';
+    student.tcIssued = true;
+    student.tcNumber = finalTcNumber;
+    student.tcDate = transferDate || new Date();
+    student.tcReason = reason || '';
     await student.save();
 
     // Log activity
@@ -606,14 +624,14 @@ router.post('/:id/transfer', checkPermission('students', 'update'), async (req: 
       action: 'transfer_student',
       entity: 'student',
       entityId: student._id,
-      details: `Generated transfer certificate for ${student.name}`,
+      details: `TC issued for ${student.name} (TC#: ${finalTcNumber})`,
       branchId: student.branchId,
       ipAddress: req.ip
     });
 
     const response: ApiResponse = {
       success: true,
-      message: 'Transfer certificate generated successfully',
+      message: 'Transfer certificate issued successfully',
       data: {
         student: {
           _id: student._id,
@@ -633,6 +651,94 @@ router.post('/:id/transfer', checkPermission('students', 'update'), async (req: 
       message: 'Server error generating transfer certificate'
     };
     res.status(500).json(response);
+  }
+});
+
+// ── SUSPENSION ──────────────────────────────────────────────────────
+
+// @desc    Suspend a student
+// @route   POST /api/students/:id/suspend
+// @access  Private
+router.post('/:id/suspend', checkPermission('students', 'update'), async (req: AuthenticatedRequest, res) => {
+  try {
+    const { suspensionReason, suspensionDate, suspensionEndDate } = req.body;
+
+    if (!suspensionReason) {
+      return res.status(400).json({ success: false, message: 'Suspension reason is required' } as ApiResponse);
+    }
+
+    const filter: any = { _id: req.params.id };
+    Object.assign(filter, getOrgBranchFilter(req));
+
+    const student = await Student.findOne(filter);
+    if (!student) {
+      return res.status(404).json({ success: false, message: 'Student not found' } as ApiResponse);
+    }
+
+    if (student.status === 'suspended') {
+      return res.status(400).json({ success: false, message: 'Student is already suspended' } as ApiResponse);
+    }
+
+    student.status = 'suspended';
+    student.suspensionDate = suspensionDate || new Date();
+    student.suspensionReason = suspensionReason;
+    if (suspensionEndDate) student.suspensionEndDate = suspensionEndDate;
+    await student.save();
+
+    await ActivityLog.create({
+      userId: req.user!._id,
+      userEmail: req.user!.mobile,
+      action: 'suspend_student',
+      entity: 'student',
+      entityId: student._id,
+      details: `Suspended student ${student.name}: ${suspensionReason}`,
+      branchId: student.branchId,
+      ipAddress: req.ip
+    });
+
+    res.json({ success: true, message: 'Student suspended successfully', data: student } as ApiResponse);
+  } catch (error) {
+    console.error('Suspend student error:', error);
+    res.status(500).json({ success: false, message: 'Server error suspending student' } as ApiResponse);
+  }
+});
+
+// @desc    Revoke student suspension
+// @route   POST /api/students/:id/revoke-suspension
+// @access  Private
+router.post('/:id/revoke-suspension', checkPermission('students', 'update'), async (req: AuthenticatedRequest, res) => {
+  try {
+    const filter: any = { _id: req.params.id };
+    Object.assign(filter, getOrgBranchFilter(req));
+
+    const student = await Student.findOne(filter);
+    if (!student) {
+      return res.status(404).json({ success: false, message: 'Student not found' } as ApiResponse);
+    }
+
+    if (student.status !== 'suspended') {
+      return res.status(400).json({ success: false, message: 'Student is not suspended' } as ApiResponse);
+    }
+
+    student.status = 'active';
+    student.suspensionEndDate = new Date();
+    await student.save();
+
+    await ActivityLog.create({
+      userId: req.user!._id,
+      userEmail: req.user!.mobile,
+      action: 'revoke_suspension',
+      entity: 'student',
+      entityId: student._id,
+      details: `Revoked suspension for ${student.name}`,
+      branchId: student.branchId,
+      ipAddress: req.ip
+    });
+
+    res.json({ success: true, message: 'Suspension revoked successfully', data: student } as ApiResponse);
+  } catch (error) {
+    console.error('Revoke suspension error:', error);
+    res.status(500).json({ success: false, message: 'Server error revoking suspension' } as ApiResponse);
   }
 });
 

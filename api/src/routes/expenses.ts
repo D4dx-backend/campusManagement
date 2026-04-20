@@ -7,6 +7,8 @@ import { validate, validateQuery } from '../middleware/validation';
 import { AuthenticatedRequest, ApiResponse, QueryParams } from '../types';
 import Joi from 'joi';
 
+import { getOrgBranchFilter, getOrgBranchForCreate } from '../utils/orgFilter';
+
 const router = express.Router();
 
 // Apply authentication to all routes
@@ -133,10 +135,8 @@ router.get('/', checkPermission('expenses', 'read'), validateQuery(queryExpenses
     // Build filter object
     const filter: any = {};
 
-    // Branch filter (non-super admins can only see their branch data)
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    // Org + Branch filter
+    Object.assign(filter, getOrgBranchFilter(req));
 
     if (search) {
       filter.$or = [
@@ -206,9 +206,7 @@ router.get('/:id', checkPermission('expenses', 'read'), async (req: Authenticate
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const expense = await Expense.findOne(filter);
 
@@ -256,6 +254,7 @@ router.post('/', checkPermission('expenses', 'create'), validate(createExpenseSc
     const branchId = req.user!.branchId || req.body.branchId;
     const categoryExists = await ExpenseCategory.findOne({
       name: req.body.category,
+      organizationId: req.user!.organizationId,
       branchId: branchId,
       status: 'active'
     });
@@ -271,6 +270,7 @@ router.post('/', checkPermission('expenses', 'create'), validate(createExpenseSc
     const expenseData = {
       ...req.body,
       voucherNo,
+      organizationId: req.user!.organizationId,
       branchId: req.user!.branchId || req.body.branchId
     };
 
@@ -337,9 +337,7 @@ router.put('/:id', checkPermission('expenses', 'update'), validate(updateExpense
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const expense = await Expense.findOneAndUpdate(
       filter,
@@ -392,9 +390,7 @@ router.delete('/:id', checkPermission('expenses', 'delete'), async (req: Authent
     const filter: any = { _id: req.params.id };
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const expense = await Expense.findOneAndDelete(filter);
 
@@ -442,9 +438,7 @@ router.get('/stats/overview', checkPermission('expenses', 'read'), async (req: A
     const filter: any = {};
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const currentDate = new Date();
     const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);

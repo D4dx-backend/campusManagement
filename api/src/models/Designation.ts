@@ -5,7 +5,8 @@ export interface IDesignation {
   name: string;
   description?: string;
   status: 'active' | 'inactive';
-  branchId: string;
+  organizationId: string;
+  branchId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,15 +29,21 @@ const DesignationSchema = new Schema<IDesignation>({
   branchId: {
     type: Schema.Types.ObjectId as any,
     ref: 'Branch',
+    default: null
+  },
+  organizationId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'Organization',
     required: true
   }
 }, {
   timestamps: true
 });
 
-// Compound index to ensure unique designation name per branch
-DesignationSchema.index({ name: 1, branchId: 1 }, { unique: true });
+// Compound index to ensure unique designation name per branch (sparse for org-level templates)
+DesignationSchema.index({ name: 1, branchId: 1 }, { unique: true, sparse: true });
 DesignationSchema.index({ branchId: 1 });
+DesignationSchema.index({ organizationId: 1 });
 DesignationSchema.index({ status: 1 });
 
 export const Designation = mongoose.model<IDesignation>('Designation', DesignationSchema);

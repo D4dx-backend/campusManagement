@@ -39,6 +39,11 @@ const DivisionSchema = new Schema<IDivision>({
     type: Schema.Types.ObjectId as any,
     ref: 'Branch',
     required: true
+  },
+  organizationId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'Organization',
+    required: true
   }
 }, {
   timestamps: true
@@ -48,6 +53,7 @@ const DivisionSchema = new Schema<IDivision>({
 DivisionSchema.index({ name: 1, classId: 1, branchId: 1 }, { unique: true });
 DivisionSchema.index({ classId: 1 });
 DivisionSchema.index({ branchId: 1 });
+DivisionSchema.index({ organizationId: 1 });
 DivisionSchema.index({ status: 1 });
 
 export const Division = mongoose.model<IDivision>('Division', DivisionSchema);

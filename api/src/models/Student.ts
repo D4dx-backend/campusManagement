@@ -112,8 +112,35 @@ const StudentSchema = new Schema<IStudent>({
   },
   status: {
     type: String,
-    enum: ['active', 'inactive'],
+    enum: ['active', 'inactive', 'suspended', 'tc_issued'],
     default: 'active'
+  },
+  // TC (Transfer Certificate) fields
+  tcIssued: {
+    type: Boolean,
+    default: false
+  },
+  tcNumber: {
+    type: String,
+    trim: true
+  },
+  tcDate: {
+    type: Date
+  },
+  tcReason: {
+    type: String,
+    trim: true
+  },
+  // Suspension fields
+  suspensionDate: {
+    type: Date
+  },
+  suspensionReason: {
+    type: String,
+    trim: true
+  },
+  suspensionEndDate: {
+    type: Date
   },
   isStaffChild: {
     type: Boolean,
@@ -123,6 +150,11 @@ const StudentSchema = new Schema<IStudent>({
     type: Schema.Types.ObjectId as any,
     ref: 'Branch',
     required: true
+  },
+  organizationId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'Organization',
+    required: true
   }
 }, {
   timestamps: true
@@ -130,6 +162,7 @@ const StudentSchema = new Schema<IStudent>({
 
 // Indexes (admissionNo already has unique index)
 StudentSchema.index({ branchId: 1 });
+StudentSchema.index({ organizationId: 1 });
 StudentSchema.index({ class: 1, section: 1 });
 StudentSchema.index({ status: 1 });
 StudentSchema.index({ name: 'text', fatherName: 'text', motherName: 'text' });

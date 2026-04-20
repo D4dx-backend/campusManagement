@@ -14,6 +14,7 @@ export interface IAccountTransaction extends Document {
   reconciledDate?: Date;
   isReconciled: boolean;
   remarks?: string;
+  organizationId?: mongoose.Types.ObjectId;
   branchId?: mongoose.Types.ObjectId;
   createdBy?: mongoose.Types.ObjectId;
   createdAt: Date;
@@ -84,6 +85,10 @@ const AccountTransactionSchema = new Schema<IAccountTransaction>(
       type: Schema.Types.ObjectId,
       ref: 'Branch'
     },
+    organizationId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Organization'
+    },
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'User'
@@ -97,6 +102,7 @@ const AccountTransactionSchema = new Schema<IAccountTransaction>(
 // Indexes
 AccountTransactionSchema.index({ accountId: 1, transactionDate: -1 });
 AccountTransactionSchema.index({ branchId: 1, transactionDate: -1 });
+AccountTransactionSchema.index({ organizationId: 1 });
 AccountTransactionSchema.index({ referenceType: 1, referenceId: 1 });
 AccountTransactionSchema.index({ isReconciled: 1 });
 AccountTransactionSchema.index({ transactionDate: -1 });

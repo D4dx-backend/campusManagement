@@ -152,6 +152,11 @@ const TextbookIndentSchema = new Schema<ITextbookIndent>({
     type: Schema.Types.ObjectId as any,
     ref: 'Branch',
     required: true
+  },
+  organizationId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'Organization',
+    required: true
   }
 }, {
   timestamps: true
@@ -160,6 +165,7 @@ const TextbookIndentSchema = new Schema<ITextbookIndent>({
 // Indexes
 TextbookIndentSchema.index({ studentId: 1 });
 TextbookIndentSchema.index({ branchId: 1 });
+TextbookIndentSchema.index({ organizationId: 1 });
 TextbookIndentSchema.index({ status: 1 });
 TextbookIndentSchema.index({ paymentStatus: 1 });
 TextbookIndentSchema.index({ issueDate: 1 });

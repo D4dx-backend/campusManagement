@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { DatePicker } from '@/components/ui/date-picker';
+import { useCurrency } from '@/hooks/useCurrency';
 import { useBalanceSheet } from '@/hooks/useAccounting';
 import { Download, Printer, TrendingUp, TrendingDown, Scale } from 'lucide-react';
 import { exportToCSV, exportToExcel } from '@/utils/exportUtils';
@@ -11,12 +12,15 @@ import { format } from 'date-fns';
 
 export const BalanceSheet = () => {
   const [asOfDate, setAsOfDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const { currencyCode, formatCurrency } = useCurrency();
 
   const { data: response, isLoading, error } = useBalanceSheet({
     asOfDate: asOfDate || undefined,
   });
 
   const data = response?.data;
+  const formatExportAmount = (value: number | string | undefined | null) =>
+    value === '' ? '' : formatCurrency(value);
 
   const handleExportCSV = () => {
     if (!data) return;
@@ -38,7 +42,7 @@ export const BalanceSheet = () => {
       columns: [
         { key: 'category', label: 'Category' },
         { key: 'item', label: 'Item' },
-        { key: 'amount', label: 'Amount (BHD)' },
+        { key: 'amount', label: `Amount (${currencyCode})`, formatter: formatExportAmount },
       ],
       filename: `balance_sheet_${asOfDate}.csv`,
     });
@@ -64,7 +68,7 @@ export const BalanceSheet = () => {
       columns: [
         { key: 'category', label: 'Category' },
         { key: 'item', label: 'Item' },
-        { key: 'amount', label: 'Amount (BHD)' },
+        { key: 'amount', label: `Amount (${currencyCode})`, formatter: formatExportAmount },
       ],
       filename: `balance_sheet_${asOfDate}.xlsx`,
       sheetName: 'Balance Sheet',
@@ -109,15 +113,15 @@ export const BalanceSheet = () => {
             <h2>Assets</h2>
             <div class="row">
               <label>Cash and Bank</label>
-              <value>BHD \$\{data.assets.cashAndBank.toFixed(3)}</value>
+              <value>${formatCurrency(data.assets.cashAndBank)}</value>
             </div>
             <div class="row">
               <label>Accounts Receivable</label>
-              <value>BHD \$\{data.assets.accountsReceivable.toFixed(3)}</value>
+              <value>${formatCurrency(data.assets.accountsReceivable)}</value>
             </div>
             <div class="row total">
               <label>Total Assets</label>
-              <value>BHD \$\{data.assets.totalAssets.toFixed(3)}</value>
+              <value>${formatCurrency(data.assets.totalAssets)}</value>
             </div>
           </div>
 
@@ -125,11 +129,11 @@ export const BalanceSheet = () => {
             <h2>Liabilities</h2>
             <div class="row">
               <label>Accounts Payable</label>
-              <value>BHD \$\{data.liabilities.accountsPayable.toFixed(3)}</value>
+              <value>${formatCurrency(data.liabilities.accountsPayable)}</value>
             </div>
             <div class="row total">
               <label>Total Liabilities</label>
-              <value>BHD \$\{data.liabilities.totalLiabilities.toFixed(3)}</value>
+              <value>${formatCurrency(data.liabilities.totalLiabilities)}</value>
             </div>
           </div>
 
@@ -137,11 +141,11 @@ export const BalanceSheet = () => {
             <h2>Equity</h2>
             <div class="row">
               <label>Retained Earnings</label>
-              <value>BHD \$\{data.equity.retainedEarnings.toFixed(3)}</value>
+              <value>${formatCurrency(data.equity.retainedEarnings)}</value>
             </div>
             <div class="row total">
               <label>Total Equity</label>
-              <value>BHD \$\{data.equity.totalEquity.toFixed(3)}</value>
+              <value>${formatCurrency(data.equity.totalEquity)}</value>
             </div>
           </div>
 
@@ -252,18 +256,16 @@ export const BalanceSheet = () => {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center py-2 border-b">
                       <span className="text-muted-foreground">Cash and Bank</span>
-                      <span className="font-semibold">BHD {data.assets.cashAndBank.toFixed(3)}</span>
+                      <span className="font-semibold">{formatCurrency(data.assets.cashAndBank)}</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b">
                       <span className="text-muted-foreground">Accounts Receivable</span>
-                      <span className="font-semibold">
-                        BHD {data.assets.accountsReceivable.toFixed(3)}
-                      </span>
+                      <span className="font-semibold">{formatCurrency(data.assets.accountsReceivable)}</span>
                     </div>
                     <div className="flex justify-between items-center py-3 border-t-2 border-primary">
                       <span className="font-bold text-lg">Total Assets</span>
                       <span className="font-bold text-2xl text-green-600">
-                        BHD {data.assets.totalAssets.toFixed(3)}
+                        {formatCurrency(data.assets.totalAssets)}
                       </span>
                     </div>
                   </div>
@@ -284,14 +286,12 @@ export const BalanceSheet = () => {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center py-2 border-b">
                         <span className="text-muted-foreground">Accounts Payable</span>
-                        <span className="font-semibold">
-                          BHD {data.liabilities.accountsPayable.toFixed(3)}
-                        </span>
+                        <span className="font-semibold">{formatCurrency(data.liabilities.accountsPayable)}</span>
                       </div>
                       <div className="flex justify-between items-center py-3 border-t-2 border-primary">
                         <span className="font-bold">Total Liabilities</span>
                         <span className="font-bold text-xl text-red-600">
-                          BHD {data.liabilities.totalLiabilities.toFixed(3)}
+                          {formatCurrency(data.liabilities.totalLiabilities)}
                         </span>
                       </div>
                     </div>
@@ -307,14 +307,12 @@ export const BalanceSheet = () => {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center py-2 border-b">
                         <span className="text-muted-foreground">Retained Earnings</span>
-                        <span className="font-semibold">
-                          BHD {data.equity.retainedEarnings.toFixed(3)}
-                        </span>
+                        <span className="font-semibold">{formatCurrency(data.equity.retainedEarnings)}</span>
                       </div>
                       <div className="flex justify-between items-center py-3 border-t-2 border-primary">
                         <span className="font-bold">Total Equity</span>
                         <span className="font-bold text-xl text-blue-600">
-                          BHD {data.equity.totalEquity.toFixed(3)}
+                          {formatCurrency(data.equity.totalEquity)}
                         </span>
                       </div>
                     </div>
@@ -336,12 +334,10 @@ export const BalanceSheet = () => {
                     <span className="font-semibold">Equity</span>
                   </div>
                   <div className="text-2xl font-bold">
-                    <span className="text-green-600">BHD {data.totalAssetsAndEquity.toFixed(3)}</span> ={' '}
-                    <span className="text-red-600">
-                      BHD {data.liabilities.totalLiabilities.toFixed(3)}
-                    </span>{' '}
+                    <span className="text-green-600">{formatCurrency(data.totalAssetsAndEquity)}</span> ={' '}
+                    <span className="text-red-600">{formatCurrency(data.liabilities.totalLiabilities)}</span>{' '}
                     +{' '}
-                    <span className="text-blue-600">BHD {data.equity.totalEquity.toFixed(3)}</span>
+                    <span className="text-blue-600">{formatCurrency(data.equity.totalEquity)}</span>
                   </div>
                 </div>
               </CardContent>

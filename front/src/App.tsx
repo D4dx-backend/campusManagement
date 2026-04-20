@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { BranchProvider } from "@/contexts/BranchContext";
 import { PermissionAction, userHasAccess } from "@/utils/accessControl";
 import { UserRole } from "@/types";
 import Index from "./pages/Index";
@@ -27,17 +28,63 @@ import ExpenseCategories from "./pages/ExpenseCategories";
 import IncomeCategories from "./pages/IncomeCategories";
 import Departments from "./pages/Departments";
 import Designations from "./pages/Designations";
+import StaffCategories from "./pages/StaffCategories";
 import TransportRoutes from "./pages/TransportRoutes";
 import ActivityLog from "./pages/ActivityLog";
 import UserAccess from "./pages/UserAccess";
 import BranchManagement from "./pages/BranchManagement";
-import ReceiptConfig from "./pages/ReceiptConfig";
+import OrganizationManagement from "./pages/OrganizationManagement";
+import OrgTemplates from "./pages/OrgTemplates";
+import BranchImport from "./pages/BranchImport";
 import { DayBook } from "./pages/accounting/DayBook";
 import { Ledger } from "./pages/accounting/Ledger";
 import { FeeDetails } from "./pages/accounting/FeeDetails";
 import { BalanceSheet } from "./pages/accounting/BalanceSheet";
 import { AnnualReport } from "./pages/accounting/AnnualReport";
-import NotFound from "./pages/NotFound";
+import ExamManagement from "./pages/ExamManagement";
+import SubjectManagement from "./pages/SubjectManagement";
+import AcademicYearManagement from "./pages/AcademicYearManagement";
+import MarkEntryPage from "./pages/MarkEntry";
+import StudentPromotion from "./pages/StudentPromotion";
+import ExamScore from "./pages/ExamScore";
+import ProgressCard from "./pages/ProgressCard";
+import AttendanceMarking from "./pages/AttendanceMarking";
+import AttendanceReport from "./pages/AttendanceReport";
+import LeaveRequests from "./pages/LeaveRequests";
+import DomainManagement from './pages/DomainManagement';
+import TimetableConfigs from './pages/TimetableConfigs';
+import TimetableManager from './pages/TimetableManager';
+import MyTimetable from './pages/MyTimetable';
+import TeacherTimetable from './pages/TeacherTimetable';
+import Help from './pages/Help';
+import NotFound from './pages/NotFound';
+import { OrgBrandingProvider } from '@/contexts/OrgBrandingContext';
+import { FeatureProvider } from '@/contexts/FeatureContext';
+// LMS pages
+import ChapterManagement from './pages/lms/ChapterManagement';
+import ChapterContent from './pages/lms/ChapterContent';
+import ContentLibrary from './pages/lms/ContentLibrary';
+import ContentSchedule from './pages/lms/ContentSchedule';
+import LmsCalendar from './pages/lms/LmsCalendar';
+import Assessments from './pages/lms/Assessments';
+import AssessmentBuilder from './pages/lms/AssessmentBuilder';
+import AssessmentResults from './pages/lms/AssessmentResults';
+import QuestionPools from './pages/lms/QuestionPools';
+import Submissions from './pages/lms/Submissions';
+import LmsReports from './pages/lms/LmsReports';
+import ProgressDashboard from './pages/lms/ProgressDashboard';
+import CloneContent from './pages/lms/CloneContent';
+import StudentLms from './pages/lms/StudentLms';
+import AttemptQuiz from './pages/lms/AttemptQuiz';
+// Student self-service pages
+import MyAttendance from './pages/MyAttendance';
+import MyMarks from './pages/MyMarks';
+import MyFees from './pages/MyFees';
+import StaffLeaveRequests from './pages/StaffLeaveRequests';
+import Announcements from './pages/Announcements';
+import HomeworkManagement from './pages/HomeworkManagement';
+import MyHomework from './pages/MyHomework';
+import TeacherAllocations from './pages/TeacherAllocations';
 
 const queryClient = new QueryClient();
 
@@ -80,6 +127,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <OrgBrandingProvider>
       <BrowserRouter
         future={{
           v7_startTransition: true,
@@ -87,6 +135,8 @@ const App = () => (
         }}
       >
         <AuthProvider>
+          <BranchProvider>
+          <FeatureProvider>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
@@ -101,7 +151,7 @@ const App = () => (
             <Route
               path="/students"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'students' }}>
                   <Students />
                 </ProtectedRoute>
               }
@@ -109,7 +159,7 @@ const App = () => (
             <Route
               path="/staff"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'staff' }}>
                   <Staff />
                 </ProtectedRoute>
               }
@@ -117,7 +167,7 @@ const App = () => (
             <Route
               path="/fees"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'fees' }}>
                   <Fees />
                 </ProtectedRoute>
               }
@@ -125,7 +175,7 @@ const App = () => (
             <Route
               path="/fee-structures"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'fees' }}>
                   <FeeStructures />
                 </ProtectedRoute>
               }
@@ -133,7 +183,7 @@ const App = () => (
             <Route
               path="/fee-type-configs"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'fees' }}>
                   <FeeTypeConfigs />
                 </ProtectedRoute>
               }
@@ -141,7 +191,7 @@ const App = () => (
             <Route
               path="/payroll"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'payroll' }}>
                   <Payroll />
                 </ProtectedRoute>
               }
@@ -149,7 +199,7 @@ const App = () => (
             <Route
               path="/expenses"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'expenses' }}>
                   <Expenses />
                 </ProtectedRoute>
               }
@@ -157,7 +207,7 @@ const App = () => (
             <Route
               path="/textbooks"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'textbooks' }}>
                   <TextBooks />
                 </ProtectedRoute>
               }
@@ -165,7 +215,7 @@ const App = () => (
             <Route
               path="/textbook-indents"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'textbooks' }}>
                   <TextbookIndents />
                 </ProtectedRoute>
               }
@@ -173,7 +223,7 @@ const App = () => (
             <Route
               path="/reports"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'reports' }}>
                   <Reports />
                 </ProtectedRoute>
               }
@@ -181,7 +231,7 @@ const App = () => (
             <Route
               path="/reports/fee-dues"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'reports' }}>
                   <FeeDues />
                 </ProtectedRoute>
               }
@@ -189,7 +239,7 @@ const App = () => (
             <Route
               path="/reports/transport"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'reports' }}>
                   <TransportReport />
                 </ProtectedRoute>
               }
@@ -197,7 +247,7 @@ const App = () => (
             <Route
               path="/classes"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'classes' }}>
                   <Classes />
                 </ProtectedRoute>
               }
@@ -205,7 +255,7 @@ const App = () => (
             <Route
               path="/divisions"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'divisions' }}>
                   <Divisions />
                 </ProtectedRoute>
               }
@@ -213,7 +263,7 @@ const App = () => (
             <Route
               path="/expense-categories"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'expenses' }}>
                   <ExpenseCategories />
                 </ProtectedRoute>
               }
@@ -221,7 +271,7 @@ const App = () => (
             <Route
               path="/income-categories"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'fees' }}>
                   <IncomeCategories />
                 </ProtectedRoute>
               }
@@ -229,7 +279,7 @@ const App = () => (
             <Route
               path="/departments"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'departments' }}>
                   <Departments />
                 </ProtectedRoute>
               }
@@ -237,15 +287,23 @@ const App = () => (
             <Route
               path="/designations"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'staff' }}>
                   <Designations />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/staff-categories"
+              element={
+                <ProtectedRoute access={{ module: 'staff' }}>
+                  <StaffCategories />
                 </ProtectedRoute>
               }
             />
             <Route
               path="/transport-routes"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'classes' }}>
                   <TransportRoutes />
                 </ProtectedRoute>
               }
@@ -253,7 +311,7 @@ const App = () => (
             <Route
               path="/activity-log"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'activity_logs' }}>
                   <ActivityLog />
                 </ProtectedRoute>
               }
@@ -261,31 +319,55 @@ const App = () => (
             <Route
               path="/user-access"
               element={
-                <ProtectedRoute access={{ roles: ['super_admin'] }}>
+                <ProtectedRoute access={{ roles: ['platform_admin', 'org_admin', 'branch_admin'] }}>
                   <UserAccess />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/organization-management"
+              element={
+                <ProtectedRoute access={{ roles: ['platform_admin'] }}>
+                  <OrganizationManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/org-templates"
+              element={
+                <ProtectedRoute access={{ roles: ['platform_admin', 'org_admin'] }}>
+                  <OrgTemplates />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/branch-import"
+              element={
+                <ProtectedRoute access={{ roles: ['platform_admin', 'org_admin'] }}>
+                  <BranchImport />
                 </ProtectedRoute>
               }
             />
             <Route
               path="/branch-management"
               element={
-                <ProtectedRoute access={{ roles: ['super_admin'] }}>
+                <ProtectedRoute access={{ roles: ['platform_admin', 'org_admin'] }}>
                   <BranchManagement />
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/receipt-config"
+              path="/domain-management"
               element={
-                <ProtectedRoute>
-                  <ReceiptConfig />
+                <ProtectedRoute access={{ roles: ['platform_admin', 'org_admin'] }}>
+                  <DomainManagement />
                 </ProtectedRoute>
               }
             />
             <Route
               path="/accounting/daybook"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'accounting' }}>
                   <DayBook />
                 </ProtectedRoute>
               }
@@ -293,7 +375,7 @@ const App = () => (
             <Route
               path="/accounting/ledger"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'accounting' }}>
                   <Ledger />
                 </ProtectedRoute>
               }
@@ -301,7 +383,7 @@ const App = () => (
             <Route
               path="/accounting/fee-details"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'accounting' }}>
                   <FeeDetails />
                 </ProtectedRoute>
               }
@@ -309,7 +391,7 @@ const App = () => (
             <Route
               path="/accounting/balance-sheet"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'accounting' }}>
                   <BalanceSheet />
                 </ProtectedRoute>
               }
@@ -317,16 +399,334 @@ const App = () => (
             <Route
               path="/accounting/annual-report"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute access={{ module: 'accounting' }}>
                   <AnnualReport />
                 </ProtectedRoute>
               }
             />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route
+              path="/exams"
+              element={
+                <ProtectedRoute access={{ module: 'classes' }}>
+                  <ExamManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/subjects"
+              element={
+                <ProtectedRoute access={{ module: 'classes' }}>
+                  <SubjectManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/academic-years"
+              element={
+                <ProtectedRoute access={{ module: 'classes' }}>
+                  <AcademicYearManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/mark-entry"
+              element={
+                <ProtectedRoute access={{ module: 'classes' }}>
+                  <MarkEntryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/student-promotion"
+              element={
+                <ProtectedRoute access={{ module: 'students' }}>
+                  <StudentPromotion />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/exam-score"
+              element={
+                <ProtectedRoute access={{ module: 'classes' }}>
+                  <ExamScore />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/progress-card"
+              element={
+                <ProtectedRoute access={{ module: 'classes' }}>
+                  <ProgressCard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/attendance"
+              element={
+                <ProtectedRoute access={{ roles: ['platform_admin', 'org_admin', 'branch_admin', 'teacher'] }}>
+                  <AttendanceMarking />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/attendance-report"
+              element={
+                <ProtectedRoute access={{ roles: ['platform_admin', 'org_admin', 'branch_admin', 'teacher'] }}>
+                  <AttendanceReport />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/leave-requests"
+              element={
+                <ProtectedRoute>
+                  <LeaveRequests />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/staff-leave-requests"
+              element={
+                <ProtectedRoute access={{ roles: ['platform_admin', 'org_admin', 'branch_admin', 'teacher', 'staff'] }}>
+                  <StaffLeaveRequests />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/announcements"
+              element={
+                <ProtectedRoute>
+                  <Announcements />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/homework"
+              element={
+                <ProtectedRoute access={{ roles: ['platform_admin', 'org_admin', 'branch_admin', 'teacher'] }}>
+                  <HomeworkManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-homework"
+              element={
+                <ProtectedRoute access={{ roles: ['student'] }}>
+                  <MyHomework />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/teacher-allocations"
+              element={
+                <ProtectedRoute access={{ roles: ['platform_admin', 'org_admin', 'branch_admin'] }}>
+                  <TeacherAllocations />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/timetable-configs"
+              element={
+                <ProtectedRoute access={{ roles: ['platform_admin', 'org_admin', 'branch_admin'] }}>
+                  <TimetableConfigs />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/timetable"
+              element={
+                <ProtectedRoute access={{ roles: ['platform_admin', 'org_admin', 'branch_admin'] }}>
+                  <TimetableManager />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-timetable"
+              element={
+                <ProtectedRoute access={{ roles: ['student'] }}>
+                  <MyTimetable />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-schedule"
+              element={
+                <ProtectedRoute access={{ roles: ['teacher'] }}>
+                  <TeacherTimetable />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/help"
+              element={
+                <ProtectedRoute>
+                  <Help />
+                </ProtectedRoute>
+              }
+            />
+            {/* LMS Teacher/Admin Routes */}
+            <Route
+              path="/lms/chapters"
+              element={
+                <ProtectedRoute access={{ module: 'classes' }}>
+                  <ChapterManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lms/chapters/:chapterId/content"
+              element={
+                <ProtectedRoute access={{ module: 'classes' }}>
+                  <ChapterContent />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lms/content-library"
+              element={
+                <ProtectedRoute access={{ module: 'classes' }}>
+                  <ContentLibrary />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lms/schedule"
+              element={
+                <ProtectedRoute access={{ module: 'classes' }}>
+                  <ContentSchedule />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lms/calendar"
+              element={
+                <ProtectedRoute access={{ module: 'classes' }}>
+                  <LmsCalendar />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lms/assessments"
+              element={
+                <ProtectedRoute access={{ module: 'classes' }}>
+                  <Assessments />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lms/assessments/builder"
+              element={
+                <ProtectedRoute access={{ module: 'classes' }}>
+                  <AssessmentBuilder />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lms/assessments/builder/:id"
+              element={
+                <ProtectedRoute access={{ module: 'classes' }}>
+                  <AssessmentBuilder />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lms/assessments/:id/results"
+              element={
+                <ProtectedRoute access={{ module: 'classes' }}>
+                  <AssessmentResults />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lms/question-pools"
+              element={
+                <ProtectedRoute access={{ module: 'classes' }}>
+                  <QuestionPools />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lms/submissions"
+              element={
+                <ProtectedRoute access={{ module: 'classes' }}>
+                  <Submissions />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lms/reports"
+              element={
+                <ProtectedRoute access={{ module: 'classes' }}>
+                  <LmsReports />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lms/progress"
+              element={
+                <ProtectedRoute access={{ module: 'classes' }}>
+                  <ProgressDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lms/clone"
+              element={
+                <ProtectedRoute access={{ roles: ['platform_admin', 'org_admin', 'branch_admin'] }}>
+                  <CloneContent />
+                </ProtectedRoute>
+              }
+            />
+            {/* LMS Student Routes */}
+            <Route
+              path="/lms/my-learning"
+              element={
+                <ProtectedRoute access={{ roles: ['student'] }}>
+                  <StudentLms />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lms/quiz/:id"
+              element={
+                <ProtectedRoute access={{ roles: ['student'] }}>
+                  <AttemptQuiz />
+                </ProtectedRoute>
+              }
+            />
+            {/* Student Self-Service Routes */}
+            <Route
+              path="/my-attendance"
+              element={
+                <ProtectedRoute access={{ roles: ['student'] }}>
+                  <MyAttendance />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-marks"
+              element={
+                <ProtectedRoute access={{ roles: ['student'] }}>
+                  <MyMarks />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-fees"
+              element={
+                <ProtectedRoute access={{ roles: ['student'] }}>
+                  <MyFees />
+                </ProtectedRoute>
+              }
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </FeatureProvider>
+          </BranchProvider>
         </AuthProvider>
       </BrowserRouter>
+      </OrgBrandingProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

@@ -11,6 +11,7 @@ export interface IIncome extends Document {
   contactInfo?: string;
   accountId?: mongoose.Types.ObjectId;
   remarks?: string;
+  organizationId?: mongoose.Types.ObjectId;
   branchId?: mongoose.Types.ObjectId;
   createdBy?: mongoose.Types.ObjectId;
   createdAt: Date;
@@ -72,6 +73,10 @@ const IncomeSchema = new Schema<IIncome>(
       type: Schema.Types.ObjectId,
       ref: 'Branch'
     },
+    organizationId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Organization'
+    },
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'User'
@@ -84,8 +89,8 @@ const IncomeSchema = new Schema<IIncome>(
 
 // Indexes
 IncomeSchema.index({ branchId: 1, date: -1 });
+IncomeSchema.index({ organizationId: 1 });
 IncomeSchema.index({ category: 1 });
-IncomeSchema.index({ receiptNo: 1 });
 IncomeSchema.index({ date: -1 });
 
 export const Income = mongoose.model<IIncome>('Income', IncomeSchema);

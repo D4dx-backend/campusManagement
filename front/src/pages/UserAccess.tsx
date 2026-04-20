@@ -10,10 +10,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { DataTable } from '@/components/ui/data-table';
 import { useConfirmation } from '@/hooks/useConfirmation';
 import { useBranches } from '@/hooks/useBranches';
-import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/hooks/useUsers';
+import { useUsers, useCreateUser, useUpdateUser, useDeleteUser, useResetPin } from '@/hooks/useUsers';
 import { authService } from '@/services/authService';
 import { User, UserRole, Permission } from '@/types';
-import { Plus, Search, Edit, Trash2, Users, Shield, Smartphone, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Users, Shield, Smartphone, Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
@@ -45,12 +45,13 @@ const UserAccess = () => {
   
   // Get branches from API only for super admins
   const { data: branchesResponse, isLoading: branchesLoading, error: branchesError } = useBranches(
-    currentUser?.role === 'super_admin'
+    (currentUser?.role === 'platform_admin' || currentUser?.role === 'org_admin')
   );
   
   const createUserMutation = useCreateUser();
   const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();
+  const resetPinMutation = useResetPin();
 
   const users = usersResponse?.data || [];
   const pagination = usersResponse?.pagination;
@@ -91,7 +92,7 @@ const UserAccess = () => {
       mobile: '',
       pin: '',
       role: 'staff',
-      branchId: currentUser?.role === 'super_admin' ? '' : '', // Backend will handle branch assignment
+      branchId: (currentUser?.role === 'platform_admin' || currentUser?.role === 'org_admin') ? '' : '', // Backend will handle branch assignment
       status: 'active',
       permissions: [],
     });
@@ -147,7 +148,7 @@ const UserAccess = () => {
     
     try {
       // Validate that super admin selects a branch when creating non-super admin users
-      if (currentUser?.role === 'super_admin' && formData.role !== 'super_admin' && !formData.branchId) {
+      if ((currentUser?.role === 'platform_admin' || currentUser?.role === 'org_admin') && (formData.role !== 'platform_admin' && formData.role !== 'org_admin') && !formData.branchId) {
         toast({ 
           title: 'Validation Error', 
           description: 'Please select a branch for this user.',
@@ -162,7 +163,7 @@ const UserAccess = () => {
         email: formData.email,
         mobile: formData.mobile,
         role: formData.role,
-        ...(currentUser?.role === 'super_admin' && formData.role !== 'super_admin' && formData.branchId && { branchId: formData.branchId }),
+        ...((currentUser?.role === 'platform_admin' || currentUser?.role === 'org_admin') && (formData.role !== 'platform_admin' && formData.role !== 'org_admin') && formData.branchId && { branchId: formData.branchId }),
         permissions: formData.permissions.map((permission) => ({
           ...permission,
           module: normalizeModule(permission.module),
@@ -275,9 +276,39 @@ const UserAccess = () => {
 
 
 
+  const handleResetPin = async (id: string, userName: string) => {
+    confirm(
+      {
+        title: 'Reset PIN',
+        description: `Reset the PIN for "${userName}"? A new random 4-digit PIN will be generated.`,
+        confirmText: 'Reset PIN',
+        variant: 'destructive'
+      },
+      async () => {
+        try {
+          const result = await resetPinMutation.mutateAsync(id);
+          const newPin = result?.data?.pin;
+          toast({
+            title: 'PIN Reset Successfully',
+            description: newPin
+              ? `New PIN for ${userName}: ${newPin}`
+              : 'PIN has been reset.',
+            duration: 15000, // Keep visible longer so they can note it down
+          });
+        } catch (error: any) {
+          toast({
+            title: 'Error',
+            description: error.response?.data?.message || 'Failed to reset PIN',
+            variant: 'destructive'
+          });
+        }
+      }
+    );
+  };
+
   const getRoleColor = (role: UserRole) => {
     switch (role) {
-      case 'super_admin': return 'bg-purple-100 text-purple-800';
+      case 'platform_admin': case 'org_admin': return 'bg-purple-100 text-purple-800';
       case 'branch_admin': return 'bg-red-100 text-red-800';
       case 'teacher': return 'bg-blue-100 text-blue-800';
       case 'accountant': return 'bg-green-100 text-green-800';
@@ -287,7 +318,7 @@ const UserAccess = () => {
   };
 
   // Show loading state while branches are being fetched (only for super admins)
-  if (branchesLoading && currentUser?.role === 'super_admin') {
+  if (branchesLoading && (currentUser?.role === 'platform_admin' || currentUser?.role === 'org_admin')) {
     return (
       <AppLayout>
         <div className="flex items-center justify-center min-h-[400px]">
@@ -398,9 +429,12 @@ const UserAccess = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {currentUser?.role === 'super_admin' && (
+                        {currentUser?.role === 'platform_admin' && (
+                          <SelectItem value="platform_admin">Platform Admin</SelectItem>
+                        )}
+                        {(currentUser?.role === 'platform_admin' || currentUser?.role === 'org_admin') && (
                           <>
-                            <SelectItem value="super_admin">Super Admin</SelectItem>
+                            <SelectItem value="org_admin">Organization Admin</SelectItem>
                             <SelectItem value="branch_admin">Branch Admin</SelectItem>
                           </>
                         )}
@@ -410,7 +444,7 @@ const UserAccess = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  {formData.role !== 'super_admin' && currentUser?.role === 'super_admin' && (
+                  {(formData.role !== 'platform_admin' && formData.role !== 'org_admin') && (currentUser?.role === 'platform_admin' || currentUser?.role === 'org_admin') && (
                     <div className="space-y-2">
                       <Label htmlFor="branchId">Branch *</Label>
                       <Select
@@ -441,7 +475,7 @@ const UserAccess = () => {
                       </Select>
                     </div>
                   )}
-                  {formData.role !== 'super_admin' && currentUser?.role !== 'super_admin' && (
+                  {(formData.role !== 'platform_admin' && formData.role !== 'org_admin') && (currentUser?.role !== 'platform_admin' && currentUser?.role !== 'org_admin') && (
                     <div className="space-y-2">
                       <Label>Branch</Label>
                       <div className="text-sm text-muted-foreground p-2 bg-muted rounded">
@@ -576,17 +610,34 @@ const UserAccess = () => {
                           </span>
                         </div>
                       </div>
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">Permissions:</span>
-                        <span className="ml-2">
-                          {user.permissions?.length > 0 
-                            ? `${user.permissions.length} modules` 
-                            : 'No permissions assigned'
-                          }
-                        </span>
+                      <div className="flex flex-wrap gap-4 text-sm">
+                        {(user as any).organizationId?.name && (
+                          <div>
+                            <span className="text-muted-foreground">Organization:</span>
+                            <span className="ml-2 font-medium">{(user as any).organizationId.name}</span>
+                          </div>
+                        )}
+                        {(user as any).branchId?.name && (
+                          <div>
+                            <span className="text-muted-foreground">Branch:</span>
+                            <span className="ml-2 font-medium">{(user as any).branchId.name}</span>
+                          </div>
+                        )}
+                        <div>
+                          <span className="text-muted-foreground">Permissions:</span>
+                          <span className="ml-2">
+                            {user.permissions?.length > 0 
+                              ? `${user.permissions.length} modules` 
+                              : 'No permissions assigned'
+                            }
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <div className="flex gap-2">
+                      <Button size="sm" variant="outline" title="Reset PIN" onClick={() => handleResetPin(user._id || user.id, user.name)}>
+                        <KeyRound className="w-4 h-4" />
+                      </Button>
                       <Button size="sm" variant="outline" onClick={() => handleEdit(user)}>
                         <Edit className="w-4 h-4" />
                       </Button>

@@ -5,7 +5,8 @@ export interface IExpenseCategory {
   name: string;
   description?: string;
   status: 'active' | 'inactive';
-  branchId: string;
+  organizationId: string;
+  branchId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,15 +29,21 @@ const ExpenseCategorySchema = new Schema<IExpenseCategory>({
   branchId: {
     type: Schema.Types.ObjectId as any,
     ref: 'Branch',
+    default: null
+  },
+  organizationId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'Organization',
     required: true
   }
 }, {
   timestamps: true
 });
 
-// Compound index to ensure unique category name per branch
-ExpenseCategorySchema.index({ name: 1, branchId: 1 }, { unique: true });
+// Compound index to ensure unique category name per branch (sparse for org-level templates)
+ExpenseCategorySchema.index({ name: 1, branchId: 1 }, { unique: true, sparse: true });
 ExpenseCategorySchema.index({ branchId: 1 });
+ExpenseCategorySchema.index({ organizationId: 1 });
 ExpenseCategorySchema.index({ status: 1 });
 
 export const ExpenseCategory = mongoose.model<IExpenseCategory>('ExpenseCategory', ExpenseCategorySchema);

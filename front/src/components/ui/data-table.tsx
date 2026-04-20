@@ -69,8 +69,8 @@ export const DataTable = ({
         <div className="flex flex-col gap-4">
           {title && <h2 className="text-lg font-semibold">{title}</h2>}
           
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+            <div className="relative flex-1 min-w-0">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
                 placeholder={searchPlaceholder}
@@ -80,7 +80,7 @@ export const DataTable = ({
               />
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               {filters.length > 0 && onFilterChange && onFilterReset && (
                 <DataFilters
                   filters={filters}

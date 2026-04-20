@@ -7,6 +7,8 @@ import { validate, validateQuery } from '../middleware/validation';
 import { AuthenticatedRequest, ApiResponse } from '../types';
 import Joi from 'joi';
 
+import { getOrgBranchFilter, getOrgBranchForCreate } from '../utils/orgFilter';
+
 const router = express.Router();
 router.use(authenticate);
 
@@ -48,11 +50,7 @@ router.get(
 
       const query: any = {};
 
-      if (req.user!.role !== 'super_admin') {
-        query.branchId = req.user!.branchId;
-      } else if (branchId) {
-        query.branchId = branchId;
-      }
+      Object.assign(query, getOrgBranchFilter(req));
 
       if (search) {
         query.$or = [
@@ -102,14 +100,10 @@ router.get(
   async (req: AuthenticatedRequest, res) => {
     try {
       const { classId } = req.params;
-      const { academicYear, branchId } = req.query;
+      const { academicYear } = req.query;
 
       const branchFilter: any = {};
-      if (req.user!.role !== 'super_admin') {
-        branchFilter.branchId = req.user!.branchId;
-      } else if (branchId) {
-        branchFilter.branchId = branchId;
-      }
+      Object.assign(branchFilter, getOrgBranchFilter(req));
 
       const baseQuery: any = { isActive: true, ...branchFilter };
       if (academicYear) baseQuery.academicYear = academicYear;
@@ -165,9 +159,10 @@ router.post(
         ...req.body,
         feeTypeName: feeTypeConfig.name,
         isCommon: feeTypeConfig.isCommon,
-        branchId: req.user!.role === 'super_admin' && req.body.branchId
+        branchId: ['platform_admin', 'org_admin'].includes(req.user!.role) && req.body.branchId
           ? req.body.branchId
-          : req.user!.branchId
+          : req.user!.branchId,
+        organizationId: req.user!.organizationId
       };
 
       const feeStructure = new FeeStructure(feeStructureData);
@@ -181,6 +176,7 @@ router.post(
         module: 'FeeStructure',
         details: `Created fee structure: ${feeStructure.title} (${feeStructure.feeTypeName})`,
         ipAddress: req.ip,
+        organizationId: req.user!.organizationId,
         branchId: req.user!.branchId
       });
 
@@ -214,9 +210,7 @@ router.put(
       };
 
       const query: any = { _id: id };
-      if (req.user!.role !== 'super_admin') {
-        query.branchId = req.user!.branchId;
-      }
+      Object.assign(query, getOrgBranchFilter(req));
 
       const feeStructure = await FeeStructure.findOneAndUpdate(query, updateData, {
         new: true,
@@ -235,6 +229,7 @@ router.put(
         module: 'FeeStructure',
         details: `Updated fee structure: ${feeStructure.title}`,
         ipAddress: req.ip,
+        organizationId: req.user!.organizationId,
         branchId: req.user!.branchId
       });
 
@@ -254,9 +249,7 @@ router.delete(
     try {
       const { id } = req.params;
       const query: any = { _id: id };
-      if (req.user!.role !== 'super_admin') {
-        query.branchId = req.user!.branchId;
-      }
+      Object.assign(query, getOrgBranchFilter(req));
 
       const feeStructure = await FeeStructure.findOneAndDelete(query);
 
@@ -272,6 +265,7 @@ router.delete(
         module: 'FeeStructure',
         details: `Deleted fee structure: ${feeStructure.title}`,
         ipAddress: req.ip,
+        organizationId: req.user!.organizationId,
         branchId: req.user!.branchId
       });
 

@@ -4,6 +4,7 @@ export interface IFeeTypeConfig extends Document {
   name: string;
   isCommon: boolean;
   isActive: boolean;
+  organizationId: mongoose.Types.ObjectId;
   branchId: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -27,6 +28,11 @@ const FeeTypeConfigSchema = new Schema<IFeeTypeConfig>(
     branchId: {
       type: Schema.Types.ObjectId as any,
       ref: 'Branch',
+      default: null
+    },
+    organizationId: {
+      type: Schema.Types.ObjectId as any,
+      ref: 'Organization',
       required: true
     }
   },
@@ -34,6 +40,7 @@ const FeeTypeConfigSchema = new Schema<IFeeTypeConfig>(
 );
 
 FeeTypeConfigSchema.index({ branchId: 1, isActive: 1 });
-FeeTypeConfigSchema.index({ branchId: 1, name: 1 }, { unique: true });
+FeeTypeConfigSchema.index({ organizationId: 1 });
+FeeTypeConfigSchema.index({ branchId: 1, name: 1 }, { unique: true, sparse: true });
 
 export const FeeTypeConfig = mongoose.model<IFeeTypeConfig>('FeeTypeConfig', FeeTypeConfigSchema);

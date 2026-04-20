@@ -1,8 +1,9 @@
 import { forwardRef } from 'react';
+import { amountToWords, formatCurrencyAmount } from '@/utils/currency';
 
 interface ExpenseVoucherProps {
   voucherNo: string;
-  date: Date;
+  date: Date | string;
   category: string;
   description: string;
   amount: number;
@@ -13,6 +14,8 @@ interface ExpenseVoucherProps {
   institutionAddress?: string;
   institutionPhone?: string;
   logo?: string;
+  currency?: string;
+  currencySymbol?: string;
 }
 
 export const ExpenseVoucher = forwardRef<HTMLDivElement, ExpenseVoucherProps>(
@@ -28,9 +31,11 @@ export const ExpenseVoucher = forwardRef<HTMLDivElement, ExpenseVoucherProps>(
     institutionName = 'Campus Management System',
     institutionAddress,
     institutionPhone,
-    logo
+    logo,
+    currency = 'BHD',
+    currencySymbol,
   }, ref) => {
-    const formatDate = (date: Date) => {
+    const formatDate = (date: Date | string) => {
       return new Date(date).toLocaleDateString('en-BH', {
         day: '2-digit',
         month: 'short',
@@ -39,38 +44,7 @@ export const ExpenseVoucher = forwardRef<HTMLDivElement, ExpenseVoucherProps>(
     };
 
     const formatCurrency = (amount: number) => {
-      return new Intl.NumberFormat('en-BH', {
-        style: 'currency',
-        currency: 'BHD',
-        minimumFractionDigits: 2
-      }).format(amount);
-    };
-
-    const numberToWords = (num: number): string => {
-      const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
-      const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-      const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
-
-      if (num === 0) return 'Zero';
-
-      const convert = (n: number): string => {
-        if (n < 10) return ones[n];
-        if (n < 20) return teens[n - 10];
-        if (n < 100) return tens[Math.floor(n / 10)] + ' ' + ones[n % 10];
-        if (n < 1000) return ones[Math.floor(n / 100)] + ' Hundred ' + convert(n % 100);
-        if (n < 100000) return convert(Math.floor(n / 1000)) + ' Thousand ' + convert(n % 1000);
-        if (n < 10000000) return convert(Math.floor(n / 100000)) + ' Thousand ' + convert(n % 100000);
-        return convert(Math.floor(n / 10000000)) + ' Million ' + convert(n % 10000000);
-      };
-
-      const dinars = Math.floor(num);
-      const fils = Math.round((num - dinars) * 1000);
-
-      let words = convert(dinars).trim() + ' BHD';
-      if (fils > 0) {
-        words += ' and ' + convert(paise).trim() + ' Fils';
-      }
-      return words + ' Only';
+      return formatCurrencyAmount(amount, currencySymbol || currency);
     };
 
     return (
@@ -129,7 +103,7 @@ export const ExpenseVoucher = forwardRef<HTMLDivElement, ExpenseVoucherProps>(
               </tr>
               <tr className="border-b border-gray-800">
                 <td className="p-3 font-semibold bg-gray-100">Amount in Words:</td>
-                <td className="p-3 italic">{numberToWords(amount)}</td>
+                <td className="p-3 italic">{amountToWords(amount, currency)}</td>
               </tr>
               <tr className="border-b border-gray-800">
                 <td className="p-3 font-semibold bg-gray-100">Payment Method:</td>

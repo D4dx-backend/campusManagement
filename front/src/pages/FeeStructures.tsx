@@ -13,6 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import feeStructureService, { FeeStructure } from '@/services/feeStructureService';
 import feeTypeConfigService, { FeeTypeConfig } from '@/services/feeTypeConfigService';
+import { formatters } from '@/utils/exportUtils';
+import { pageConfigurations } from '@/utils/pageTemplates';
 import { classesApi } from '@/services/classes';
 import { useClasses } from '@/hooks/useClasses';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,7 +39,7 @@ const FeeStructures = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
-  const isSuperAdmin = user?.role === 'super_admin';
+  const isSuperAdmin = (user?.role === 'platform_admin' || user?.role === 'org_admin');
 
   const { data: branchesResponse } = useBranches();
   const branches = branchesResponse?.data || [];
@@ -685,6 +687,13 @@ const FeeStructures = () => {
           searchPlaceholder="Search fee structures..."
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
+          exportConfig={{
+            filename: 'fee_structures',
+            columns: pageConfigurations.feeStructures.exportColumns.map(col => ({
+              ...col,
+              formatter: col.formatter ? formatters[col.formatter] : undefined
+            }))
+          }}
           pagination={{
             currentPage,
             totalPages: pagination?.pages || 1,

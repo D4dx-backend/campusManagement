@@ -2,8 +2,9 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { TrendingUp, TrendingDown, DollarSign, FileText, Loader2, AlertCircle, Bus, ArrowRight } from 'lucide-react';
+import { useCurrency } from '@/hooks/useCurrency';
 import { useDashboardReport, useFinancialReport } from '@/hooks/useReports';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,6 +12,7 @@ const Reports = () => {
   const navigate = useNavigate();
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth().toString());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const { formatCurrency } = useCurrency();
 
   // Get dashboard overview data
   const { data: dashboardResponse, isLoading: dashboardLoading } = useDashboardReport();
@@ -94,7 +96,7 @@ const Reports = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-secondary">BHD {monthlyIncome.toFixed(3)}</div>
+                <div className="text-3xl font-bold text-secondary">{formatCurrency(monthlyIncome)}</div>
               </CardContent>
             </Card>
 
@@ -106,10 +108,10 @@ const Reports = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-orange-600">BHD {monthlyExpenses.toFixed(3)}</div>
+                <div className="text-3xl font-bold text-orange-600">{formatCurrency(monthlyExpenses)}</div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Operations: BHD {(financialData?.expenses.generalExpenses.totalAmount || 0).toFixed(3)}<br />
-                  Payroll: BHD {(financialData?.expenses.payrollExpenses.totalAmount || 0).toFixed(3)}
+                  Operations: {formatCurrency(financialData?.expenses.generalExpenses.totalAmount || 0)}<br />
+                  Payroll: {formatCurrency(financialData?.expenses.payrollExpenses.totalAmount || 0)}
                 </p>
               </CardContent>
             </Card>
@@ -123,7 +125,7 @@ const Reports = () => {
               </CardHeader>
               <CardContent>
                 <div className={`text-3xl font-bold ${netIncome >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                  BHD {netIncome.toFixed(3)}
+                  {formatCurrency(netIncome)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   {netIncome >= 0 ? 'Profit' : 'Loss'} for the month
@@ -167,7 +169,9 @@ const Reports = () => {
                           style={{ width: `${monthlyIncome > 0 ? (item.totalAmount / monthlyIncome) * 100 : 0}%` }}
                         />
                       </div>
-                      <span className="font-bold text-secondary w-24 text-right">BHD {item.totalAmount.toFixed(3)}</span>
+                      <span className="font-bold text-secondary w-24 text-right">
+                        {formatCurrency(item.totalAmount)}
+                      </span>
                     </div>
                   </div>
                 )) || (
@@ -195,7 +199,7 @@ const Reports = () => {
                       />
                     </div>
                     <span className="font-bold text-orange-600 w-24 text-right">
-                      BHD {(financialData?.expenses.payrollExpenses.totalAmount || 0).toFixed(3)}
+                      {formatCurrency(financialData?.expenses.payrollExpenses.totalAmount || 0)}
                     </span>
                   </div>
                 </div>
@@ -209,7 +213,9 @@ const Reports = () => {
                           style={{ width: `${monthlyExpenses > 0 ? (item.totalAmount / monthlyExpenses) * 100 : 0}%` }}
                         />
                       </div>
-                      <span className="font-bold text-orange-600 w-24 text-right">BHD {item.totalAmount.toFixed(3)}</span>
+                      <span className="font-bold text-orange-600 w-24 text-right">
+                        {formatCurrency(item.totalAmount)}
+                      </span>
                     </div>
                   </div>
                 )) || (
@@ -294,7 +300,9 @@ const Reports = () => {
               </div>
               <div>
                 <p className="text-muted-foreground mb-2">Total Collection</p>
-                <div className="text-3xl font-bold">BHD {(dashboardData?.fees.totalCollection || 0).toFixed(3)}</div>
+                <div className="text-3xl font-bold">
+                  {formatCurrency(dashboardData?.fees.totalCollection || 0)}
+                </div>
                 <p className="text-sm text-muted-foreground mt-1">
                   All time fee collection
                 </p>

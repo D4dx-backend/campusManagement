@@ -1,0 +1,49 @@
+import mongoose, { Schema } from 'mongoose';
+
+export interface IStaffCategory {
+  _id: string;
+  name: string;
+  description?: string;
+  status: 'active' | 'inactive';
+  organizationId: string;
+  branchId?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const StaffCategorySchema = new Schema<IStaffCategory>({
+  name: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  description: {
+    type: String,
+    trim: true
+  },
+  status: {
+    type: String,
+    enum: ['active', 'inactive'],
+    default: 'active'
+  },
+  branchId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'Branch',
+    default: null
+  },
+  organizationId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'Organization',
+    required: true
+  }
+}, {
+  timestamps: true
+});
+
+// Compound index to ensure unique category name per branch (sparse for org-level templates)
+StaffCategorySchema.index({ name: 1, branchId: 1 }, { unique: true, sparse: true });
+StaffCategorySchema.index({ branchId: 1 });
+StaffCategorySchema.index({ organizationId: 1 });
+StaffCategorySchema.index({ status: 1 });
+
+export const StaffCategory = mongoose.model<IStaffCategory>('StaffCategory', StaffCategorySchema);

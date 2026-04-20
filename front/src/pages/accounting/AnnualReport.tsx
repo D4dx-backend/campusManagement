@@ -37,12 +37,14 @@ import {
   PieChart as RechartPieChart,
   Pie,
 } from 'recharts';
+import { useCurrency } from '@/hooks/useCurrency';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82ca9d', '#ffc658'];
 
 export const AnnualReport = () => {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
+  const { currencyCode, formatCurrency } = useCurrency();
 
   const { data: response, isLoading, error } = useAnnualReport({ year });
 
@@ -58,9 +60,9 @@ export const AnnualReport = () => {
       data: monthlySummary,
       columns: [
         { key: 'month', label: 'Month' },
-        { key: 'income', label: 'Income', formatter: formatters.currency },
-        { key: 'expenses', label: 'Expenses', formatter: formatters.currency },
-        { key: 'netProfit', label: 'Net Profit', formatter: formatters.currency },
+        { key: 'income', label: `Income (${currencyCode})`, formatter: formatCurrency },
+        { key: 'expenses', label: `Expenses (${currencyCode})`, formatter: formatCurrency },
+        { key: 'netProfit', label: `Net Profit (${currencyCode})`, formatter: formatCurrency },
       ],
       filename: `annual_report_${year}.csv`,
     });
@@ -73,9 +75,9 @@ export const AnnualReport = () => {
       data: monthlySummary,
       columns: [
         { key: 'month', label: 'Month' },
-        { key: 'income', label: 'Income', formatter: formatters.currency },
-        { key: 'expenses', label: 'Expenses', formatter: formatters.currency },
-        { key: 'netProfit', label: 'Net Profit', formatter: formatters.currency },
+        { key: 'income', label: `Income (${currencyCode})`, formatter: formatCurrency },
+        { key: 'expenses', label: `Expenses (${currencyCode})`, formatter: formatCurrency },
+        { key: 'netProfit', label: `Net Profit (${currencyCode})`, formatter: formatCurrency },
       ],
       filename: `annual_report_${year}.xlsx`,
       sheetName: 'Annual Report',
@@ -125,15 +127,15 @@ export const AnnualReport = () => {
           <div class="summary">
             <div class="summary-card">
               <label>Total Income</label>
-              <value class="income">BHD \$\{summary?.totalIncome.toFixed(3)}</value>
+              <value class="income">${formatCurrency(summary?.totalIncome)}</value>
             </div>
             <div class="summary-card">
               <label>Total Expenses</label>
-              <value class="expense">BHD \$\{summary?.totalExpenses.toFixed(3)}</value>
+              <value class="expense">${formatCurrency(summary?.totalExpenses)}</value>
             </div>
             <div class="summary-card">
               <label>Net Profit</label>
-              <value class="profit">BHD \$\{summary?.netProfit.toFixed(3)}</value>
+              <value class="profit">${formatCurrency(summary?.netProfit)}</value>
             </div>
           </div>
 
@@ -154,9 +156,9 @@ export const AnnualReport = () => {
                     (month) => `
                   <tr>
                     <td>${month.month}</td>
-                    <td class="income">BHD \$\{month.income.toFixed(3)}</td>
-                    <td class="expense">BHD \$\{month.expenses.toFixed(3)}</td>
-                    <td class="profit">BHD \$\{month.netProfit.toFixed(3)}</td>
+                    <td class="income">${formatCurrency(month.income)}</td>
+                    <td class="expense">${formatCurrency(month.expenses)}</td>
+                    <td class="profit">${formatCurrency(month.netProfit)}</td>
                   </tr>
                 `
                   )
@@ -181,7 +183,7 @@ export const AnnualReport = () => {
                     (cat) => `
                   <tr>
                     <td>${cat.categoryName || 'Uncategorized'}</td>
-                    <td class="expense">BHD \$\{cat.totalAmount.toFixed(3)}</td>
+                    <td class="expense">${formatCurrency(cat.totalAmount)}</td>
                     <td>${cat.transactionCount}</td>
                   </tr>
                 `
@@ -279,7 +281,7 @@ export const AnnualReport = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-green-600">
-                      BHD {summary.totalIncome.toFixed(3)}
+                      {formatCurrency(summary.totalIncome)}
                     </div>
                   </CardContent>
                 </Card>
@@ -291,7 +293,7 @@ export const AnnualReport = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-red-600">
-                      BHD {summary.totalExpenses.toFixed(3)}
+                      {formatCurrency(summary.totalExpenses)}
                     </div>
                   </CardContent>
                 </Card>
@@ -307,7 +309,7 @@ export const AnnualReport = () => {
                         summary.netProfit >= 0 ? 'text-blue-600' : 'text-red-600'
                       }`}
                     >
-                      BHD {summary.netProfit.toFixed(3)}
+                      {formatCurrency(summary.netProfit)}
                     </div>
                   </CardContent>
                 </Card>
@@ -335,7 +337,7 @@ export const AnnualReport = () => {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
-                    <Tooltip formatter={(value: number) => `BHD \$\{value.toFixed(3)}`} />
+                    <Tooltip formatter={(value: number) => formatCurrency(value)} />
                     <Legend />
                     <Bar dataKey="income" fill="#16a34a" name="Income" />
                     <Bar dataKey="expenses" fill="#dc2626" name="Expenses" />
@@ -355,7 +357,7 @@ export const AnnualReport = () => {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
-                    <Tooltip formatter={(value: number) => `BHD \$\{value.toFixed(3)}`} />
+                    <Tooltip formatter={(value: number) => formatCurrency(value)} />
                     <Legend />
                     <Line
                       type="monotone"
@@ -392,7 +394,7 @@ export const AnnualReport = () => {
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip formatter={(value: number) => `BHD \$\{value.toFixed(3)}`} />
+                        <Tooltip formatter={(value: number) => formatCurrency(value)} />
                       </RechartPieChart>
                     </ResponsiveContainer>
                   </CardContent>
@@ -421,7 +423,7 @@ export const AnnualReport = () => {
                               {category.categoryName || 'Uncategorized'}
                             </TableCell>
                             <TableCell className="font-semibold text-red-600">
-                              BHD {category.totalAmount.toFixed(3)}
+                              {formatCurrency(category.totalAmount)}
                             </TableCell>
                             <TableCell>{category.transactionCount}</TableCell>
                           </TableRow>
@@ -454,17 +456,17 @@ export const AnnualReport = () => {
                         <TableRow key={index}>
                           <TableCell className="font-medium">{month.month}</TableCell>
                           <TableCell className="font-semibold text-green-600">
-                            BHD {month.income.toFixed(3)}
+                            {formatCurrency(month.income)}
                           </TableCell>
                           <TableCell className="font-semibold text-red-600">
-                            BHD {month.expenses.toFixed(3)}
+                            {formatCurrency(month.expenses)}
                           </TableCell>
                           <TableCell
                             className={`font-semibold ${
                               month.netProfit >= 0 ? 'text-blue-600' : 'text-red-600'
                             }`}
                           >
-                            BHD {month.netProfit.toFixed(3)}
+                            {formatCurrency(month.netProfit)}
                           </TableCell>
                         </TableRow>
                       ))}

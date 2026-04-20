@@ -10,7 +10,8 @@ export interface User {
   email: string;
   mobile: string;
   name: string;
-  role: 'super_admin' | 'branch_admin' | 'accountant' | 'teacher' | 'staff';
+  role: 'platform_admin' | 'org_admin' | 'branch_admin' | 'accountant' | 'teacher' | 'staff';
+  organizationId?: string;
   branchId?: string;
   permissions: Array<{
     module: string;
@@ -31,6 +32,7 @@ export interface RegisterData {
   pin: string;
   name: string;
   role: string;
+  organizationId?: string;
   branchId?: string;
   permissions?: Array<{
     module: string;

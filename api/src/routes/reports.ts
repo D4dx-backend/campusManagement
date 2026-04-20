@@ -6,10 +6,15 @@ import { PayrollEntry } from '../models/PayrollEntry';
 import { Expense } from '../models/Expense';
 import { TextBook } from '../models/TextBook';
 import { ActivityLog } from '../models/ActivityLog';
-import { authenticate, checkPermission } from '../middleware/auth';
+import { Organization } from '../models/Organization';
+import { Branch } from '../models/Branch';
+import { User } from '../models/User';
+import { authenticate, authorize, checkPermission } from '../middleware/auth';
 import { validateQuery } from '../middleware/validation';
 import { AuthenticatedRequest, ApiResponse } from '../types';
 import Joi from 'joi';
+
+import { getOrgBranchFilter, getOrgBranchForCreate } from '../utils/orgFilter';
 
 const router = express.Router();
 
@@ -30,6 +35,106 @@ const financialReportSchema = Joi.object({
   format: Joi.string().valid('json', 'csv').default('json')
 });
 
+// @desc    Get platform admin dashboard (god-level overview)
+// @route   GET /api/reports/platform-dashboard
+// @access  Private (platform_admin only)
+router.get('/platform-dashboard', authorize('platform_admin'), async (req: AuthenticatedRequest, res) => {
+  try {
+    const [
+      orgStats,
+      branchStats,
+      userStats,
+      studentCount,
+      recentOrgs,
+      recentActivity
+    ] = await Promise.all([
+      // Organization stats
+      Organization.aggregate([
+        {
+          $group: {
+            _id: null,
+            total: { $sum: 1 },
+            active: { $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] } },
+            inactive: { $sum: { $cond: [{ $eq: ['$status', 'inactive'] }, 1, 0] } }
+          }
+        }
+      ]),
+
+      // Branch stats (grouped by org)
+      Branch.aggregate([
+        {
+          $group: {
+            _id: null,
+            total: { $sum: 1 },
+            active: { $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] } }
+          }
+        }
+      ]),
+
+      // User stats (grouped by role)
+      User.aggregate([
+        { $match: { status: 'active' } },
+        {
+          $group: {
+            _id: '$role',
+            count: { $sum: 1 }
+          }
+        }
+      ]),
+
+      // Total students across platform
+      Student.countDocuments({ status: 'active' }),
+
+      // Recent organizations with branch count
+      Organization.find()
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean()
+        .then(async (orgs) => {
+          const enriched = await Promise.all(
+            orgs.map(async (org) => {
+              const branchCount = await Branch.countDocuments({ organizationId: org._id });
+              const userCount = await User.countDocuments({ organizationId: org._id });
+              return { ...org, branchCount, userCount };
+            })
+          );
+          return enriched;
+        }),
+
+      // Recent activity across all orgs
+      ActivityLog.find()
+        .sort({ timestamp: -1 })
+        .limit(10)
+        .select('userName userRole module action details timestamp')
+        .lean()
+    ]);
+
+    const usersByRole: Record<string, number> = {};
+    let totalUsers = 0;
+    for (const stat of userStats) {
+      usersByRole[stat._id] = stat.count;
+      totalUsers += stat.count;
+    }
+
+    res.json({
+      success: true,
+      message: 'Platform dashboard retrieved successfully',
+      data: {
+        organizations: orgStats[0] || { total: 0, active: 0, inactive: 0 },
+        branches: branchStats[0] || { total: 0, active: 0 },
+        users: { total: totalUsers, byRole: usersByRole },
+        students: { active: studentCount },
+        recentOrganizations: recentOrgs,
+        recentActivities: recentActivity,
+        generatedAt: new Date()
+      }
+    });
+  } catch (error) {
+    console.error('Get platform dashboard error:', error);
+    res.status(500).json({ success: false, message: 'Server error retrieving platform dashboard' });
+  }
+});
+
 // @desc    Get dashboard overview report
 // @route   GET /api/reports/dashboard
 // @access  Private
@@ -38,9 +143,7 @@ router.get('/dashboard', checkPermission('reports', 'read'), async (req: Authent
     const filter: any = {};
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const currentDate = new Date();
     const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -193,9 +296,7 @@ router.get('/financial', checkPermission('reports', 'read'), validateQuery(finan
     const filter: any = {};
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const dateFilter = {
       $gte: new Date(startDate as string),
@@ -322,9 +423,7 @@ router.get('/students', checkPermission('reports', 'read'), async (req: Authenti
     const filter: any = {};
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const [
       totalStats,
@@ -453,9 +552,7 @@ router.get('/staff', checkPermission('reports', 'read'), async (req: Authenticat
     const filter: any = {};
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const [
       totalStats,
@@ -578,9 +675,7 @@ router.get('/fees', checkPermission('reports', 'read'), validateQuery(dateRangeS
     const filter: any = {};
 
     // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    Object.assign(filter, getOrgBranchFilter(req));
 
     const dateFilter = {
       $gte: new Date(startDate as string),
@@ -697,10 +792,8 @@ router.get('/fee-dues', checkPermission('reports', 'read'), async (req: Authenti
     
     const filter: any = { status: 'pending' };
 
-    // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    // Org + Branch filter
+    Object.assign(filter, getOrgBranchFilter(req));
 
     // Optional filters
     if (req.query.classId) {
@@ -868,10 +961,8 @@ router.get('/transport', checkPermission('reports', 'read'), async (req: Authent
     
     const filter: any = { status: 'active' };
 
-    // Branch filter for non-super admins
-    if (req.user!.role !== 'super_admin') {
-      filter.branchId = req.user!.branchId;
-    }
+    // Org + Branch filter
+    Object.assign(filter, getOrgBranchFilter(req));
 
     // Filter by transport type if specified
     if (transportType && ['school', 'own', 'none'].includes(transportType)) {
@@ -896,9 +987,7 @@ router.get('/transport', checkPermission('reports', 'read'), async (req: Authent
 
     // Get all students for statistics (without pagination)
     const allStudentsFilter: any = { status: 'active' };
-    if (req.user!.role !== 'super_admin') {
-      allStudentsFilter.branchId = req.user!.branchId;
-    }
+    Object.assign(allStudentsFilter, getOrgBranchFilter(req));
     
     const allStudents = await Student.find(allStudentsFilter)
       .populate('classId', 'name')

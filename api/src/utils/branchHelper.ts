@@ -17,9 +17,13 @@ export const getBranchId = async (req: AuthenticatedRequest, providedBranchId?: 
     return req.user!.branchId;
   }
 
-  // For super admin users without a branchId, use the first available active branch
-  if (req.user!.role === 'super_admin') {
-    const firstBranch = await Branch.findOne({ status: 'active' });
+  // For platform/org admin users without a branchId, use the first available active branch
+  if (['platform_admin', 'org_admin'].includes(req.user!.role)) {
+    const branchFilter: any = { status: 'active' };
+    if (req.user!.organizationId) {
+      branchFilter.organizationId = req.user!.organizationId;
+    }
+    const firstBranch = await Branch.findOne(branchFilter);
     if (firstBranch) {
       return firstBranch._id.toString();
     }

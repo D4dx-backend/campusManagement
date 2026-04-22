@@ -182,6 +182,6 @@ export const downloadReceipt = async (receiptData: ReceiptData) => {
     URL.revokeObjectURL(url);
   } catch (error) {
     console.error('Error generating receipt:', error);
-    throw new Error('Failed to generate receipt');
+    throw new Error('Something went wrong while generating the receipt.');
   }
 };

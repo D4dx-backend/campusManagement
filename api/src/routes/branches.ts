@@ -16,7 +16,7 @@ router.use(authenticate);
 router.get('/', authorize('platform_admin', 'org_admin'), async (req: AuthenticatedRequest, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
+    const limit = req.query.limit != null ? parseInt(req.query.limit as string) : 20;
     const search = req.query.search as string || '';
     const status = req.query.status as string;
 
@@ -65,7 +65,7 @@ router.get('/', authorize('platform_admin', 'org_admin'), async (req: Authentica
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: (limit > 0 ? Math.ceil(total / limit) : 1)
       }
     };
 
@@ -74,7 +74,7 @@ router.get('/', authorize('platform_admin', 'org_admin'), async (req: Authentica
     console.error('Get branches error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving branches'
+      message: 'Something went wrong while loading branches. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -94,7 +94,7 @@ router.post('/', authorize('platform_admin', 'org_admin'), async (req: Authentic
     if (req.user!.role === 'platform_admin') {
       assignedOrgId = organizationId;
       if (!assignedOrgId) {
-        const response: ApiResponse = { success: false, message: 'Organization ID is required' };
+        const response: ApiResponse = { success: false, message: 'Organization is required. Please select an organization.' };
         return res.status(400).json(response);
       }
     } else {
@@ -115,7 +115,7 @@ router.post('/', authorize('platform_admin', 'org_admin'), async (req: Authentic
     if (existingBranch) {
       const response: ApiResponse = {
         success: false,
-        message: 'Branch with this code already exists'
+        message: 'A branch with this code already exists. Please use a different code.'
       };
       return res.status(400).json(response);
     }
@@ -125,7 +125,7 @@ router.post('/', authorize('platform_admin', 'org_admin'), async (req: Authentic
     if (existingEmail) {
       const response: ApiResponse = {
         success: false,
-        message: 'Branch with this email already exists'
+        message: 'A branch with this email already exists. Please use a different email.'
       };
       return res.status(400).json(response);
     }
@@ -172,14 +172,14 @@ router.post('/', authorize('platform_admin', 'org_admin'), async (req: Authentic
     if (error.code === 11000) {
       const response: ApiResponse = {
         success: false,
-        message: 'Branch code or email already exists'
+        message: 'A branch with this code or email already exists.'
       };
       return res.status(400).json(response);
     }
 
     const response: ApiResponse = {
       success: false,
-      message: 'Server error creating branch'
+      message: 'Something went wrong while creating the branch. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -188,7 +188,7 @@ router.post('/', authorize('platform_admin', 'org_admin'), async (req: Authentic
 // @desc    Get single branch
 // @route   GET /api/branches/:id
 // @access  Private (Super Admin only)
-router.get('/:id', authorize('platform_admin', 'org_admin'), async (req: AuthenticatedRequest, res) => {
+router.get('/:id', authorize('platform_admin', 'org_admin', 'branch_admin', 'teacher', 'accountant', 'staff'), async (req: AuthenticatedRequest, res) => {
   try {
     const branch = await Branch.findById(req.params.id)
       .populate('createdBy', 'name email')
@@ -197,16 +197,25 @@ router.get('/:id', authorize('platform_admin', 'org_admin'), async (req: Authent
     if (!branch) {
       const response: ApiResponse = {
         success: false,
-        message: 'Branch not found'
+        message: 'Branch was not found.'
       };
       return res.status(404).json(response);
     }
 
-    // Org isolation: org_admin can only see own org's branches
-    if (req.user!.role === 'org_admin' && branch.organizationId?.toString() !== req.user!.organizationId?.toString()) {
+    // Org isolation: non-platform users can only see own org's branches
+    if (req.user!.role !== 'platform_admin' && branch.organizationId?.toString() !== req.user!.organizationId?.toString()) {
       const response: ApiResponse = {
         success: false,
-        message: 'Access denied to this branch'
+        message: 'You do not have access to this branch.'
+      };
+      return res.status(403).json(response);
+    }
+
+    // Branch-level users can only view their own branch
+    if (!['platform_admin', 'org_admin'].includes(req.user!.role) && req.user!.branchId?.toString() !== req.params.id) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'You do not have access to this branch.'
       };
       return res.status(403).json(response);
     }
@@ -222,7 +231,7 @@ router.get('/:id', authorize('platform_admin', 'org_admin'), async (req: Authent
     console.error('Get branch error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving branch'
+      message: 'Something went wrong while loading branch. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -238,7 +247,7 @@ router.put('/:id', authorize('platform_admin', 'org_admin'), async (req: Authent
     if (!branch) {
       const response: ApiResponse = {
         success: false,
-        message: 'Branch not found'
+        message: 'Branch was not found.'
       };
       return res.status(404).json(response);
     }
@@ -247,7 +256,7 @@ router.put('/:id', authorize('platform_admin', 'org_admin'), async (req: Authent
     if (req.user!.role === 'org_admin' && branch.organizationId?.toString() !== req.user!.organizationId?.toString()) {
       const response: ApiResponse = {
         success: false,
-        message: 'Access denied to this branch'
+        message: 'You do not have access to this branch.'
       };
       return res.status(403).json(response);
     }
@@ -261,7 +270,7 @@ router.put('/:id', authorize('platform_admin', 'org_admin'), async (req: Authent
       if (existingBranch) {
         const response: ApiResponse = {
           success: false,
-          message: 'Branch with this code already exists'
+          message: 'A branch with this code already exists. Please use a different code.'
         };
         return res.status(400).json(response);
       }
@@ -277,7 +286,7 @@ router.put('/:id', authorize('platform_admin', 'org_admin'), async (req: Authent
       if (existingEmail) {
         const response: ApiResponse = {
           success: false,
-          message: 'Branch with this email already exists'
+          message: 'A branch with this email already exists. Please use a different email.'
         };
         return res.status(400).json(response);
       }
@@ -315,14 +324,14 @@ router.put('/:id', authorize('platform_admin', 'org_admin'), async (req: Authent
     if (error.code === 11000) {
       const response: ApiResponse = {
         success: false,
-        message: 'Branch code or email already exists'
+        message: 'A branch with this code or email already exists.'
       };
       return res.status(400).json(response);
     }
 
     const response: ApiResponse = {
       success: false,
-      message: 'Server error updating branch'
+      message: 'Something went wrong while updating the branch. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -338,7 +347,7 @@ router.delete('/:id', authorize('platform_admin', 'org_admin'), async (req: Auth
     if (!branch) {
       const response: ApiResponse = {
         success: false,
-        message: 'Branch not found'
+        message: 'Branch was not found.'
       };
       return res.status(404).json(response);
     }
@@ -355,7 +364,7 @@ router.delete('/:id', authorize('platform_admin', 'org_admin'), async (req: Auth
     console.error('Delete branch error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error deleting branch'
+      message: 'Something went wrong while deleting the branch. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -368,12 +377,12 @@ router.get('/:id/settings', async (req: AuthenticatedRequest, res) => {
   try {
     const branch = await Branch.findById(req.params.id).lean();
     if (!branch) {
-      return res.status(404).json({ success: false, message: 'Branch not found' });
+      return res.status(404).json({ success: false, message: 'Branch was not found.' });
     }
 
     // Org isolation
     if (req.user!.role === 'org_admin' && branch.organizationId?.toString() !== req.user!.organizationId?.toString()) {
-      return res.status(403).json({ success: false, message: 'Access denied' });
+      return res.status(403).json({ success: false, message: 'You do not have permission to perform this action.' });
     }
 
     const org = await Organization.findById(branch.organizationId).lean();
@@ -382,7 +391,7 @@ router.get('/:id/settings', async (req: AuthenticatedRequest, res) => {
     res.json({ success: true, data: settings });
   } catch (error) {
     console.error('Get branch settings error:', error);
-    res.status(500).json({ success: false, message: 'Server error retrieving settings' });
+    res.status(500).json({ success: false, message: 'Something went wrong while loading settings. Please try again.' });
   }
 });
 

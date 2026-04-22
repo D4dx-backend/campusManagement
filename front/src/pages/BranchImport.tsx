@@ -68,7 +68,7 @@ const BranchImport = () => {
       const res = await apiClient.get('/branches');
       setBranches(((res.data as any).data || []).map((b: any) => ({ _id: b._id, name: b.name })));
     } catch {
-      toast({ title: 'Failed to load branches', variant: 'destructive' });
+      toast({ title: 'Something went wrong while loading branches. Please try again.', variant: 'destructive' });
     }
   };
 
@@ -92,7 +92,7 @@ const BranchImport = () => {
         if (compareRes) setCompareData(compareRes.data);
       }
     } catch {
-      toast({ title: 'Failed to load classes', variant: 'destructive' });
+      toast({ title: 'Something went wrong while loading classes. Please try again.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }

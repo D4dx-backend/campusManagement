@@ -38,7 +38,7 @@ export const authenticate = async (
     if (!token) {
       res.status(401).json({
         success: false,
-        message: 'Access denied. No token provided.'
+        message: 'Please log in to continue. Your session may have expired.'
       });
       return;
     }
@@ -49,7 +49,7 @@ export const authenticate = async (
     if (!user) {
       res.status(401).json({
         success: false,
-        message: 'Invalid token. User not found.'
+        message: 'Your account was not found. Please log in again.'
       });
       return;
     }
@@ -57,7 +57,7 @@ export const authenticate = async (
     if (user.status !== 'active') {
       res.status(401).json({
         success: false,
-        message: 'Account is inactive. Please contact administrator.'
+        message: 'Your account is inactive. Please contact the administrator to reactivate it.'
       });
       return;
     }
@@ -75,7 +75,7 @@ export const authenticate = async (
       if (requestedOrgId && userOrgId && requestedOrgId !== userOrgId) {
         res.status(403).json({
           success: false,
-          message: 'Access denied. You can only access your assigned organization data.'
+          message: 'You do not have permission to access another organization\'s data.'
         });
         return;
       }
@@ -92,7 +92,7 @@ export const authenticate = async (
       if (requestedBranchId && userBranchId && requestedBranchId !== userBranchId) {
         res.status(403).json({
           success: false,
-          message: 'Access denied. You can only access your assigned branch data.'
+          message: 'You do not have permission to access another branch\'s data.'
         });
         return;
       }
@@ -102,7 +102,7 @@ export const authenticate = async (
   } catch (error) {
     res.status(401).json({
       success: false,
-      message: 'Invalid token.'
+      message: 'Your session has expired. Please log in again.'
     });
   }
 };
@@ -112,7 +112,7 @@ export const authorize = (...roles: UserRole[]) => {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        message: 'Access denied. Authentication required.'
+        message: 'Please log in to continue.'
       });
       return;
     }
@@ -120,7 +120,7 @@ export const authorize = (...roles: UserRole[]) => {
     if (!roles.includes(req.user.role)) {
       res.status(403).json({
         success: false,
-        message: 'Access denied. Insufficient permissions.'
+        message: 'You do not have the required role to perform this action.'
       });
       return;
     }
@@ -134,7 +134,7 @@ export const checkPermission = (module: string, action: 'create' | 'read' | 'upd
     if (!req.user) {
       res.status(401).json({
         success: false,
-        message: 'Access denied. Authentication required.'
+        message: 'Please log in to continue.'
       });
       return;
     }
@@ -151,9 +151,11 @@ export const checkPermission = (module: string, action: 'create' | 'read' | 'upd
     );
 
     if (!hasPermission) {
+      const actionLabel = { create: 'create', read: 'view', update: 'edit', delete: 'delete' }[action] || action;
+      const moduleLabel = module.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
       res.status(403).json({
         success: false,
-        message: `Access denied. You don't have permission to ${action} ${module}.`
+        message: `You don't have permission to ${actionLabel} ${moduleLabel}. Please contact your administrator.`
       });
       return;
     }

@@ -40,7 +40,7 @@ router.get('/', checkPermission('accounting', 'read'), async (req: Authenticated
     console.error('Get accounts error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving accounts'
+      message: 'Something went wrong while loading accounts. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -137,7 +137,7 @@ router.post('/', checkPermission('accounting', 'create'), async (req: Authentica
     console.error('Create account error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error creating account'
+      message: 'Something went wrong while creating the account. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -155,7 +155,7 @@ router.get('/:id/transactions', checkPermission('accounting', 'read'), async (re
     if (!account) {
       const response: ApiResponse = {
         success: false,
-        message: 'Account not found'
+        message: 'Account was not found.'
       };
       return res.status(404).json(response);
     }
@@ -164,14 +164,14 @@ router.get('/:id/transactions', checkPermission('accounting', 'read'), async (re
     if (req.user!.role === 'org_admin' && account.organizationId?.toString() !== req.user!.organizationId?.toString()) {
       const response: ApiResponse = {
         success: false,
-        message: 'Access denied to this account'
+        message: 'You do not have access to this account.'
       };
       return res.status(403).json(response);
     }
     if (!['platform_admin', 'org_admin'].includes(req.user!.role) && req.user!.branchId?.toString() !== account.branchId?.toString()) {
       const response: ApiResponse = {
         success: false,
-        message: 'Access denied to this account'
+        message: 'You do not have access to this account.'
       };
       return res.status(403).json(response);
     }
@@ -210,7 +210,7 @@ router.get('/:id/transactions', checkPermission('accounting', 'read'), async (re
         page: Number(page),
         limit: Number(limit),
         total,
-        pages: Math.ceil(total / Number(limit))
+        pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1)
       }
     };
 
@@ -219,7 +219,7 @@ router.get('/:id/transactions', checkPermission('accounting', 'read'), async (re
     console.error('Get account transactions error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving transactions'
+      message: 'Something went wrong while loading transactions. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -245,18 +245,18 @@ router.post('/:id/reconcile', checkPermission('accounting', 'update'), async (re
     if (!account) {
       const response: ApiResponse = {
         success: false,
-        message: 'Account not found'
+        message: 'Account was not found.'
       };
       return res.status(404).json(response);
     }
 
     // Check org + branch access
     if (req.user!.role === 'org_admin' && account.organizationId?.toString() !== req.user!.organizationId?.toString()) {
-      const response: ApiResponse = { success: false, message: 'Access denied to this account' };
+      const response: ApiResponse = { success: false, message: 'You do not have access to this account.' };
       return res.status(403).json(response);
     }
     if (!['platform_admin', 'org_admin'].includes(req.user!.role) && req.user!.branchId?.toString() !== account.branchId?.toString()) {
-      const response: ApiResponse = { success: false, message: 'Access denied to this account' };
+      const response: ApiResponse = { success: false, message: 'You do not have access to this account.' };
       return res.status(403).json(response);
     }
 
@@ -298,7 +298,7 @@ router.post('/:id/reconcile', checkPermission('accounting', 'update'), async (re
     console.error('Reconcile transactions error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error reconciling transactions'
+      message: 'Something went wrong while reconciling transactions. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -324,7 +324,7 @@ router.put('/:id', checkPermission('accounting', 'update'), async (req: Authenti
     if (!account) {
       const response: ApiResponse = {
         success: false,
-        message: 'Account not found'
+        message: 'Account was not found.'
       };
       return res.status(404).json(response);
     }
@@ -352,7 +352,7 @@ router.put('/:id', checkPermission('accounting', 'update'), async (req: Authenti
     console.error('Update account error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error updating account'
+      message: 'Something went wrong while updating the account. Please try again.'
     };
     res.status(500).json(response);
   }

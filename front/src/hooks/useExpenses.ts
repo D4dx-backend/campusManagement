@@ -56,7 +56,7 @@ export const useCreateExpense = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to create expense',
+        description: error.response?.data?.message || 'Something went wrong while creating the expense. Please try again.',
         variant: 'destructive',
       });
     },
@@ -82,7 +82,7 @@ export const useUpdateExpense = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to update expense',
+        description: error.response?.data?.message || 'Something went wrong while updating the expense. Please try again.',
         variant: 'destructive',
       });
     },
@@ -106,7 +106,7 @@ export const useDeleteExpense = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to delete expense',
+        description: error.response?.data?.message || 'Something went wrong while deleting the expense. Please try again.',
         variant: 'destructive',
       });
     },

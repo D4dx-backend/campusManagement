@@ -12,6 +12,7 @@ import { StaffCategory } from '../models/StaffCategory';
 import { ExpenseCategory } from '../models/ExpenseCategory';
 import { IncomeCategory } from '../models/IncomeCategory';
 import { FeeTypeConfig } from '../models/FeeTypeConfig';
+import { Organization } from '../models/Organization';
 import { authenticate, authorize, checkPermission } from '../middleware/auth';
 import { validate } from '../middleware/validation';
 import { AuthenticatedRequest, ApiResponse } from '../types';
@@ -23,10 +24,13 @@ router.use(authenticate);
 // Only org_admin and platform_admin can manage org-level templates
 const orgAdminOnly = authorize('platform_admin', 'org_admin');
 
-function getOrgId(req: AuthenticatedRequest): mongoose.Types.ObjectId | undefined {
+async function getOrgId(req: AuthenticatedRequest): Promise<mongoose.Types.ObjectId | undefined> {
   if (req.user!.role === 'platform_admin') {
     const id = req.body.organizationId || req.query.organizationId;
-    return id ? new mongoose.Types.ObjectId(String(id)) : undefined;
+    if (id) return new mongoose.Types.ObjectId(String(id));
+    // Auto-resolve: pick the first organization
+    const org = await Organization.findOne().select('_id').lean();
+    return org ? new mongoose.Types.ObjectId(String(org._id)) : undefined;
   }
   return req.user!.organizationId ? new mongoose.Types.ObjectId(String(req.user!.organizationId)) : undefined;
 }
@@ -39,7 +43,7 @@ function getOrgId(req: AuthenticatedRequest): mongoose.Types.ObjectId | undefine
 // @route  GET /api/org-templates/classes
 router.get('/classes', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     const { status, academicYear, search } = req.query;
@@ -52,7 +56,7 @@ router.get('/classes', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
     res.json({ success: true, message: 'Org template classes', data: classes });
   } catch (error) {
     console.error('Get org template classes error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -68,7 +72,7 @@ const createOrgClassSchema = Joi.object({
 
 router.post('/classes', orgAdminOnly, validate(createOrgClassSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     // Check duplicate
@@ -102,7 +106,7 @@ router.post('/classes', orgAdminOnly, validate(createOrgClassSchema), async (req
     res.status(201).json({ success: true, message: 'Org template class created', data: newClass });
   } catch (error) {
     console.error('Create org template class error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -117,7 +121,7 @@ const updateOrgClassSchema = Joi.object({
 
 router.put('/classes/:id', orgAdminOnly, validate(updateOrgClassSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     const cls = await Class.findOneAndUpdate(
@@ -125,12 +129,12 @@ router.put('/classes/:id', orgAdminOnly, validate(updateOrgClassSchema), async (
       { $set: req.body },
       { new: true }
     );
-    if (!cls) return res.status(404).json({ success: false, message: 'Org template class not found' });
+    if (!cls) return res.status(404).json({ success: false, message: 'Organization template class was not found.' });
 
     res.json({ success: true, message: 'Updated', data: cls });
   } catch (error) {
     console.error('Update org template class error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -138,11 +142,11 @@ router.put('/classes/:id', orgAdminOnly, validate(updateOrgClassSchema), async (
 // @route  DELETE /api/org-templates/classes/:id
 router.delete('/classes/:id', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     const cls = await Class.findOneAndDelete({ _id: req.params.id, organizationId: orgId, branchId: null });
-    if (!cls) return res.status(404).json({ success: false, message: 'Org template class not found' });
+    if (!cls) return res.status(404).json({ success: false, message: 'Organization template class was not found.' });
 
     // Also remove org-level subjects that reference this class
     await Subject.updateMany(
@@ -153,7 +157,7 @@ router.delete('/classes/:id', orgAdminOnly, async (req: AuthenticatedRequest, re
     res.json({ success: true, message: 'Deleted' });
   } catch (error) {
     console.error('Delete org template class error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -165,7 +169,7 @@ router.delete('/classes/:id', orgAdminOnly, async (req: AuthenticatedRequest, re
 // @route  GET /api/org-templates/subjects
 router.get('/subjects', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     const { status, classId, search } = req.query;
@@ -178,7 +182,7 @@ router.get('/subjects', orgAdminOnly, async (req: AuthenticatedRequest, res) => 
     res.json({ success: true, message: 'Org template subjects', data: subjects });
   } catch (error) {
     console.error('Get org template subjects error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -197,7 +201,7 @@ const createOrgSubjectSchema = Joi.object({
 
 router.post('/subjects', orgAdminOnly, validate(createOrgSubjectSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     // Check duplicate code at org level
@@ -229,7 +233,7 @@ router.post('/subjects', orgAdminOnly, validate(createOrgSubjectSchema), async (
     res.status(201).json({ success: true, message: 'Org template subject created', data: newSubject });
   } catch (error) {
     console.error('Create org template subject error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -247,7 +251,7 @@ const updateOrgSubjectSchema = Joi.object({
 
 router.put('/subjects/:id', orgAdminOnly, validate(updateOrgSubjectSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     const subj = await Subject.findOneAndUpdate(
@@ -255,12 +259,12 @@ router.put('/subjects/:id', orgAdminOnly, validate(updateOrgSubjectSchema), asyn
       { $set: req.body },
       { new: true }
     ).populate('classIds', 'name academicYear');
-    if (!subj) return res.status(404).json({ success: false, message: 'Org template subject not found' });
+    if (!subj) return res.status(404).json({ success: false, message: 'Organization template subject was not found.' });
 
     res.json({ success: true, message: 'Updated', data: subj });
   } catch (error) {
     console.error('Update org template subject error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -268,16 +272,16 @@ router.put('/subjects/:id', orgAdminOnly, validate(updateOrgSubjectSchema), asyn
 // @route  DELETE /api/org-templates/subjects/:id
 router.delete('/subjects/:id', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     const subj = await Subject.findOneAndDelete({ _id: req.params.id, organizationId: orgId, branchId: null });
-    if (!subj) return res.status(404).json({ success: false, message: 'Org template subject not found' });
+    if (!subj) return res.status(404).json({ success: false, message: 'Organization template subject was not found.' });
 
     res.json({ success: true, message: 'Deleted' });
   } catch (error) {
     console.error('Delete org template subject error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -289,7 +293,7 @@ router.delete('/subjects/:id', orgAdminOnly, async (req: AuthenticatedRequest, r
 // @route  GET /api/org-templates/import/preview
 router.get('/import/preview', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     const { academicYear } = req.query;
@@ -378,7 +382,7 @@ router.get('/import/preview', orgAdminOnly, async (req: AuthenticatedRequest, re
     });
   } catch (error) {
     console.error('Import preview error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -408,7 +412,7 @@ const importSchema = Joi.object({
 
 router.post('/import', orgAdminOnly, validate(importSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     const { branchId, classIds, includeSubjects, includeChapters, includeAcademicYears, includeDepartments, includeDesignations, includeStaffCategories, includeExpenseCategories, includeIncomeCategories, includeFeeTypes, divisions } = req.body;
@@ -739,7 +743,7 @@ router.post('/import', orgAdminOnly, validate(importSchema), async (req: Authent
     });
   } catch (error) {
     console.error('Import org templates error:', error);
-    res.status(500).json({ success: false, message: 'Server error during import' });
+    res.status(500).json({ success: false, message: 'Something went wrong during import. Please try again.' });
   }
 });
 
@@ -747,7 +751,7 @@ router.post('/import', orgAdminOnly, validate(importSchema), async (req: Authent
 // @route  GET /api/org-templates/compare/:branchId
 router.get('/compare/:branchId', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     const branchObjId = new mongoose.Types.ObjectId(req.params.branchId);
@@ -815,7 +819,7 @@ router.get('/compare/:branchId', orgAdminOnly, async (req: AuthenticatedRequest,
     });
   } catch (error) {
     console.error('Compare error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -825,7 +829,7 @@ router.get('/compare/:branchId', orgAdminOnly, async (req: AuthenticatedRequest,
 
 router.get('/academic-years', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const { status, search } = req.query;
     const filter: any = { organizationId: orgId, branchId: null };
@@ -835,7 +839,7 @@ router.get('/academic-years', orgAdminOnly, async (req: AuthenticatedRequest, re
     res.json({ success: true, data });
   } catch (error) {
     console.error('Get org template academic years error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -849,7 +853,7 @@ const createOrgAYSchema = Joi.object({
 });
 router.post('/academic-years', orgAdminOnly, validate(createOrgAYSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const exists = await AcademicYear.findOne({ name: req.body.name, organizationId: orgId, branchId: null });
     if (exists) return res.status(400).json({ success: false, message: 'Academic year already exists at org level' });
@@ -857,7 +861,7 @@ router.post('/academic-years', orgAdminOnly, validate(createOrgAYSchema), async 
     res.status(201).json({ success: true, data: doc });
   } catch (error) {
     console.error('Create org template academic year error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -870,7 +874,7 @@ const updateOrgAYSchema = Joi.object({
 });
 router.put('/academic-years/:id', orgAdminOnly, validate(updateOrgAYSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await AcademicYear.findOneAndUpdate(
       { _id: req.params.id, organizationId: orgId, branchId: null },
@@ -879,19 +883,19 @@ router.put('/academic-years/:id', orgAdminOnly, validate(updateOrgAYSchema), asy
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
     res.json({ success: true, data: doc });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
 router.delete('/academic-years/:id', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await AcademicYear.findOneAndDelete({ _id: req.params.id, organizationId: orgId, branchId: null });
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
     res.json({ success: true, message: 'Deleted' });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -901,7 +905,7 @@ router.delete('/academic-years/:id', orgAdminOnly, async (req: AuthenticatedRequ
 
 router.get('/departments', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const filter: any = { organizationId: orgId, branchId: null };
     if (req.query.status) filter.status = req.query.status;
@@ -912,7 +916,7 @@ router.get('/departments', orgAdminOnly, async (req: AuthenticatedRequest, res) 
     const data = await Department.find(filter).sort({ name: 1 }).lean();
     res.json({ success: true, data });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -926,14 +930,14 @@ const orgDeptSchema = Joi.object({
 });
 router.post('/departments', orgAdminOnly, validate(orgDeptSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const exists = await Department.findOne({ code: req.body.code.toUpperCase(), organizationId: orgId, branchId: null });
     if (exists) return res.status(400).json({ success: false, message: 'Department code already exists at org level' });
     const doc = await Department.create({ ...req.body, code: req.body.code.toUpperCase(), organizationId: orgId, branchId: null });
     res.status(201).json({ success: true, data: doc });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -946,7 +950,7 @@ const updateOrgDeptSchema = Joi.object({
 });
 router.put('/departments/:id', orgAdminOnly, validate(updateOrgDeptSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await Department.findOneAndUpdate(
       { _id: req.params.id, organizationId: orgId, branchId: null },
@@ -955,19 +959,19 @@ router.put('/departments/:id', orgAdminOnly, validate(updateOrgDeptSchema), asyn
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
     res.json({ success: true, data: doc });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
 router.delete('/departments/:id', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await Department.findOneAndDelete({ _id: req.params.id, organizationId: orgId, branchId: null });
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
     res.json({ success: true, message: 'Deleted' });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -977,7 +981,7 @@ router.delete('/departments/:id', orgAdminOnly, async (req: AuthenticatedRequest
 
 router.get('/designations', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const filter: any = { organizationId: orgId, branchId: null };
     if (req.query.status) filter.status = req.query.status;
@@ -985,7 +989,7 @@ router.get('/designations', orgAdminOnly, async (req: AuthenticatedRequest, res)
     const data = await Designation.find(filter).sort({ name: 1 }).lean();
     res.json({ success: true, data });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -997,14 +1001,14 @@ const orgDesigSchema = Joi.object({
 });
 router.post('/designations', orgAdminOnly, validate(orgDesigSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const exists = await Designation.findOne({ name: req.body.name, organizationId: orgId, branchId: null });
     if (exists) return res.status(400).json({ success: false, message: 'Designation already exists at org level' });
     const doc = await Designation.create({ ...req.body, organizationId: orgId, branchId: null });
     res.status(201).json({ success: true, data: doc });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -1015,7 +1019,7 @@ const updateOrgDesigSchema = Joi.object({
 });
 router.put('/designations/:id', orgAdminOnly, validate(updateOrgDesigSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await Designation.findOneAndUpdate(
       { _id: req.params.id, organizationId: orgId, branchId: null },
@@ -1024,19 +1028,19 @@ router.put('/designations/:id', orgAdminOnly, validate(updateOrgDesigSchema), as
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
     res.json({ success: true, data: doc });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
 router.delete('/designations/:id', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await Designation.findOneAndDelete({ _id: req.params.id, organizationId: orgId, branchId: null });
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
     res.json({ success: true, message: 'Deleted' });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -1046,7 +1050,7 @@ router.delete('/designations/:id', orgAdminOnly, async (req: AuthenticatedReques
 
 router.get('/staff-categories', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const filter: any = { organizationId: orgId, branchId: null };
     if (req.query.status) filter.status = req.query.status;
@@ -1054,7 +1058,7 @@ router.get('/staff-categories', orgAdminOnly, async (req: AuthenticatedRequest, 
     const data = await StaffCategory.find(filter).sort({ name: 1 }).lean();
     res.json({ success: true, data });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -1066,14 +1070,14 @@ const orgStaffCatSchema = Joi.object({
 });
 router.post('/staff-categories', orgAdminOnly, validate(orgStaffCatSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const exists = await StaffCategory.findOne({ name: req.body.name, organizationId: orgId, branchId: null });
     if (exists) return res.status(400).json({ success: false, message: 'Staff category already exists at org level' });
     const doc = await StaffCategory.create({ ...req.body, organizationId: orgId, branchId: null });
     res.status(201).json({ success: true, data: doc });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -1083,7 +1087,7 @@ router.put('/staff-categories/:id', orgAdminOnly, validate(Joi.object({
   status: Joi.string().valid('active', 'inactive').optional()
 })), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await StaffCategory.findOneAndUpdate(
       { _id: req.params.id, organizationId: orgId, branchId: null },
@@ -1092,19 +1096,19 @@ router.put('/staff-categories/:id', orgAdminOnly, validate(Joi.object({
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
     res.json({ success: true, data: doc });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
 router.delete('/staff-categories/:id', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await StaffCategory.findOneAndDelete({ _id: req.params.id, organizationId: orgId, branchId: null });
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
     res.json({ success: true, message: 'Deleted' });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -1114,7 +1118,7 @@ router.delete('/staff-categories/:id', orgAdminOnly, async (req: AuthenticatedRe
 
 router.get('/expense-categories', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const filter: any = { organizationId: orgId, branchId: null };
     if (req.query.status) filter.status = req.query.status;
@@ -1122,7 +1126,7 @@ router.get('/expense-categories', orgAdminOnly, async (req: AuthenticatedRequest
     const data = await ExpenseCategory.find(filter).sort({ name: 1 }).lean();
     res.json({ success: true, data });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -1134,14 +1138,14 @@ const orgExpCatSchema = Joi.object({
 });
 router.post('/expense-categories', orgAdminOnly, validate(orgExpCatSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const exists = await ExpenseCategory.findOne({ name: req.body.name, organizationId: orgId, branchId: null });
     if (exists) return res.status(400).json({ success: false, message: 'Expense category already exists at org level' });
     const doc = await ExpenseCategory.create({ ...req.body, organizationId: orgId, branchId: null });
     res.status(201).json({ success: true, data: doc });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -1151,7 +1155,7 @@ router.put('/expense-categories/:id', orgAdminOnly, validate(Joi.object({
   status: Joi.string().valid('active', 'inactive').optional()
 })), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await ExpenseCategory.findOneAndUpdate(
       { _id: req.params.id, organizationId: orgId, branchId: null },
@@ -1160,19 +1164,19 @@ router.put('/expense-categories/:id', orgAdminOnly, validate(Joi.object({
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
     res.json({ success: true, data: doc });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
 router.delete('/expense-categories/:id', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await ExpenseCategory.findOneAndDelete({ _id: req.params.id, organizationId: orgId, branchId: null });
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
     res.json({ success: true, message: 'Deleted' });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -1182,7 +1186,7 @@ router.delete('/expense-categories/:id', orgAdminOnly, async (req: Authenticated
 
 router.get('/income-categories', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const filter: any = { organizationId: orgId, branchId: null };
     if (req.query.status) filter.status = req.query.status;
@@ -1190,7 +1194,7 @@ router.get('/income-categories', orgAdminOnly, async (req: AuthenticatedRequest,
     const data = await IncomeCategory.find(filter).sort({ name: 1 }).lean();
     res.json({ success: true, data });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -1202,14 +1206,14 @@ const orgIncCatSchema = Joi.object({
 });
 router.post('/income-categories', orgAdminOnly, validate(orgIncCatSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const exists = await IncomeCategory.findOne({ name: req.body.name, organizationId: orgId, branchId: null });
     if (exists) return res.status(400).json({ success: false, message: 'Income category already exists at org level' });
     const doc = await IncomeCategory.create({ ...req.body, organizationId: orgId, branchId: null });
     res.status(201).json({ success: true, data: doc });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -1219,7 +1223,7 @@ router.put('/income-categories/:id', orgAdminOnly, validate(Joi.object({
   status: Joi.string().valid('active', 'inactive').optional()
 })), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await IncomeCategory.findOneAndUpdate(
       { _id: req.params.id, organizationId: orgId, branchId: null },
@@ -1228,19 +1232,19 @@ router.put('/income-categories/:id', orgAdminOnly, validate(Joi.object({
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
     res.json({ success: true, data: doc });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
 router.delete('/income-categories/:id', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await IncomeCategory.findOneAndDelete({ _id: req.params.id, organizationId: orgId, branchId: null });
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
     res.json({ success: true, message: 'Deleted' });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -1250,14 +1254,14 @@ router.delete('/income-categories/:id', orgAdminOnly, async (req: AuthenticatedR
 
 router.get('/fee-types', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const filter: any = { organizationId: orgId, branchId: null };
     if (req.query.search) filter.name = { $regex: req.query.search, $options: 'i' };
     const data = await FeeTypeConfig.find(filter).sort({ name: 1 }).lean();
     res.json({ success: true, data });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -1269,14 +1273,14 @@ const orgFeeTypeSchema = Joi.object({
 });
 router.post('/fee-types', orgAdminOnly, validate(orgFeeTypeSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const exists = await FeeTypeConfig.findOne({ name: req.body.name, organizationId: orgId, branchId: null });
     if (exists) return res.status(400).json({ success: false, message: 'Fee type already exists at org level' });
     const doc = await FeeTypeConfig.create({ ...req.body, organizationId: orgId, branchId: null });
     res.status(201).json({ success: true, data: doc });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -1286,7 +1290,7 @@ router.put('/fee-types/:id', orgAdminOnly, validate(Joi.object({
   isActive: Joi.boolean().optional()
 })), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await FeeTypeConfig.findOneAndUpdate(
       { _id: req.params.id, organizationId: orgId, branchId: null },
@@ -1295,19 +1299,19 @@ router.put('/fee-types/:id', orgAdminOnly, validate(Joi.object({
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
     res.json({ success: true, data: doc });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
 router.delete('/fee-types/:id', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
     const doc = await FeeTypeConfig.findOneAndDelete({ _id: req.params.id, organizationId: orgId, branchId: null });
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
     res.json({ success: true, message: 'Deleted' });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -1339,12 +1343,12 @@ const branchImportSchema = Joi.object({
 // @route  GET /api/org-templates/branch-preview/:sourceBranchId
 router.get('/branch-preview/:sourceBranchId', orgAdminOnly, async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     const srcBranchId = new mongoose.Types.ObjectId(req.params.sourceBranchId);
     const srcBranch = await Branch.findOne({ _id: srcBranchId, organizationId: orgId });
-    if (!srcBranch) return res.status(404).json({ success: false, message: 'Source branch not found' });
+    if (!srcBranch) return res.status(404).json({ success: false, message: 'Source branch was not found.' });
 
     const [classes, academicYears, departments, designations, staffCategories, expenseCategories, incomeCategories, feeTypes] = await Promise.all([
       Class.find({ organizationId: orgId, branchId: srcBranchId, status: 'active' }).lean(),
@@ -1362,7 +1366,7 @@ router.get('/branch-preview/:sourceBranchId', orgAdminOnly, async (req: Authenti
       data: { classes, academicYears, departments, designations, staffCategories, expenseCategories, incomeCategories, feeTypes }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Something went wrong. Please try again.' });
   }
 });
 
@@ -1370,7 +1374,7 @@ router.get('/branch-preview/:sourceBranchId', orgAdminOnly, async (req: Authenti
 // @route  POST /api/org-templates/import-from-branch
 router.post('/import-from-branch', orgAdminOnly, validate(branchImportSchema), async (req: AuthenticatedRequest, res) => {
   try {
-    const orgId = getOrgId(req);
+    const orgId = await getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization ID required' });
 
     const { sourceBranchId, targetBranchId, classIds, includeSubjects, includeChapters, includeAcademicYears, includeDepartments, includeDesignations, includeStaffCategories, includeExpenseCategories, includeIncomeCategories, includeFeeTypes, divisions } = req.body;
@@ -1386,8 +1390,8 @@ router.post('/import-from-branch', orgAdminOnly, validate(branchImportSchema), a
       Branch.findOne({ _id: srcBranchObjId, organizationId: orgId }),
       Branch.findOne({ _id: tgtBranchObjId, organizationId: orgId })
     ]);
-    if (!srcBranch) return res.status(404).json({ success: false, message: 'Source branch not found' });
-    if (!tgtBranch) return res.status(404).json({ success: false, message: 'Target branch not found' });
+    if (!srcBranch) return res.status(404).json({ success: false, message: 'Source branch was not found.' });
+    if (!tgtBranch) return res.status(404).json({ success: false, message: 'Target branch was not found.' });
 
     const stats: Record<string, number> = {
       classesCreated: 0, classesSkipped: 0, divisionsCreated: 0,
@@ -1592,7 +1596,7 @@ router.post('/import-from-branch', orgAdminOnly, validate(branchImportSchema), a
     res.json({ success: true, message: 'Branch-to-branch import completed', data: stats });
   } catch (error) {
     console.error('Branch-to-branch import error:', error);
-    res.status(500).json({ success: false, message: 'Server error during import' });
+    res.status(500).json({ success: false, message: 'Something went wrong during import. Please try again.' });
   }
 });
 

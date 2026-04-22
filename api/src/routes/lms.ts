@@ -75,7 +75,7 @@ const chapterUpdateSchema = Joi.object({
 
 const chapterQuerySchema = Joi.object({
   page: Joi.alternatives().try(Joi.number().integer().min(1), Joi.string().pattern(/^\d+$/).custom(v => parseInt(v, 10))).default(1),
-  limit: Joi.alternatives().try(Joi.number().integer().min(1).max(100), Joi.string().pattern(/^\d+$/).custom(v => Math.min(parseInt(v, 10), 100))).default(50),
+  limit: Joi.number().integer().min(0).default(50),
   search: Joi.string().optional().allow(''),
   subjectId: Joi.string().optional().allow(''),
   classId: Joi.string().optional().allow(''),
@@ -114,14 +114,14 @@ router.get('/chapters', checkPermission('classes', 'read'), validateQuery(chapte
     success: true,
     message: 'Chapters fetched',
     data,
-    pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) }
+    pagination: { page: Number(page), limit: Number(limit), total, pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1) }
   };
   res.json(response);
 });
 
 // GET /api/lms/chapters/:id
 router.get('/chapters/:id', checkPermission('classes', 'read'), async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const filter: any = { _id: req.params.id };
   Object.assign(filter, getLmsReadFilter(req));
   const chapter = await Chapter.findOne(filter)
@@ -151,7 +151,7 @@ router.post('/chapters', checkPermission('classes', 'create'), validate(chapterC
 
 // PUT /api/lms/chapters/:id
 router.put('/chapters/:id', checkPermission('classes', 'update'), validate(chapterUpdateSchema), async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const filter: any = { _id: req.params.id };
   Object.assign(filter, getOrgBranchFilter(req));
   const chapter = await Chapter.findOneAndUpdate(filter, req.body, { new: true, runValidators: true });
@@ -161,7 +161,7 @@ router.put('/chapters/:id', checkPermission('classes', 'update'), validate(chapt
 
 // DELETE /api/lms/chapters/:id
 router.delete('/chapters/:id', checkPermission('classes', 'delete'), async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const filter: any = { _id: req.params.id };
   Object.assign(filter, getOrgBranchFilter(req));
   const chapter = await Chapter.findOneAndDelete(filter);
@@ -226,7 +226,7 @@ const contentUpdateSchema = Joi.object({
 
 const contentQuerySchema = Joi.object({
   page: Joi.alternatives().try(Joi.number().integer().min(1), Joi.string().pattern(/^\d+$/).custom(v => parseInt(v, 10))).default(1),
-  limit: Joi.alternatives().try(Joi.number().integer().min(1).max(100), Joi.string().pattern(/^\d+$/).custom(v => Math.min(parseInt(v, 10), 100))).default(50),
+  limit: Joi.number().integer().min(0).default(50),
   search: Joi.string().optional().allow(''),
   chapterId: Joi.string().optional().allow(''),
   subjectId: Joi.string().optional().allow(''),
@@ -270,14 +270,14 @@ router.get('/content', checkPermission('classes', 'read'), validateQuery(content
     success: true,
     message: 'Content fetched',
     data,
-    pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) }
+    pagination: { page: Number(page), limit: Number(limit), total, pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1) }
   };
   res.json(response);
 });
 
 // GET /api/lms/content/:id
 router.get('/content/:id', checkPermission('classes', 'read'), async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const filter: any = { _id: req.params.id };
   Object.assign(filter, getLmsReadFilter(req));
   const content = await LessonContent.findOne(filter)
@@ -354,7 +354,7 @@ router.put('/content/:id', checkPermission('classes', 'update'), (req, res, next
     next();
   });
 }, async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
 
   const data = { ...req.body };
   if (typeof data.tags === 'string') {
@@ -388,7 +388,7 @@ router.put('/content/:id', checkPermission('classes', 'update'), (req, res, next
 
 // DELETE /api/lms/content/:id
 router.delete('/content/:id', checkPermission('classes', 'delete'), async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const filter: any = { _id: req.params.id };
   Object.assign(filter, getOrgBranchFilter(req));
   const content = await LessonContent.findOneAndDelete(filter);
@@ -398,7 +398,7 @@ router.delete('/content/:id', checkPermission('classes', 'delete'), async (req: 
 
 // POST /api/lms/content/:id/publish
 router.post('/content/:id/publish', checkPermission('classes', 'update'), async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const filter: any = { _id: req.params.id };
   Object.assign(filter, getOrgBranchFilter(req));
   const content = await LessonContent.findOneAndUpdate(filter, { status: 'published' }, { new: true });
@@ -518,7 +518,7 @@ const assessmentUpdateSchema = Joi.object({
 
 const assessmentQuerySchema = Joi.object({
   page: Joi.alternatives().try(Joi.number().integer().min(1), Joi.string().pattern(/^\d+$/).custom(v => parseInt(v, 10))).default(1),
-  limit: Joi.alternatives().try(Joi.number().integer().min(1).max(100), Joi.string().pattern(/^\d+$/).custom(v => Math.min(parseInt(v, 10), 100))).default(50),
+  limit: Joi.number().integer().min(0).default(50),
   search: Joi.string().optional().allow(''),
   subjectId: Joi.string().optional().allow(''),
   classId: Joi.string().optional().allow(''),
@@ -563,14 +563,14 @@ router.get('/assessments', checkPermission('classes', 'read'), validateQuery(ass
     success: true,
     message: 'Assessments fetched',
     data,
-    pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) }
+    pagination: { page: Number(page), limit: Number(limit), total, pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1) }
   };
   res.json(response);
 });
 
 // GET /api/lms/assessments/:id
 router.get('/assessments/:id', checkPermission('classes', 'read'), async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const filter: any = { _id: req.params.id };
   Object.assign(filter, getLmsReadFilter(req));
   const assessment = await LmsAssessment.findOne(filter)
@@ -583,7 +583,7 @@ router.get('/assessments/:id', checkPermission('classes', 'read'), async (req: A
 
 // GET /api/lms/assessments/:id/student — student view (hides correct answers)
 router.get('/assessments/:id/student', async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const filter: any = { _id: req.params.id, status: 'published' };
   Object.assign(filter, getLmsReadFilter(req));
   const assessment = await LmsAssessment.findOne(filter)
@@ -634,7 +634,7 @@ router.post('/assessments', checkPermission('classes', 'create'), validate(asses
 
 // PUT /api/lms/assessments/:id
 router.put('/assessments/:id', checkPermission('classes', 'update'), validate(assessmentUpdateSchema), async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const filter: any = { _id: req.params.id };
   Object.assign(filter, getOrgBranchFilter(req));
   const data = { ...req.body };
@@ -652,7 +652,7 @@ router.put('/assessments/:id', checkPermission('classes', 'update'), validate(as
 
 // DELETE /api/lms/assessments/:id
 router.delete('/assessments/:id', checkPermission('classes', 'delete'), async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const filter: any = { _id: req.params.id };
   Object.assign(filter, getOrgBranchFilter(req));
   const assessment = await LmsAssessment.findOneAndDelete(filter);
@@ -664,7 +664,7 @@ router.delete('/assessments/:id', checkPermission('classes', 'delete'), async (r
 
 // POST /api/lms/assessments/:id/publish
 router.post('/assessments/:id/publish', checkPermission('classes', 'update'), async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const filter: any = { _id: req.params.id };
   Object.assign(filter, getOrgBranchFilter(req));
   const assessment = await LmsAssessment.findOne(filter);
@@ -679,7 +679,7 @@ router.post('/assessments/:id/publish', checkPermission('classes', 'update'), as
 
 // POST /api/lms/assessments/:id/duplicate
 router.post('/assessments/:id/duplicate', checkPermission('classes', 'create'), async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const filter: any = { _id: req.params.id };
   Object.assign(filter, getOrgBranchFilter(req));
   const original = await LmsAssessment.findOne(filter);
@@ -707,7 +707,7 @@ router.post('/assessments/:id/duplicate', checkPermission('classes', 'create'), 
 
 const submissionQuerySchema = Joi.object({
   page: Joi.alternatives().try(Joi.number().integer().min(1), Joi.string().pattern(/^\d+$/).custom(v => parseInt(v, 10))).default(1),
-  limit: Joi.alternatives().try(Joi.number().integer().min(1).max(100), Joi.string().pattern(/^\d+$/).custom(v => Math.min(parseInt(v, 10), 100))).default(50),
+  limit: Joi.number().integer().min(0).default(50),
   assessmentId: Joi.string().optional().allow(''),
   studentId: Joi.string().optional().allow(''),
   status: Joi.string().valid('not_started', 'in_progress', 'submitted', 'graded', 'returned').optional(),
@@ -741,14 +741,14 @@ router.get('/submissions', checkPermission('classes', 'read'), validateQuery(sub
     success: true,
     message: 'Submissions fetched',
     data,
-    pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) }
+    pagination: { page: Number(page), limit: Number(limit), total, pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1) }
   };
   res.json(response);
 });
 
 // GET /api/lms/submissions/:id
 router.get('/submissions/:id', async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const filter: any = { _id: req.params.id };
   Object.assign(filter, getOrgBranchFilter(req));
   const submission = await StudentSubmission.findOne(filter)
@@ -770,7 +770,7 @@ router.post('/submissions', async (req: AuthenticatedRequest, res) => {
 
   // Get the assessment
   const assessment = await LmsAssessment.findById(assessmentId);
-  if (!assessment) return res.status(404).json({ success: false, message: 'Assessment not found' });
+  if (!assessment) return res.status(404).json({ success: false, message: 'Assessment was not found.' });
   if (assessment.status !== 'published') return res.status(400).json({ success: false, message: 'Assessment is not published' });
 
   // Check existing submissions for retake logic
@@ -853,7 +853,7 @@ router.post('/submissions', async (req: AuthenticatedRequest, res) => {
 
 // POST /api/lms/submissions/:id/grade — teacher grades a submission
 router.post('/submissions/:id/grade', checkPermission('classes', 'update'), async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const filter: any = { _id: req.params.id };
   Object.assign(filter, getOrgBranchFilter(req));
   const submission = await StudentSubmission.findOne(filter);
@@ -866,7 +866,7 @@ router.post('/submissions/:id/grade', checkPermission('classes', 'update'), asyn
 
   // Get assessment for totalMarks
   const assessment = await LmsAssessment.findById(submission.assessmentId);
-  if (!assessment) return res.status(404).json({ success: false, message: 'Assessment not found' });
+  if (!assessment) return res.status(404).json({ success: false, message: 'Assessment was not found.' });
 
   // Update answers with grades if provided
   if (Array.isArray(answers)) {
@@ -892,7 +892,7 @@ router.post('/submissions/:id/grade', checkPermission('classes', 'update'), asyn
 
 // POST /api/lms/submissions/:id/return — return for revision
 router.post('/submissions/:id/return', checkPermission('classes', 'update'), async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const filter: any = { _id: req.params.id };
   Object.assign(filter, getOrgBranchFilter(req));
   const submission = await StudentSubmission.findOneAndUpdate(
@@ -906,7 +906,7 @@ router.post('/submissions/:id/return', checkPermission('classes', 'update'), asy
 
 // GET /api/lms/submissions/assessment-summary/:assessmentId — summary for teacher
 router.get('/submissions/assessment-summary/:assessmentId', checkPermission('classes', 'read'), async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.assessmentId)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.assessmentId)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const assessmentObjId = new Types.ObjectId(req.params.assessmentId);
   const orgBranch = getOrgBranchFilter(req);
 
@@ -916,7 +916,7 @@ router.get('/submissions/assessment-summary/:assessmentId', checkPermission('cla
       .populate('studentId', 'name admissionNo')
   ]);
 
-  if (!assessment) return res.status(404).json({ success: false, message: 'Assessment not found' });
+  if (!assessment) return res.status(404).json({ success: false, message: 'Assessment was not found.' });
 
   const totalSubmissions = submissions.length;
   const gradedSubmissions = submissions.filter(s => s.status === 'graded');
@@ -1007,8 +1007,8 @@ router.get('/assignments', async (req: AuthenticatedRequest, res) => {
     if (search) filter.title = { $regex: search, $options: 'i' };
 
     const pageNum = Math.max(1, parseInt(page));
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
-    const skip = (pageNum - 1) * limitNum;
+    const limitNum = limit != null ? parseInt(limit) : 20;
+    const skip = limitNum > 0 ? (pageNum - 1) * limitNum : 0;
 
     const [assignments, total] = await Promise.all([
       ClassContentAssignment.find(filter)
@@ -1024,7 +1024,7 @@ router.get('/assignments', async (req: AuthenticatedRequest, res) => {
       success: true,
       message: 'Assignments fetched',
       data: assignments,
-      pagination: { page: pageNum, limit: limitNum, total, pages: Math.ceil(total / limitNum) }
+      pagination: { page: pageNum, limit: limitNum, total, pages: (limitNum > 0 ? Math.ceil(total / limitNum) : 1) }
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -1075,7 +1075,7 @@ router.get('/assignments/:id', async (req: AuthenticatedRequest, res) => {
       .lean();
 
     if (!assignment) {
-      return res.status(404).json({ success: false, message: 'Assignment not found' });
+      return res.status(404).json({ success: false, message: 'Assignment was not found.' });
     }
     res.json({ success: true, message: 'Assignment fetched', data: assignment });
   } catch (error: any) {
@@ -1169,7 +1169,7 @@ router.put('/assignments/:id', validate(Joi.object({
       .populate('divisionIds', 'name');
 
     if (!assignment) {
-      return res.status(404).json({ success: false, message: 'Assignment not found' });
+      return res.status(404).json({ success: false, message: 'Assignment was not found.' });
     }
     res.json({ success: true, message: 'Assignment updated', data: assignment });
   } catch (error: any) {
@@ -1185,7 +1185,7 @@ router.delete('/assignments/:id', async (req: AuthenticatedRequest, res) => {
       ...getOrgBranchFilter(req)
     });
     if (!assignment) {
-      return res.status(404).json({ success: false, message: 'Assignment not found' });
+      return res.status(404).json({ success: false, message: 'Assignment was not found.' });
     }
     res.json({ success: true, message: 'Assignment deleted' });
   } catch (error: any) {
@@ -1837,7 +1837,7 @@ router.post('/clone/chapter', validate(Joi.object({
 
     const chapter = await Chapter.findOne({ _id: chapterId, ...filter }).lean();
     if (!chapter) {
-      return res.status(404).json({ success: false, message: 'Chapter not found' });
+      return res.status(404).json({ success: false, message: 'Chapter was not found.' });
     }
 
     // Get max chapter number in target
@@ -2007,7 +2007,7 @@ router.get('/import/available', validateQuery(Joi.object({
   classId: Joi.string(),
   subjectId: Joi.string(),
   page: Joi.number().integer().min(1),
-  limit: Joi.number().integer().min(1).max(100)
+  limit: Joi.number().integer().min(0)
 })), async (req: AuthenticatedRequest, res) => {
   try {
     const orgId = req.user!.organizationId;
@@ -2337,7 +2337,7 @@ const questionPoolItemSchema = Joi.object({
 // GET /question-pools
 router.get('/question-pools', checkPermission('classes', 'read'), validateQuery(Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(50),
+  limit: Joi.number().integer().min(0).default(50),
   search: Joi.string().optional().allow(''),
   subjectId: Joi.string().optional().allow(''),
   classId: Joi.string().optional().allow(''),
@@ -2377,7 +2377,7 @@ router.get('/question-pools', checkPermission('classes', 'read'), validateQuery(
 
     res.json({
       success: true, message: 'Question pools', data: summaries,
-      pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) }
+      pagination: { page: Number(page), limit: Number(limit), total, pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1) }
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -2387,7 +2387,7 @@ router.get('/question-pools', checkPermission('classes', 'read'), validateQuery(
 // GET /question-pools/:id
 router.get('/question-pools/:id', checkPermission('classes', 'read'), async (req: AuthenticatedRequest, res) => {
   try {
-    if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+    if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
     const filter: any = { _id: req.params.id };
     Object.assign(filter, getLmsReadFilter(req));
     const pool = await QuestionPool.findOne(filter)
@@ -2432,7 +2432,7 @@ router.put('/question-pools/:id', checkPermission('classes', 'update'), validate
   questions: Joi.array().items(questionPoolItemSchema).optional()
 })), async (req: AuthenticatedRequest, res) => {
   try {
-    if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+    if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
     const filter: any = { _id: req.params.id };
     Object.assign(filter, getOrgBranchFilter(req));
     const pool = await QuestionPool.findOneAndUpdate(filter, req.body, { new: true, runValidators: true });
@@ -2446,7 +2446,7 @@ router.put('/question-pools/:id', checkPermission('classes', 'update'), validate
 // DELETE /question-pools/:id
 router.delete('/question-pools/:id', checkPermission('classes', 'delete'), async (req: AuthenticatedRequest, res) => {
   try {
-    if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+    if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
     const filter: any = { _id: req.params.id };
     Object.assign(filter, getOrgBranchFilter(req));
     const pool = await QuestionPool.findOneAndDelete(filter);

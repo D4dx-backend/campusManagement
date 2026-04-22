@@ -46,7 +46,7 @@ const updateTextBookSchema = Joi.object({
 
 const queryTextBooksSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(10),
+  limit: Joi.number().integer().min(0).default(10),
   search: Joi.string().optional().allow(''),
   class: Joi.string().optional().allow(''),
   subject: Joi.string().optional().allow(''),
@@ -137,7 +137,7 @@ router.get('/', checkPermission('textbooks', 'read'), validateQuery(queryTextBoo
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: (limit > 0 ? Math.ceil(total / limit) : 1)
       }
     };
 
@@ -146,7 +146,7 @@ router.get('/', checkPermission('textbooks', 'read'), validateQuery(queryTextBoo
     console.error('Get textbooks error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving textbooks'
+      message: 'Something went wrong while loading textbooks. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -167,7 +167,7 @@ router.get('/:id', checkPermission('textbooks', 'read'), async (req: Authenticat
     if (!textbook) {
       const response: ApiResponse = {
         success: false,
-        message: 'Textbook not found'
+        message: 'Textbook was not found.'
       };
       return res.status(404).json(response);
     }
@@ -190,7 +190,7 @@ router.get('/:id', checkPermission('textbooks', 'read'), async (req: Authenticat
     console.error('Get textbook error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving textbook'
+      message: 'Something went wrong while loading textbook. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -211,7 +211,7 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextBook
     if (existingBook) {
       const response: ApiResponse = {
         success: false,
-        message: 'Textbook with this book code already exists'
+        message: 'A textbook with this book code already exists. Please use a different code.'
       };
       return res.status(400).json(response);
     }
@@ -283,7 +283,7 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextBook
     
     const response: ApiResponse = {
       success: false,
-      message: error.message || 'Server error creating textbook'
+      message: error.message || 'Something went wrong while creating the textbook. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -303,7 +303,7 @@ router.put('/:id', checkPermission('textbooks', 'update'), validate(updateTextBo
     if (!existingBook) {
       const response: ApiResponse = {
         success: false,
-        message: 'Textbook not found'
+        message: 'Textbook was not found.'
       };
       return res.status(404).json(response);
     }
@@ -358,7 +358,7 @@ router.put('/:id', checkPermission('textbooks', 'update'), validate(updateTextBo
     console.error('Update textbook error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error updating textbook'
+      message: 'Something went wrong while updating the textbook. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -378,7 +378,7 @@ router.delete('/:id', checkPermission('textbooks', 'delete'), async (req: Authen
     if (!textbook) {
       const response: ApiResponse = {
         success: false,
-        message: 'Textbook not found'
+        message: 'Textbook was not found.'
       };
       return res.status(404).json(response);
     }
@@ -417,7 +417,7 @@ router.delete('/:id', checkPermission('textbooks', 'delete'), async (req: Authen
     console.error('Delete textbook error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error deleting textbook'
+      message: 'Something went wrong while deleting the textbook. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -506,7 +506,7 @@ router.get('/stats/overview', checkPermission('textbooks', 'read'), async (req: 
     console.error('Get textbook stats error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving textbook statistics'
+      message: 'Something went wrong while loading textbook statistics. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -536,7 +536,7 @@ router.put('/:id/stock', checkPermission('textbooks', 'update'), async (req: Aut
     if (!textbook) {
       const response: ApiResponse = {
         success: false,
-        message: 'Textbook not found'
+        message: 'Textbook was not found.'
       };
       return res.status(404).json(response);
     }
@@ -579,7 +579,7 @@ router.put('/:id/stock', checkPermission('textbooks', 'update'), async (req: Aut
     console.error('Update stock error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error updating stock'
+      message: 'Something went wrong while updating the stock. Please try again.'
     };
     res.status(500).json(response);
   }

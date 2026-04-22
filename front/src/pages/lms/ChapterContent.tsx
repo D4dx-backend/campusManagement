@@ -92,7 +92,7 @@ const ChapterContent = () => {
       });
       setContents(res.data || []);
     } catch {
-      toast({ title: 'Error', description: 'Failed to load content', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading content. Please try again.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -196,7 +196,7 @@ const ChapterContent = () => {
       setDialogOpen(false);
       loadContents();
     } catch (err: any) {
-      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to save', variant: 'destructive' });
+      toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong while saving. Please try again', variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -209,7 +209,7 @@ const ChapterContent = () => {
       toast({ title: 'Deleted', description: 'Content deleted' });
       loadContents();
     } catch {
-      toast({ title: 'Error', description: 'Failed to delete', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while deleting. Please try again.', variant: 'destructive' });
     }
   };
 
@@ -219,7 +219,7 @@ const ChapterContent = () => {
       toast({ title: 'Published', description: `"${c.title}" is now published` });
       loadContents();
     } catch {
-      toast({ title: 'Error', description: 'Failed to publish', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while publishing. Please try again.', variant: 'destructive' });
     }
   };
 

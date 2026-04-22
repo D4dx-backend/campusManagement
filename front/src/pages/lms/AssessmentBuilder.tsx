@@ -146,7 +146,7 @@ const AssessmentBuilder = () => {
       setQuestions(a.questions.length > 0 ? a.questions : [emptyQuestion(1)]);
       setSettings(a.settings || defaultSettings);
     } catch {
-      toast({ title: 'Error', description: 'Failed to load assessment', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading. Please try again assessment', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -172,7 +172,7 @@ const AssessmentBuilder = () => {
       const res = await questionPoolApi.getAll(params);
       setPools(res.data || []);
     } catch {
-      toast({ title: 'Failed to load pools', variant: 'destructive' });
+      toast({ title: 'Something went wrong while loading. Please try again pools', variant: 'destructive' });
     }
   };
 
@@ -205,7 +205,7 @@ const AssessmentBuilder = () => {
       setPoolDialogOpen(false);
       toast({ title: `Imported ${generated.length} questions from pool` });
     } catch {
-      toast({ title: 'Failed to generate questions', variant: 'destructive' });
+      toast({ title: 'Something went wrong while generating. Please try again questions', variant: 'destructive' });
     } finally {
       setPoolLoading(false);
     }
@@ -328,7 +328,7 @@ const AssessmentBuilder = () => {
         return;
       }
     } catch (err: any) {
-      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to save', variant: 'destructive' });
+      toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong while saving. Please try again', variant: 'destructive' });
     } finally {
       setSaving(false);
     }

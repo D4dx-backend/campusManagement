@@ -91,7 +91,7 @@ router.put('/:id', checkPermission('fees', 'update'), validate(feeTypeConfigSche
     const feeType = await FeeTypeConfig.findOneAndUpdate(query, req.body, { new: true, runValidators: true });
 
     if (!feeType) {
-      return res.status(404).json({ success: false, message: 'Fee type not found' });
+      return res.status(404).json({ success: false, message: 'Fee type was not found.' });
     }
 
     await ActivityLog.create({
@@ -124,7 +124,7 @@ router.delete('/:id', checkPermission('fees', 'delete'), async (req: Authenticat
     const feeType = await FeeTypeConfig.findOneAndDelete(query);
 
     if (!feeType) {
-      return res.status(404).json({ success: false, message: 'Fee type not found' });
+      return res.status(404).json({ success: false, message: 'Fee type was not found.' });
     }
 
     await ActivityLog.create({

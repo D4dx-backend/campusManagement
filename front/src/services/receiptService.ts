@@ -54,7 +54,7 @@ export const receiptService = {
       } else if (error.response?.status === 401) {
         throw new Error('Authentication failed. Please login again.');
       } else {
-        throw new Error(error.response?.data?.message || 'Failed to create receipt configuration');
+        throw new Error(error.response?.data?.message || 'Something went wrong while creating the receipt configuration.');
       }
     }
   },

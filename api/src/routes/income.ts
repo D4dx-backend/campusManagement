@@ -70,7 +70,7 @@ router.get('/', checkPermission('accounting', 'read'), async (req: Authenticated
         page: Number(page),
         limit: Number(limit),
         total,
-        pages: Math.ceil(total / Number(limit))
+        pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1)
       }
     };
 
@@ -79,7 +79,7 @@ router.get('/', checkPermission('accounting', 'read'), async (req: Authenticated
     console.error('Get income error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving income entries'
+      message: 'Something went wrong while loading income entries. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -185,7 +185,7 @@ router.post('/', checkPermission('accounting', 'create'), async (req: Authentica
     console.error('Create income error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error recording income'
+      message: 'Something went wrong while recording the income. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -238,7 +238,7 @@ router.get('/stats/overview', checkPermission('accounting', 'read'), async (req:
     console.error('Get income stats error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving income statistics'
+      message: 'Something went wrong while loading income statistics. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -255,20 +255,20 @@ router.delete('/:id', checkPermission('accounting', 'delete'), async (req: Authe
     if (!income) {
       const response: ApiResponse = {
         success: false,
-        message: 'Income entry not found'
+        message: 'Income entry was not found.'
       };
       return res.status(404).json(response);
     }
 
     // Check org + branch access
     if (req.user!.role === 'org_admin' && income.organizationId?.toString() !== req.user!.organizationId?.toString()) {
-      const response: ApiResponse = { success: false, message: 'Access denied to this income entry' };
+      const response: ApiResponse = { success: false, message: 'You do not have access to this income entry.' };
       return res.status(403).json(response);
     }
     if (!['platform_admin', 'org_admin'].includes(req.user!.role) && req.user!.branchId?.toString() !== income.branchId?.toString()) {
       const response: ApiResponse = {
         success: false,
-        message: 'Access denied to this income entry'
+        message: 'You do not have access to this income entry.'
       };
       return res.status(403).json(response);
     }
@@ -312,7 +312,7 @@ router.delete('/:id', checkPermission('accounting', 'delete'), async (req: Authe
     console.error('Delete income error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error deleting income entry'
+      message: 'Something went wrong while deleting the income entry. Please try again.'
     };
     res.status(500).json(response);
   }

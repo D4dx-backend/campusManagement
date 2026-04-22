@@ -57,7 +57,7 @@ export const ExportButton = ({ data, columns, filename, disabled = false, classN
     } catch (error) {
       toast({
         title: 'Export Failed',
-        description: error instanceof Error ? error.message : 'Failed to export data',
+        description: error instanceof Error ? error.message : 'Something went wrong while exporting data. Please try again.',
         variant: 'destructive',
       });
     } finally {

@@ -51,12 +51,12 @@ router.get(
         success: true,
         message: 'Timetable configs retrieved successfully',
         data: configs,
-        pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+        pagination: { page, limit, total, pages: (limit > 0 ? Math.ceil(total / limit) : 1) },
       };
       res.json(response);
     } catch (error) {
       console.error('Get timetable configs error:', error);
-      res.status(500).json({ success: false, message: 'Server error retrieving timetable configs' });
+      res.status(500).json({ success: false, message: 'Something went wrong while loading timetable configs. Please try again.' });
     }
   }
 );
@@ -73,13 +73,13 @@ router.get('/:id', checkPermission('timetable', 'read'), async (req: Authenticat
       .lean();
 
     if (!config) {
-      return res.status(404).json({ success: false, message: 'Timetable config not found' });
+      return res.status(404).json({ success: false, message: 'Timetable configuration was not found.' });
     }
 
     res.json({ success: true, message: 'Timetable config retrieved successfully', data: config });
   } catch (error) {
     console.error('Get timetable config error:', error);
-    res.status(500).json({ success: false, message: 'Server error retrieving timetable config' });
+    res.status(500).json({ success: false, message: 'Something went wrong while loading timetable config. Please try again.' });
   }
 });
 
@@ -94,7 +94,7 @@ router.post(
       const orgBranch = getOrgBranchForCreate(req);
 
       if (!orgBranch.branchId) {
-        return res.status(400).json({ success: false, message: 'Branch information is required' });
+        return res.status(400).json({ success: false, message: 'Branch information is missing. Please select a branch.' });
       }
 
       const configData = {
@@ -129,7 +129,7 @@ router.post(
           .status(400)
           .json({ success: false, message: 'A timetable config with this name already exists for this academic year' });
       }
-      res.status(500).json({ success: false, message: 'Server error creating timetable config' });
+      res.status(500).json({ success: false, message: 'Something went wrong while creating the timetable config. Please try again.' });
     }
   }
 );
@@ -151,7 +151,7 @@ router.put(
       });
 
       if (!updatedConfig) {
-        return res.status(404).json({ success: false, message: 'Timetable config not found' });
+        return res.status(404).json({ success: false, message: 'Timetable configuration was not found.' });
       }
 
       await ActivityLog.create({
@@ -173,7 +173,7 @@ router.put(
           .status(400)
           .json({ success: false, message: 'A timetable config with this name already exists for this academic year' });
       }
-      res.status(500).json({ success: false, message: 'Server error updating timetable config' });
+      res.status(500).json({ success: false, message: 'Something went wrong while updating the timetable config. Please try again.' });
     }
   }
 );
@@ -196,7 +196,7 @@ router.delete('/:id', checkPermission('timetable', 'delete'), async (req: Authen
 
     const deletedConfig = await TimetableConfig.findOneAndDelete(filter);
     if (!deletedConfig) {
-      return res.status(404).json({ success: false, message: 'Timetable config not found' });
+      return res.status(404).json({ success: false, message: 'Timetable configuration was not found.' });
     }
 
     await ActivityLog.create({
@@ -213,7 +213,7 @@ router.delete('/:id', checkPermission('timetable', 'delete'), async (req: Authen
     res.json({ success: true, message: 'Timetable config deleted successfully' });
   } catch (error) {
     console.error('Delete timetable config error:', error);
-    res.status(500).json({ success: false, message: 'Server error deleting timetable config' });
+    res.status(500).json({ success: false, message: 'Something went wrong while deleting the timetable config. Please try again.' });
   }
 });
 

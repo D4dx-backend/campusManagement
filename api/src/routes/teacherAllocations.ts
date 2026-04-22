@@ -29,7 +29,7 @@ const bulkSchema = Joi.object({
 
 const querySchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(200).default(100),
+  limit: Joi.number().integer().min(0).default(100),
   teacherId: Joi.string().allow(''),
   classId: Joi.string().allow(''),
   academicYear: Joi.string().allow(''),
@@ -47,12 +47,12 @@ router.get('/', validateQuery(querySchema), async (req: AuthenticatedRequest, re
     // Teacher can only see their own allocations
     if (req.user!.role === 'teacher') {
       filter.teacherId = new Types.ObjectId(req.user!._id);
-    } else if (teacherId) {
+    } else if (teacherId && Types.ObjectId.isValid(teacherId)) {
       filter.teacherId = new Types.ObjectId(teacherId);
     }
 
-    if (classId) filter.classId = new Types.ObjectId(classId);
-    if (academicYear) filter.academicYear = academicYear;
+    if (classId && Types.ObjectId.isValid(classId)) filter.classId = new Types.ObjectId(classId);
+    if (academicYear && academicYear !== 'all') filter.academicYear = academicYear;
 
     const skip = (Number(page) - 1) * Number(limit);
     const [items, total] = await Promise.all([
@@ -63,7 +63,7 @@ router.get('/', validateQuery(querySchema), async (req: AuthenticatedRequest, re
     res.json({
       success: true,
       data: items,
-      pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) },
+      pagination: { page: Number(page), limit: Number(limit), total, pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1) },
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -104,7 +104,7 @@ router.post('/', authorize('platform_admin', 'org_admin', 'branch_admin'), valid
     res.status(201).json({ success: true, message: 'Allocation created', data: allocation });
   } catch (error: any) {
     if (error.code === 11000) {
-      return res.status(400).json({ success: false, message: 'This teacher-class-subject allocation already exists' });
+      return res.status(400).json({ success: false, message: 'This teacher is already allocated to this class and subject.' });
     }
     res.status(500).json({ success: false, message: error.message });
   }
@@ -145,7 +145,7 @@ router.post('/bulk', authorize('platform_admin', 'org_admin', 'branch_admin'), v
 router.delete('/:id', authorize('platform_admin', 'org_admin', 'branch_admin'), async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
-    if (!Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+    if (!Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
 
     const result = await TeacherAllocation.findByIdAndDelete(id);
     if (!result) return res.status(404).json({ success: false, message: 'Not found' });
@@ -163,7 +163,7 @@ router.delete('/class/:classId', authorize('platform_admin', 'org_admin', 'branc
   try {
     const { classId } = req.params;
     const { academicYear } = req.query as any;
-    if (!Types.ObjectId.isValid(classId)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+    if (!Types.ObjectId.isValid(classId)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
 
     const filter: any = { classId: new Types.ObjectId(classId) };
     if (academicYear) filter.academicYear = academicYear;

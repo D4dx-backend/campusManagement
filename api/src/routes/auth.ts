@@ -16,12 +16,16 @@ router.post('/login', validate(loginSchema), async (req, res) => {
   try {
     const { mobile, pin } = req.body;
 
-    // Find user by mobile
-    const user = await User.findOne({ mobile }).select('+pin');
+    // Find user by mobile (try exact match first, then with country code prefix for legacy data)
+    let user = await User.findOne({ mobile }).select('+pin');
+    if (!user) {
+      // Fallback: search for mobile stored with country code (e.g., +919876543210)
+      user = await User.findOne({ mobile: { $regex: new RegExp(mobile + '$') } }).select('+pin');
+    }
     if (!user) {
       const response: ApiResponse = {
         success: false,
-        message: 'Invalid credentials'
+        message: 'Incorrect mobile number or PIN. Please try again.'
       };
       return res.status(401).json(response);
     }
@@ -35,12 +39,23 @@ router.post('/login', validate(loginSchema), async (req, res) => {
       return res.status(401).json(response);
     }
 
+    // Check if user is approved
+    if (user.approvalStatus && user.approvalStatus !== 'approved') {
+      const response: ApiResponse = {
+        success: false,
+        message: user.approvalStatus === 'pending'
+          ? 'Your account is pending approval. Please contact the organization admin.'
+          : 'Your account access has been rejected. Please contact the organization admin.'
+      };
+      return res.status(401).json(response);
+    }
+
     // Check PIN
     const isMatch = await user.comparePin(pin);
     if (!isMatch) {
       const response: ApiResponse = {
         success: false,
-        message: 'Invalid credentials'
+        message: 'Incorrect mobile number or PIN. Please try again.'
       };
       return res.status(401).json(response);
     }
@@ -100,7 +115,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
     console.error('Login error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error during login'
+      message: 'Something went wrong during login. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -149,7 +164,7 @@ router.post('/register', authenticate, authorize('platform_admin', 'org_admin'),
     if (existingUser) {
       const response: ApiResponse = {
         success: false,
-        message: 'User with this email or mobile already exists'
+        message: 'A user with this email or mobile number already exists.'
       };
       return res.status(400).json(response);
     }
@@ -253,7 +268,7 @@ router.post('/register', authenticate, authorize('platform_admin', 'org_admin'),
     console.error('Registration error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error during registration'
+      message: 'Something went wrong during registration. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -277,7 +292,7 @@ router.get('/profile', authenticate, async (req: AuthenticatedRequest, res) => {
     console.error('Profile error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving profile'
+      message: 'Something went wrong while loading profile. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -295,7 +310,7 @@ router.put('/change-pin', authenticate, validate(changePasswordSchema), async (r
     if (!user) {
       const response: ApiResponse = {
         success: false,
-        message: 'User not found'
+        message: 'User was not found.'
       };
       return res.status(404).json(response);
     }
@@ -337,7 +352,7 @@ router.put('/change-pin', authenticate, validate(changePasswordSchema), async (r
     console.error('Change PIN error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error changing PIN'
+      message: 'Something went wrong while changing PIN. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -371,7 +386,7 @@ router.post('/logout', authenticate, async (req: AuthenticatedRequest, res) => {
     console.error('Logout error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error during logout'
+      message: 'Something went wrong during logout. Please try again.'
     };
     res.status(500).json(response);
   }

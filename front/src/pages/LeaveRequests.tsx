@@ -72,8 +72,8 @@ const LeaveRequests = () => {
 
   // Fetch leave requests
   const params: any = {};
-  if (filterStatus) params.status = filterStatus;
-  if (filterClassId) params.classId = filterClassId;
+  if (filterStatus && filterStatus !== '__all__') params.status = filterStatus;
+  if (filterClassId && filterClassId !== '__all__') params.classId = filterClassId;
   if (isStudent && user?.studentId) params.studentId = user.studentId;
 
   const { data: leaveData, isLoading } = useLeaveRequests(params);

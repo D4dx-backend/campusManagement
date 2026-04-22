@@ -35,7 +35,7 @@ router.get('/my-profile', async (req: AuthenticatedRequest, res) => {
       .lean();
 
     if (!student) {
-      return res.status(404).json({ success: false, message: 'Student profile not found' });
+      return res.status(404).json({ success: false, message: 'Student profile was not found.' });
     }
 
     res.json({ success: true, data: student });
@@ -49,7 +49,7 @@ router.get('/my-attendance', async (req: AuthenticatedRequest, res) => {
   try {
     const student = await Student.findById(req.user!.studentId).lean();
     if (!student) {
-      return res.status(404).json({ success: false, message: 'Student not found' });
+      return res.status(404).json({ success: false, message: 'Student was not found.' });
     }
 
     const { month, year } = req.query;
@@ -162,7 +162,7 @@ router.get('/my-fees', async (req: AuthenticatedRequest, res) => {
     const studentId = req.user!.studentId as string;
     const student = await Student.findById(studentId).lean();
     if (!student) {
-      return res.status(404).json({ success: false, message: 'Student not found' });
+      return res.status(404).json({ success: false, message: 'Student was not found.' });
     }
 
     // Get all payments for this student

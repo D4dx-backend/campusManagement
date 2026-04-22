@@ -5,17 +5,19 @@ export const loginSchema = Joi.object({
     .pattern(/^[0-9]{10}$/)
     .required()
     .messages({
-      'string.pattern.base': 'Mobile number must be 10 digits',
-      'any.required': 'Mobile number is required'
+      'string.pattern.base': 'Mobile number must be exactly 10 digits.',
+      'any.required': 'Mobile number is required.',
+      'string.empty': 'Mobile number cannot be empty.'
     }),
   pin: Joi.string()
     .min(4)
     .max(6)
     .required()
     .messages({
-      'string.min': 'PIN must be at least 4 characters',
-      'string.max': 'PIN must not exceed 6 characters',
-      'any.required': 'PIN is required'
+      'string.min': 'PIN must be at least 4 characters.',
+      'string.max': 'PIN must not exceed 6 characters.',
+      'any.required': 'PIN is required.',
+      'string.empty': 'PIN cannot be empty.'
     })
 });
 

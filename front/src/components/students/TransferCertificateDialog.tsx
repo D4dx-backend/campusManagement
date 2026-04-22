@@ -55,7 +55,7 @@ export const TransferCertificateDialog = ({
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to generate transfer certificate',
+        description: error.response?.data?.message || 'Something went wrong while generating the transfer certificate. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -87,7 +87,7 @@ export const TransferCertificateDialog = ({
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to download PDF',
+        description: 'Something went wrong while downloading the PDF. Please try again.',
         variant: 'destructive',
       });
     }

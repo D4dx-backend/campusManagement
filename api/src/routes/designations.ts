@@ -30,7 +30,7 @@ const updateDesignationSchema = Joi.object({
 
 const queryDesignationsSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(10),
+  limit: Joi.number().integer().min(0).default(10),
   search: Joi.string().optional().allow(''),
   status: Joi.string().valid('active', 'inactive').optional(),
   sortBy: Joi.string().valid('name', 'createdAt').default('name'),
@@ -88,7 +88,7 @@ router.get('/', checkPermission('staff', 'read'), validateQuery(queryDesignation
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: (limit > 0 ? Math.ceil(total / limit) : 1)
       }
     };
 
@@ -97,7 +97,7 @@ router.get('/', checkPermission('staff', 'read'), validateQuery(queryDesignation
     console.error('Get designations error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving designations'
+      message: 'Something went wrong while loading designations. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -120,7 +120,7 @@ router.post('/', checkPermission('staff', 'create'), validate(createDesignationS
     if (existingDesignation) {
       const response: ApiResponse = {
         success: false,
-        message: 'Designation with this name already exists'
+        message: 'A designation with this name already exists. Please use a different name.'
       };
       return res.status(400).json(response);
     }
@@ -168,7 +168,7 @@ router.post('/', checkPermission('staff', 'create'), validate(createDesignationS
     console.error('Create designation error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error creating designation'
+      message: 'Something went wrong while creating the designation. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -193,7 +193,7 @@ router.put('/:id', checkPermission('staff', 'update'), validate(updateDesignatio
     if (!updatedDesignation) {
       const response: ApiResponse = {
         success: false,
-        message: 'Designation not found'
+        message: 'Designation was not found.'
       };
       return res.status(404).json(response);
     }
@@ -221,7 +221,7 @@ router.put('/:id', checkPermission('staff', 'update'), validate(updateDesignatio
     console.error('Update designation error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error updating designation'
+      message: 'Something went wrong while updating the designation. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -242,7 +242,7 @@ router.delete('/:id', checkPermission('staff', 'delete'), async (req: Authentica
     if (!deletedDesignation) {
       const response: ApiResponse = {
         success: false,
-        message: 'Designation not found'
+        message: 'Designation was not found.'
       };
       return res.status(404).json(response);
     }
@@ -269,7 +269,7 @@ router.delete('/:id', checkPermission('staff', 'delete'), async (req: Authentica
     console.error('Delete designation error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error deleting designation'
+      message: 'Something went wrong while deleting the designation. Please try again.'
     };
     res.status(500).json(response);
   }

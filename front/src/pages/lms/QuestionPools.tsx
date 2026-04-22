@@ -170,7 +170,7 @@ const QuestionPools = () => {
       setExpandedQ(null);
       setQuestionDialogOpen(true);
     } catch {
-      toast({ title: 'Error', description: 'Failed to load questions', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading questions. Please try again.', variant: 'destructive' });
     }
   };
 

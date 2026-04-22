@@ -39,7 +39,7 @@ router.get('/', authenticate, authorize('platform_admin'), async (req: Authentic
       page: Number(page),
       limit: Number(limit),
       total,
-      pages: Math.ceil(total / Number(limit))
+      pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1)
     }
   });
 });
@@ -55,7 +55,7 @@ router.get('/my-organization', authenticate, async (req: AuthenticatedRequest, r
     'name code address phone email website logo status currency currencySymbol'
   );
   if (!organization) {
-    res.status(404).json({ success: false, message: 'Organization not found' });
+    res.status(404).json({ success: false, message: 'Organization was not found.' });
     return;
   }
   res.json({ success: true, data: organization });
@@ -65,13 +65,13 @@ router.get('/my-organization', authenticate, async (req: AuthenticatedRequest, r
 router.get('/:id', authenticate, authorize('platform_admin', 'org_admin'), async (req: AuthenticatedRequest, res: Response) => {
   const organization = await Organization.findById(req.params.id);
   if (!organization) {
-    res.status(404).json({ success: false, message: 'Organization not found' });
+    res.status(404).json({ success: false, message: 'Organization was not found.' });
     return;
   }
 
   // org_admin can only see their own organization
   if (req.user!.role === 'org_admin' && req.user!.organizationId?.toString() !== (organization._id as any).toString()) {
-    res.status(403).json({ success: false, message: 'Access denied' });
+    res.status(403).json({ success: false, message: 'You do not have permission to perform this action.' });
     return;
   }
 
@@ -134,13 +134,13 @@ router.post('/', authenticate, authorize('platform_admin'), async (req: Authenti
 router.put('/:id', authenticate, authorize('platform_admin', 'org_admin'), async (req: AuthenticatedRequest, res: Response) => {
   const organization = await Organization.findById(req.params.id);
   if (!organization) {
-    res.status(404).json({ success: false, message: 'Organization not found' });
+    res.status(404).json({ success: false, message: 'Organization was not found.' });
     return;
   }
 
   // org_admin can only update their own organization
   if (req.user!.role === 'org_admin' && req.user!.organizationId?.toString() !== (organization._id as any).toString()) {
-    res.status(403).json({ success: false, message: 'Access denied' });
+    res.status(403).json({ success: false, message: 'You do not have permission to perform this action.' });
     return;
   }
 
@@ -202,7 +202,7 @@ router.put('/:id', authenticate, authorize('platform_admin', 'org_admin'), async
 router.delete('/:id', authenticate, authorize('platform_admin'), async (req: AuthenticatedRequest, res: Response) => {
   const organization = await Organization.findById(req.params.id);
   if (!organization) {
-    res.status(404).json({ success: false, message: 'Organization not found' });
+    res.status(404).json({ success: false, message: 'Organization was not found.' });
     return;
   }
 

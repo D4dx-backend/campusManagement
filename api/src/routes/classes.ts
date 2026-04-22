@@ -39,8 +39,8 @@ const queryClassesSchema = Joi.object({
     Joi.string().pattern(/^\d+$/).custom((value) => parseInt(value, 10))
   ).default(1),
   limit: Joi.alternatives().try(
-    Joi.number().integer().min(1).max(100),
-    Joi.string().pattern(/^\d+$/).custom((value) => Math.min(parseInt(value, 10), 100))
+    Joi.number().integer().min(0),
+    Joi.string().pattern(/^\d+$/).custom((value) => parseInt(value, 10))
   ).default(10),
   search: Joi.string().optional().allow(''),
   academicYear: Joi.string().optional().allow(''),
@@ -114,8 +114,7 @@ router.get('/', checkPermission('classes', 'read'), validateQuery(queryClassesSc
         },
         { $project: { divisions: 0 } },
         { $sort: sortOptions },
-        { $skip: skip },
-        { $limit: limit }
+        ...(limit > 0 ? [{ $skip: skip }, { $limit: limit }] : [])
       ]),
       Class.countDocuments(filter)
     ]);
@@ -128,7 +127,7 @@ router.get('/', checkPermission('classes', 'read'), validateQuery(queryClassesSc
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: (limit > 0 ? Math.ceil(total / limit) : 1)
       }
     };
 
@@ -137,7 +136,7 @@ router.get('/', checkPermission('classes', 'read'), validateQuery(queryClassesSc
     console.error('Get classes error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving classes'
+      message: 'Something went wrong while loading classes. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -181,7 +180,7 @@ router.get('/:id', checkPermission('classes', 'read'), async (req: Authenticated
     if (!classData || classData.length === 0) {
       const response: ApiResponse = {
         success: false,
-        message: 'Class not found'
+        message: 'Class was not found.'
       };
       return res.status(404).json(response);
     }
@@ -197,7 +196,7 @@ router.get('/:id', checkPermission('classes', 'read'), async (req: Authenticated
     console.error('Get class error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving class'
+      message: 'Something went wrong while loading class. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -254,7 +253,7 @@ router.post('/', checkPermission('classes', 'create'), validate(createClassSchem
     console.error('Create class error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error creating class'
+      message: 'Something went wrong while creating the class. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -279,7 +278,7 @@ router.put('/:id', checkPermission('classes', 'update'), validate(updateClassSch
     if (!updatedClass) {
       const response: ApiResponse = {
         success: false,
-        message: 'Class not found'
+        message: 'Class was not found.'
       };
       return res.status(404).json(response);
     }
@@ -307,7 +306,7 @@ router.put('/:id', checkPermission('classes', 'update'), validate(updateClassSch
     console.error('Update class error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error updating class'
+      message: 'Something went wrong while updating the class. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -348,7 +347,7 @@ router.delete('/:id', checkPermission('classes', 'delete'), async (req: Authenti
     if (!deletedClass) {
       const response: ApiResponse = {
         success: false,
-        message: 'Class not found'
+        message: 'Class was not found.'
       };
       return res.status(404).json(response);
     }
@@ -375,7 +374,7 @@ router.delete('/:id', checkPermission('classes', 'delete'), async (req: Authenti
     console.error('Delete class error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error deleting class'
+      message: 'Something went wrong while deleting the class. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -444,7 +443,7 @@ router.get('/stats/overview', checkPermission('classes', 'read'), async (req: Au
     console.error('Get class stats error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving class statistics'
+      message: 'Something went wrong while loading class statistics. Please try again.'
     };
     res.status(500).json(response);
   }

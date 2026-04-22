@@ -52,7 +52,7 @@ const returnTextbooksSchema = Joi.object({
 
 const queryTextbookIndentsSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(10),
+  limit: Joi.number().integer().min(0).default(10),
   search: Joi.string().allow('').optional().trim(),
   studentId: Joi.string().allow('').optional().trim(),
   status: Joi.string().valid('pending', 'issued', 'partially_returned', 'returned', 'cancelled', '').optional(),
@@ -66,13 +66,13 @@ const queryTextbookIndentsSchema = Joi.object({
   sortOrder: Joi.string().valid('asc', 'desc').default('desc')
 }).options({ allowUnknown: true });
 
-// Generate unique indent number
-const generateIndentNo = async (branchId: string): Promise<string> => {
+// Generate unique indent number (global across all branches)
+const generateIndentNo = async (): Promise<string> => {
   const currentYear = new Date().getFullYear();
   const prefix = `TBI${currentYear}`;
   
   const lastIndent = await TextbookIndent.findOne(
-    { branchId, indentNo: { $regex: `^${prefix}` } },
+    { indentNo: { $regex: `^${prefix}` } },
     {},
     { sort: { indentNo: -1 } }
   );
@@ -80,7 +80,9 @@ const generateIndentNo = async (branchId: string): Promise<string> => {
   let nextNumber = 1;
   if (lastIndent) {
     const lastNumber = parseInt(lastIndent.indentNo.replace(prefix, ''));
-    nextNumber = lastNumber + 1;
+    if (!isNaN(lastNumber)) {
+      nextNumber = lastNumber + 1;
+    }
   }
 
   return `${prefix}${nextNumber.toString().padStart(4, '0')}`;
@@ -200,7 +202,7 @@ router.get('/', checkPermission('textbooks', 'read'), validateQuery(queryTextboo
         page: pageNum,
         limit: limitNum,
         total,
-        pages: Math.ceil(total / limitNum)
+        pages: (limitNum > 0 ? Math.ceil(total / limitNum) : 1)
       }
     };
 
@@ -209,7 +211,7 @@ router.get('/', checkPermission('textbooks', 'read'), validateQuery(queryTextboo
     console.error('Get textbook indents error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving textbook indents'
+      message: 'Something went wrong while loading textbook indents. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -309,7 +311,7 @@ router.get('/stats/overview', checkPermission('textbooks', 'read'), async (req: 
     console.error('Get textbook indent stats error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving textbook indent statistics'
+      message: 'Something went wrong while loading textbook indent statistics. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -330,7 +332,7 @@ router.get('/:id', checkPermission('textbooks', 'read'), async (req: Authenticat
     if (!indent) {
       const response: ApiResponse = {
         success: false,
-        message: 'Textbook indent not found'
+        message: 'Textbook indent was not found.'
       };
       return res.status(404).json(response);
     }
@@ -346,7 +348,7 @@ router.get('/:id', checkPermission('textbooks', 'read'), async (req: Authenticat
     console.error('Get textbook indent error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving textbook indent'
+      message: 'Something went wrong while loading textbook indent. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -380,7 +382,7 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextbook
     if (!student) {
       const response: ApiResponse = {
         success: false,
-        message: 'Student not found'
+        message: 'Student was not found.'
       };
       return res.status(404).json(response);
     }
@@ -397,7 +399,7 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextbook
     if (textbooks.length !== items.length) {
       const response: ApiResponse = {
         success: false,
-        message: 'One or more textbooks not found'
+        message: 'One or more selected textbooks were not found.'
       };
       return res.status(404).json(response);
     }
@@ -435,44 +437,56 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextbook
       });
     }
 
-    // Generate indent number
-    const indentBranchId = createFilter.branchId?.toString() || 'GLOBAL';
-    const indentNo = await generateIndentNo(indentBranchId);
-
-    // Calculate balance amount
-    const balanceAmount = totalAmount - paidAmount;
-    const paymentStatus = balanceAmount === 0 ? 'paid' : (paidAmount > 0 ? 'partial' : 'pending');
-
-    // Create indent
-    const indentData = {
-      indentNo,
-      studentId: student._id.toString(),
-      studentName: student.name,
-      admissionNo: student.admissionNo,
-      class: student.class,
-      division: student.section,
-      academicYear: new Date().getFullYear().toString(),
-      items: indentItems,
-      totalAmount,
-      paymentMethod,
-      paymentStatus,
-      paidAmount,
-      balanceAmount,
-      issueDate: new Date(),
-      expectedReturnDate: expectedReturnDate ? new Date(expectedReturnDate) : undefined,
-      status: 'pending',
-      issuedBy: req.user!._id.toString(),
-      issuedByName: req.user!.name,
-      remarks,
-      receiptGenerated: false,
-      organizationId: createFilter.organizationId,
-      branchId: createFilter.branchId
-    };
-
+    // Generate indent number with retry for race conditions
+    let indentNo: string = '';
+    let indent: any = null;
+    const maxRetries = 3;
     
-    const indent = new TextbookIndent(indentData);
-    
-    await indent.save();
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        indentNo = await generateIndentNo();
+
+        // Calculate balance amount
+        const balanceAmount = totalAmount - paidAmount;
+        const paymentStatus = balanceAmount === 0 ? 'paid' : (paidAmount > 0 ? 'partial' : 'pending');
+
+        // Create indent
+        const indentData = {
+          indentNo,
+          studentId: student._id.toString(),
+          studentName: student.name,
+          admissionNo: student.admissionNo,
+          class: student.class,
+          division: student.section,
+          academicYear: new Date().getFullYear().toString(),
+          items: indentItems,
+          totalAmount,
+          paymentMethod,
+          paymentStatus,
+          paidAmount,
+          balanceAmount,
+          issueDate: new Date(),
+          expectedReturnDate: expectedReturnDate ? new Date(expectedReturnDate) : undefined,
+          status: 'pending',
+          issuedBy: req.user!._id.toString(),
+          issuedByName: req.user!.name,
+          remarks,
+          receiptGenerated: false,
+          organizationId: createFilter.organizationId,
+          branchId: createFilter.branchId
+        };
+
+        indent = new TextbookIndent(indentData);
+        await indent.save();
+        break; // Success, exit retry loop
+      } catch (retryError: any) {
+        if (retryError.code === 11000 && attempt < maxRetries - 1) {
+          // Duplicate key — retry with next number
+          continue;
+        }
+        throw retryError; // Re-throw on last attempt or non-duplicate error
+      }
+    }
 
     // Log activity
     await ActivityLog.create({
@@ -522,7 +536,7 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextbook
     
     const response: ApiResponse = {
       success: false,
-      message: `Server error creating textbook indent: ${error.message || 'Unknown error'}`
+      message: `Something went wrong while creating the textbook indent: ${error.message || 'Unknown error'}`
     };
     res.status(500).json(response);
   }
@@ -553,7 +567,7 @@ router.put('/:id/issue', checkPermission('textbooks', 'update'), async (req: Aut
     if (!indent) {
       const response: ApiResponse = {
         success: false,
-        message: 'Textbook indent not found'
+        message: 'Textbook indent was not found.'
       };
       return res.status(404).json(response);
     }
@@ -608,7 +622,7 @@ router.put('/:id/issue', checkPermission('textbooks', 'update'), async (req: Aut
     
     const response: ApiResponse = {
       success: false,
-      message: `Server error issuing textbook indent: ${error.message || 'Unknown error'}`
+      message: `Something went wrong while issuing the textbook indent: ${error.message || 'Unknown error'}`
     };
     res.status(500).json(response);
   }
@@ -630,7 +644,7 @@ router.put('/:id/return', checkPermission('textbooks', 'update'), validate(retur
     if (!indent) {
       const response: ApiResponse = {
         success: false,
-        message: 'Textbook indent not found'
+        message: 'Textbook indent was not found.'
       };
       return res.status(404).json(response);
     }
@@ -726,7 +740,7 @@ router.put('/:id/return', checkPermission('textbooks', 'update'), validate(retur
     console.error('Return textbooks error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error processing textbook return'
+      message: 'Something went wrong while processing the textbook return. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -758,7 +772,7 @@ router.put('/:id/cancel', checkPermission('textbooks', 'update'), async (req: Au
     if (!indent) {
       const response: ApiResponse = {
         success: false,
-        message: 'Textbook indent not found'
+        message: 'Textbook indent was not found.'
       };
       return res.status(404).json(response);
     }
@@ -806,7 +820,7 @@ router.put('/:id/cancel', checkPermission('textbooks', 'update'), async (req: Au
     
     const response: ApiResponse = {
       success: false,
-      message: `Server error cancelling textbook indent: ${error.message || 'Unknown error'}`
+      message: `Something went wrong while cancelling the textbook indent: ${error.message || 'Unknown error'}`
     };
     res.status(500).json(response);
   }
@@ -837,7 +851,7 @@ router.post('/:id/receipt', checkPermission('textbooks', 'read'), async (req: Au
     if (!indent) {
       const response: ApiResponse = {
         success: false,
-        message: 'Textbook indent not found'
+        message: 'Textbook indent was not found.'
       };
       return res.status(404).json(response);
     }
@@ -915,7 +929,7 @@ router.post('/:id/receipt', checkPermission('textbooks', 'read'), async (req: Au
     
     const response: ApiResponse = {
       success: false,
-      message: `Server error generating receipt: ${error.message || 'Unknown error'}`
+      message: `Something went wrong while generating the receipt: ${error.message || 'Unknown error'}`
     };
     res.status(500).json(response);
   }

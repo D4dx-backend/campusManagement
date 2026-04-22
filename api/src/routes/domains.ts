@@ -28,7 +28,7 @@ const updateDomainSchema = Joi.object({
 router.get('/resolve', async (req: express.Request, res: Response) => {
   const { domain } = req.query;
   if (!domain || typeof domain !== 'string') {
-    res.status(400).json({ success: false, message: 'Domain query parameter is required' });
+    res.status(400).json({ success: false, message: 'Please provide a domain to look up.' });
     return;
   }
 
@@ -125,7 +125,7 @@ router.post(
     // Verify organization exists
     const org = await Organization.findById(value.organizationId);
     if (!org) {
-      res.status(404).json({ success: false, message: 'Organization not found' });
+      res.status(404).json({ success: false, message: 'Organization was not found.' });
       return;
     }
 
@@ -152,8 +152,10 @@ router.post(
     await ActivityLog.create({
       action: 'create',
       module: 'domain-mapping',
-      description: `Domain "${value.domain}" mapped to organization "${org.name}"`,
+      details: `Domain "${value.domain}" mapped to organization "${org.name}"`,
       userId: req.user!._id,
+      userName: req.user!.name,
+      userRole: req.user!.role,
       organizationId: value.organizationId,
     });
 
@@ -175,7 +177,7 @@ router.put(
 
     const domain = await DomainMapping.findById(req.params.id);
     if (!domain) {
-      res.status(404).json({ success: false, message: 'Domain mapping not found' });
+      res.status(404).json({ success: false, message: 'Domain mapping was not found.' });
       return;
     }
 
@@ -184,7 +186,7 @@ router.put(
       req.user!.role === 'org_admin' &&
       domain.organizationId.toString() !== req.user!.organizationId?.toString()
     ) {
-      res.status(403).json({ success: false, message: 'Access denied' });
+      res.status(403).json({ success: false, message: 'You do not have permission to perform this action.' });
       return;
     }
 
@@ -202,8 +204,10 @@ router.put(
     await ActivityLog.create({
       action: 'update',
       module: 'domain-mapping',
-      description: `Domain mapping "${domain.domain}" updated`,
+      details: `Domain mapping "${domain.domain}" updated`,
       userId: req.user!._id,
+      userName: req.user!.name,
+      userRole: req.user!.role,
       organizationId: domain.organizationId,
     });
 
@@ -219,7 +223,7 @@ router.delete(
   async (req: AuthenticatedRequest, res: Response) => {
     const domain = await DomainMapping.findById(req.params.id);
     if (!domain) {
-      res.status(404).json({ success: false, message: 'Domain mapping not found' });
+      res.status(404).json({ success: false, message: 'Domain mapping was not found.' });
       return;
     }
 
@@ -227,7 +231,7 @@ router.delete(
       req.user!.role === 'org_admin' &&
       domain.organizationId.toString() !== req.user!.organizationId?.toString()
     ) {
-      res.status(403).json({ success: false, message: 'Access denied' });
+      res.status(403).json({ success: false, message: 'You do not have permission to perform this action.' });
       return;
     }
 
@@ -236,8 +240,10 @@ router.delete(
     await ActivityLog.create({
       action: 'delete',
       module: 'domain-mapping',
-      description: `Domain mapping "${domain.domain}" removed`,
+      details: `Domain mapping "${domain.domain}" removed`,
       userId: req.user!._id,
+      userName: req.user!.name,
+      userRole: req.user!.role,
       organizationId: domain.organizationId,
     });
 
@@ -253,7 +259,7 @@ router.post(
   async (req: AuthenticatedRequest, res: Response) => {
     const domain = await DomainMapping.findById(req.params.id);
     if (!domain) {
-      res.status(404).json({ success: false, message: 'Domain mapping not found' });
+      res.status(404).json({ success: false, message: 'Domain mapping was not found.' });
       return;
     }
 
@@ -261,7 +267,7 @@ router.post(
       req.user!.role === 'org_admin' &&
       domain.organizationId.toString() !== req.user!.organizationId?.toString()
     ) {
-      res.status(403).json({ success: false, message: 'Access denied' });
+      res.status(403).json({ success: false, message: 'You do not have permission to perform this action.' });
       return;
     }
 

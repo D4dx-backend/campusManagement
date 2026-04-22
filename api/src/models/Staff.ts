@@ -48,9 +48,9 @@ const StaffSchema = new Schema<IStaff>({
   },
   email: {
     type: String,
-    required: true,
     lowercase: true,
-    trim: true
+    trim: true,
+    default: ''
   },
   address: {
     type: String,

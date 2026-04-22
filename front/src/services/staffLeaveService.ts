@@ -20,6 +20,8 @@ export interface StaffLeaveRequest {
 }
 
 export interface CreateStaffLeaveData {
+  staffId?: string;
+  branchId?: string;
   leaveType: string;
   fromDate: string;
   toDate: string;

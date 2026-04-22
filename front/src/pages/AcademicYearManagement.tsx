@@ -41,7 +41,7 @@ const AcademicYearManagement = () => {
       const res = await academicYearApi.getAll({ limit: 100, sortBy: 'name', sortOrder: 'desc' });
       setYears(res.data || []);
     } catch {
-      toast({ title: 'Error', description: 'Failed to load academic years', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading. Please try again academic years', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -105,7 +105,7 @@ const AcademicYearManagement = () => {
       setDialogOpen(false);
       loadYears();
     } catch (err: any) {
-      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to save', variant: 'destructive' });
+      toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong while saving. Please try again', variant: 'destructive' });
     }
   };
 
@@ -116,7 +116,7 @@ const AcademicYearManagement = () => {
       toast({ title: 'Deleted', description: 'Academic year deleted' });
       loadYears();
     } catch {
-      toast({ title: 'Error', description: 'Failed to delete', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while deleting. Please try again.', variant: 'destructive' });
     }
   };
 
@@ -126,7 +126,7 @@ const AcademicYearManagement = () => {
       toast({ title: 'Success', description: `${y.name} set as current academic year` });
       loadYears();
     } catch {
-      toast({ title: 'Error', description: 'Failed to update', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while updating. Please try again', variant: 'destructive' });
     }
   };
 

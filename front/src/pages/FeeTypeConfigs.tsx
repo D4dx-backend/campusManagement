@@ -56,7 +56,7 @@ const FeeTypeConfigs = () => {
       closeDialog();
     },
     onError: (err: any) => {
-      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to create fee type', variant: 'destructive' });
+      toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong while creating. Please try again fee type', variant: 'destructive' });
     }
   });
 
@@ -69,7 +69,7 @@ const FeeTypeConfigs = () => {
       closeDialog();
     },
     onError: (err: any) => {
-      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to update fee type', variant: 'destructive' });
+      toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong while updating. Please try again fee type', variant: 'destructive' });
     }
   });
 
@@ -80,7 +80,7 @@ const FeeTypeConfigs = () => {
       toast({ title: 'Success', description: 'Fee type deleted successfully' });
     },
     onError: (err: any) => {
-      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to delete fee type', variant: 'destructive' });
+      toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong while deleting. Please try again fee type', variant: 'destructive' });
     }
   });
 

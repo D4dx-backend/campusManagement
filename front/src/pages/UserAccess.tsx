@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -10,15 +10,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { DataTable } from '@/components/ui/data-table';
 import { useConfirmation } from '@/hooks/useConfirmation';
 import { useBranches } from '@/hooks/useBranches';
-import { useUsers, useCreateUser, useUpdateUser, useDeleteUser, useResetPin } from '@/hooks/useUsers';
-import { authService } from '@/services/authService';
+import { useUsers, useCreateUser, useUpdateUser, useDeleteUser, useResetPin, useApproveUser, useRejectUser } from '@/hooks/useUsers';
 import { User, UserRole, Permission } from '@/types';
-import { Plus, Search, Edit, Trash2, Users, Shield, Smartphone, Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, Shield, Smartphone, Eye, EyeOff, Loader2, KeyRound, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { formatters } from '@/utils/exportUtils';
-import { pageConfigurations } from '@/utils/pageTemplates';
 import { normalizeModule } from '@/utils/accessControl';
 
 const UserAccess = () => {
@@ -41,6 +39,7 @@ const UserAccess = () => {
     branchId: filterValues.branch,
     role: filterValues.role,
     status: filterValues.status,
+    approvalStatus: filterValues.approvalStatus,
   });
   
   // Get branches from API only for super admins
@@ -52,6 +51,8 @@ const UserAccess = () => {
   const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();
   const resetPinMutation = useResetPin();
+  const approveUserMutation = useApproveUser();
+  const rejectUserMutation = useRejectUser();
 
   const users = usersResponse?.data || [];
   const pagination = usersResponse?.pagination;
@@ -99,8 +100,6 @@ const UserAccess = () => {
     setEditingUser(null);
   };
 
-  // Get configuration from templates
-  const config = pageConfigurations.userAccess;
   const branchOptions = (branches.length > 0
     ? branches
         .filter((branch: any) => (branch.id || branch._id) && branch.name)
@@ -119,7 +118,38 @@ const UserAccess = () => {
       type: 'select' as const,
       options: branchOptions
     },
-    ...config.filters
+    {
+      key: 'role',
+      label: 'Role',
+      type: 'select' as const,
+      options: [
+        { value: 'platform_admin', label: 'Platform Admin' },
+        { value: 'org_admin', label: 'Organization Admin' },
+        { value: 'branch_admin', label: 'Branch Admin' },
+        { value: 'teacher', label: 'Teacher' },
+        { value: 'accountant', label: 'Accountant' },
+        { value: 'staff', label: 'Staff' }
+      ]
+    },
+    {
+      key: 'status',
+      label: 'Login Status',
+      type: 'select' as const,
+      options: [
+        { value: 'active', label: 'Active' },
+        { value: 'inactive', label: 'Inactive' }
+      ]
+    },
+    {
+      key: 'approvalStatus',
+      label: 'Approval',
+      type: 'select' as const,
+      options: [
+        { value: 'pending', label: 'Pending' },
+        { value: 'approved', label: 'Approved' },
+        { value: 'rejected', label: 'Rejected' }
+      ]
+    }
   ];
 
   // Filter handlers
@@ -193,7 +223,7 @@ const UserAccess = () => {
     } catch (error: any) {
       toast({ 
         title: 'Error', 
-        description: error.response?.data?.message || (editingUser ? 'Failed to update user' : 'Failed to create user'),
+        description: error.response?.data?.message || (editingUser ? 'Something went wrong while updating. Please try again user' : 'Something went wrong while creating. Please try again user'),
         variant: 'destructive'
       });
     }
@@ -237,7 +267,7 @@ const UserAccess = () => {
         } catch (error: any) {
           toast({ 
             title: 'Error', 
-            description: error.response?.data?.message || 'Failed to delete user',
+            description: error.response?.data?.message || 'Something went wrong while deleting. Please try again user',
             variant: 'destructive'
           });
         }
@@ -298,7 +328,7 @@ const UserAccess = () => {
         } catch (error: any) {
           toast({
             title: 'Error',
-            description: error.response?.data?.message || 'Failed to reset PIN',
+            description: error.response?.data?.message || 'Something went wrong while resetting the PIN. Please try again.',
             variant: 'destructive'
           });
         }
@@ -315,6 +345,91 @@ const UserAccess = () => {
       case 'staff': return 'bg-yellow-100 text-yellow-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const getRoleLabel = (role: UserRole) => {
+    switch (role) {
+      case 'platform_admin': return 'Platform Admin';
+      case 'org_admin': return 'Organization Admin';
+      case 'branch_admin': return 'Branch Admin';
+      case 'accountant': return 'Accountant';
+      case 'teacher': return 'Teacher';
+      case 'staff': return 'Staff';
+      default: return role;
+    }
+  };
+
+  const getLoginStatusLabel = (status: User['status']) => {
+    return status === 'active' ? 'Login Active' : 'Login Inactive';
+  };
+
+  const getDisplayEmail = (email?: string) => {
+    if (!email || email.endsWith('@placeholder.local')) {
+      return 'Not provided';
+    }
+
+    return email;
+  };
+
+  const getApprovalBadge = (approvalStatus?: string) => {
+    switch (approvalStatus) {
+      case 'pending': return <Badge className="bg-amber-100 text-amber-800"><Clock className="w-3 h-3 mr-1" />Pending</Badge>;
+      case 'rejected': return <Badge className="bg-red-100 text-red-800"><XCircle className="w-3 h-3 mr-1" />Rejected</Badge>;
+      case 'approved': return <Badge className="bg-emerald-100 text-emerald-800"><CheckCircle className="w-3 h-3 mr-1" />Approved</Badge>;
+      default: return <Badge className="bg-emerald-100 text-emerald-800"><CheckCircle className="w-3 h-3 mr-1" />Approved</Badge>;
+    }
+  };
+
+  const handleApprove = async (id: string, userName: string) => {
+    confirm(
+      {
+        title: 'Approve User Access',
+        description: `Approve access for "${userName}"? A login PIN will be generated.`,
+        confirmText: 'Approve',
+      },
+      async () => {
+        try {
+          const result = await approveUserMutation.mutateAsync(id);
+          const pin = result?.data?.pin;
+          toast({
+            title: 'User Approved',
+            description: pin
+              ? `Login PIN for ${userName}: ${pin}. Please share this with the staff member.`
+              : 'User has been approved.',
+            duration: 20000,
+          });
+        } catch (error: any) {
+          toast({
+            title: 'Error',
+            description: error.response?.data?.message || 'Something went wrong while approving the user.',
+            variant: 'destructive'
+          });
+        }
+      }
+    );
+  };
+
+  const handleReject = async (id: string, userName: string) => {
+    confirm(
+      {
+        title: 'Reject User Access',
+        description: `Are you sure you want to reject access for "${userName}"?`,
+        confirmText: 'Reject',
+        variant: 'destructive'
+      },
+      async () => {
+        try {
+          await rejectUserMutation.mutateAsync(id);
+          toast({ title: 'User access rejected' });
+        } catch (error: any) {
+          toast({
+            title: 'Error',
+            description: error.response?.data?.message || 'Something went wrong while rejecting the user.',
+            variant: 'destructive'
+          });
+        }
+      }
+    );
   };
 
   // Show loading state while branches are being fetched (only for super admins)
@@ -334,7 +449,7 @@ const UserAccess = () => {
   return (
     <AppLayout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold">User Access Management</h1>
             <p className="text-muted-foreground mt-1">Manage user accounts and permissions</p>
@@ -554,9 +669,18 @@ const UserAccess = () => {
           onFilterReset={handleFilterReset}
           exportConfig={{
             filename: 'user_access',
-            columns: config.exportColumns.map(col => ({
+            columns: [
+              { key: 'name', label: 'Full Name' },
+              { key: 'email', label: 'Email' },
+              { key: 'mobile', label: 'Mobile' },
+              { key: 'role', label: 'Role', formatter: formatters.capitalize },
+              { key: 'status', label: 'Login Status', formatter: formatters.capitalize },
+              { key: 'approvalStatus', label: 'Approval Status', formatter: formatters.capitalize },
+              { key: 'lastLogin', label: 'Last Login', formatter: formatters.date },
+              { key: 'createdAt', label: 'Created Date', formatter: formatters.date }
+            ].map(col => ({
               ...col,
-              formatter: col.formatter ? formatters[col.formatter] : undefined
+              formatter: typeof col.formatter === 'string' ? formatters[col.formatter] : col.formatter
             }))
           }}
           pagination={{
@@ -572,77 +696,110 @@ const UserAccess = () => {
           error={null}
           emptyState={{
             icon: <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />,
-            message: "No users found"
+            message: 'No users found'
           }}
         >
           <div className="grid gap-4">
             {users.map(user => (
               <Card key={user._id || user.id}>
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-2 flex-1">
-                      <div className="flex items-center gap-3">
-                        <h3 className="font-semibold text-lg">{user.name}</h3>
-                        <Badge className={getRoleColor(user.role)}>
-                          {user.role}
-                        </Badge>
-                        <Badge variant={user.status === 'active' ? 'default' : 'secondary'}>
-                          {user.status}
-                        </Badge>
+                <CardContent className="p-4 sm:p-5">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="min-w-0 flex-1 space-y-4">
+                      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                        <div className="min-w-0">
+                          <h3 className="truncate text-lg font-semibold">{user.name}</h3>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {getRoleLabel(user.role)}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge className={getRoleColor(user.role)}>
+                            {getRoleLabel(user.role)}
+                          </Badge>
+                          <Badge variant={user.status === 'active' ? 'default' : 'secondary'}>
+                            {getLoginStatusLabel(user.status)}
+                          </Badge>
+                          {getApprovalBadge((user as any).approvalStatus)}
+                        </div>
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">Email:</span>
-                          <span className="ml-2 font-medium">{user.email}</span>
+
+                      <div className="grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
+                        <div className="rounded-md border bg-muted/30 px-3 py-2">
+                          <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Email</div>
+                          <div className="mt-1 break-all font-medium">{getDisplayEmail(user.email)}</div>
                         </div>
-                        <div>
-                          <span className="text-muted-foreground">Mobile:</span>
-                          <span className="ml-2 font-medium">{user.mobile}</span>
+                        <div className="rounded-md border bg-muted/30 px-3 py-2">
+                          <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Mobile</div>
+                          <div className="mt-1 font-medium">{user.mobile || 'Not provided'}</div>
                         </div>
-                        <div>
-                          <span className="text-muted-foreground">PIN:</span>
-                          <span className="ml-2 font-medium">••••</span>
+                        <div className="rounded-md border bg-muted/30 px-3 py-2">
+                          <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">PIN</div>
+                          <div className="mt-1 font-medium">••••</div>
                         </div>
-                        <div>
-                          <span className="text-muted-foreground">Last Login:</span>
-                          <span className="ml-2 font-medium">
+                        <div className="rounded-md border bg-muted/30 px-3 py-2">
+                          <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Last Login</div>
+                          <div className="mt-1 font-medium">
                             {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-3">
+                        <div>
+                          <span className="text-muted-foreground">Organization:</span>
+                          <span className="ml-2 font-medium">
+                            {(user as any).organizationId?.name || 'Not assigned'}
                           </span>
                         </div>
-                      </div>
-                      <div className="flex flex-wrap gap-4 text-sm">
-                        {(user as any).organizationId?.name && (
-                          <div>
-                            <span className="text-muted-foreground">Organization:</span>
-                            <span className="ml-2 font-medium">{(user as any).organizationId.name}</span>
-                          </div>
-                        )}
-                        {(user as any).branchId?.name && (
-                          <div>
-                            <span className="text-muted-foreground">Branch:</span>
-                            <span className="ml-2 font-medium">{(user as any).branchId.name}</span>
-                          </div>
-                        )}
+                        <div>
+                          <span className="text-muted-foreground">Branch:</span>
+                          <span className="ml-2 font-medium">
+                            {(user as any).branchId?.name || 'Organization Level'}
+                          </span>
+                        </div>
                         <div>
                           <span className="text-muted-foreground">Permissions:</span>
-                          <span className="ml-2">
-                            {user.permissions?.length > 0 
-                              ? `${user.permissions.length} modules` 
-                              : 'No permissions assigned'
-                            }
+                          <span className="ml-2 font-medium">
+                            {user.permissions?.length > 0
+                              ? `${user.permissions.length} modules`
+                              : 'No permissions assigned'}
                           </span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" title="Reset PIN" onClick={() => handleResetPin(user._id || user.id, user.name)}>
-                        <KeyRound className="w-4 h-4" />
+
+                    <div className="flex flex-wrap items-center gap-2 lg:w-auto lg:flex-col lg:items-stretch">
+                      {(user as any).approvalStatus === 'pending' && (currentUser?.role === 'platform_admin' || currentUser?.role === 'org_admin') && (
+                        <>
+                          <Button size="sm" className="gap-2 bg-emerald-600 hover:bg-emerald-700" onClick={() => handleApprove(user._id || user.id, user.name)}>
+                            <CheckCircle className="h-4 w-4" />
+                            Approve
+                          </Button>
+                          <Button size="sm" variant="destructive" className="gap-2" onClick={() => handleReject(user._id || user.id, user.name)}>
+                            <XCircle className="h-4 w-4" />
+                            Reject
+                          </Button>
+                        </>
+                      )}
+                      {(user as any).approvalStatus === 'rejected' && (currentUser?.role === 'platform_admin' || currentUser?.role === 'org_admin') && (
+                        <Button size="sm" className="gap-2 bg-emerald-600 hover:bg-emerald-700" onClick={() => handleApprove(user._id || user.id, user.name)}>
+                          <CheckCircle className="h-4 w-4" />
+                          Approve
+                        </Button>
+                      )}
+                      {(user as any).approvalStatus !== 'pending' && (
+                        <Button size="sm" variant="outline" className="gap-2" title="Reset PIN" onClick={() => handleResetPin(user._id || user.id, user.name)}>
+                          <KeyRound className="h-4 w-4" />
+                          Reset PIN
+                        </Button>
+                      )}
+                      <Button size="sm" variant="outline" className="gap-2" onClick={() => handleEdit(user)}>
+                        <Edit className="h-4 w-4" />
+                        Edit
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleEdit(user)}>
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleDelete(user._id || user.id, user.name)}>
-                        <Trash2 className="w-4 h-4" />
+                      <Button size="sm" variant="outline" className="gap-2" onClick={() => handleDelete(user._id || user.id, user.name)}>
+                        <Trash2 className="h-4 w-4" />
+                        Delete
                       </Button>
                     </div>
                   </div>

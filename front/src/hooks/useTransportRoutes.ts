@@ -38,7 +38,7 @@ export const useCreateTransportRoute = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to create transport route',
+        description: error.response?.data?.message || 'Something went wrong while creating the transport route. Please try again.',
         variant: 'destructive',
       });
     }
@@ -63,7 +63,7 @@ export const useUpdateTransportRoute = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to update transport route',
+        description: error.response?.data?.message || 'Something went wrong while updating the transport route. Please try again.',
         variant: 'destructive',
       });
     }
@@ -86,7 +86,7 @@ export const useDeleteTransportRoute = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to delete transport route',
+        description: error.response?.data?.message || 'Something went wrong while deleting the transport route. Please try again.',
         variant: 'destructive',
       });
     }

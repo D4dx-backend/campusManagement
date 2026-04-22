@@ -54,7 +54,7 @@ const StudentLms = () => {
       setSubjectProgress(progressRes.data || []);
       setAssignments(assignRes.data || []);
     } catch (err: any) {
-      toast({ title: 'Error', description: 'Failed to load data', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading. Please try again data', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -85,7 +85,7 @@ const StudentLms = () => {
         setViewerOpen(true);
       }
     } catch {
-      toast({ title: 'Error', description: 'Failed to load content', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading content. Please try again.', variant: 'destructive' });
     } finally {
       setLoadingContentId(null);
     }

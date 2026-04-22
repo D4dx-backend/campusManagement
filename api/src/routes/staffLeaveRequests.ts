@@ -2,6 +2,7 @@ import express from 'express';
 import { Types } from 'mongoose';
 import Joi from 'joi';
 import { StaffLeaveRequest } from '../models/StaffLeaveRequest';
+import { Staff } from '../models/Staff';
 import { authenticate, authorize } from '../middleware/auth';
 import { validate, validateQuery } from '../middleware/validation';
 import { AuthenticatedRequest, ApiResponse } from '../types';
@@ -11,6 +12,8 @@ const router = express.Router();
 router.use(authenticate);
 
 const createSchema = Joi.object({
+  staffId: Joi.string().optional().allow('', null),
+  branchId: Joi.string().optional().allow('', null),
   leaveType: Joi.string().valid('casual', 'sick', 'earned', 'other').default('casual'),
   fromDate: Joi.date().iso().required(),
   toDate: Joi.date().iso().min(Joi.ref('fromDate')).required(),
@@ -24,7 +27,7 @@ const reviewSchema = Joi.object({
 
 const querySchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(20),
+  limit: Joi.number().integer().min(0).default(20),
   status: Joi.string().valid('pending', 'approved', 'rejected').allow(''),
   userId: Joi.string().allow(''),
   sortBy: Joi.string().default('createdAt'),
@@ -40,13 +43,34 @@ router.post('/', validate(createSchema), async (req: AuthenticatedRequest, res) 
       return res.status(403).json({ success: false, message: 'Students cannot request staff leave' });
     }
 
-    const { leaveType, fromDate, toDate, reason } = req.body;
+    const { staffId, leaveType, fromDate, toDate, reason } = req.body;
     const orgBranch = getOrgBranchForCreate(req);
+    const isAdmin = ['platform_admin', 'org_admin', 'branch_admin'].includes(req.user!.role);
+
+    let userId: Types.ObjectId;
+    let userName: string;
+    let role: string;
+
+    if (staffId && isAdmin) {
+      // Admin creating on behalf of a staff member
+      const staff = await Staff.findById(staffId);
+      if (!staff) {
+        return res.status(404).json({ success: false, message: 'Staff member not found' });
+      }
+      userId = staff._id as any;
+      userName = staff.name;
+      role = staff.designation || 'staff';
+    } else {
+      // Self-apply
+      userId = new Types.ObjectId(req.user!._id);
+      userName = req.user!.name;
+      role = req.user!.role;
+    }
 
     const leaveRequest = await StaffLeaveRequest.create({
-      userId: new Types.ObjectId(req.user!._id),
-      userName: req.user!.name,
-      role: req.user!.role,
+      userId,
+      userName,
+      role,
       leaveType,
       fromDate: new Date(fromDate),
       toDate: new Date(toDate),
@@ -101,7 +125,7 @@ router.get('/', validateQuery(querySchema), async (req: AuthenticatedRequest, re
     res.json({
       success: true,
       data: requests,
-      pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) },
+      pagination: { page: Number(page), limit: Number(limit), total, pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1) },
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -129,12 +153,12 @@ router.put('/:id/review', authorize('platform_admin', 'org_admin', 'branch_admin
   try {
     const { id } = req.params;
     if (!Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ success: false, message: 'Invalid ID' });
+      return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
     }
 
     const leave = await StaffLeaveRequest.findById(id);
     if (!leave) {
-      return res.status(404).json({ success: false, message: 'Leave request not found' });
+      return res.status(404).json({ success: false, message: 'Leave request was not found.' });
     }
     if (leave.status !== 'pending') {
       return res.status(400).json({ success: false, message: 'Already reviewed' });
@@ -160,7 +184,7 @@ router.delete('/:id', async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
     if (!Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ success: false, message: 'Invalid ID' });
+      return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
     }
 
     const leave = await StaffLeaveRequest.findById(id);
@@ -172,7 +196,7 @@ router.delete('/:id', async (req: AuthenticatedRequest, res) => {
     const isOwner = leave.userId.toString() === req.user!._id.toString();
 
     if (!isAdmin && !isOwner) {
-      return res.status(403).json({ success: false, message: 'Access denied' });
+      return res.status(403).json({ success: false, message: 'You do not have permission to perform this action.' });
     }
     if (!isAdmin && leave.status !== 'pending') {
       return res.status(400).json({ success: false, message: 'Can only delete pending requests' });

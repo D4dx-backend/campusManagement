@@ -69,7 +69,7 @@ const ProgressDashboard = () => {
       const res = await progressApi.getDashboard(params);
       setDashboard(res.data);
     } catch {
-      toast({ title: 'Error', description: 'Failed to load dashboard', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading. Please try again dashboard', variant: 'destructive' });
     } finally {
       setLoading(false);
     }

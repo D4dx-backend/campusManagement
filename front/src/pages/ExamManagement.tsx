@@ -79,7 +79,7 @@ const ExamManagement = () => {
       const res = await examApi.getAll(params);
       setExams(res.data || []);
     } catch {
-      toast({ title: 'Error', description: 'Failed to load exams', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading. Please try again exams', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -124,7 +124,7 @@ const ExamManagement = () => {
       setDialogOpen(false);
       loadExams();
     } catch (err: any) {
-      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to save', variant: 'destructive' });
+      toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong while saving. Please try again', variant: 'destructive' });
     }
   };
 
@@ -135,7 +135,7 @@ const ExamManagement = () => {
       toast({ title: 'Deleted', description: 'Exam deleted' });
       loadExams();
     } catch {
-      toast({ title: 'Error', description: 'Failed to delete', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while deleting. Please try again.', variant: 'destructive' });
     }
   };
 

@@ -15,7 +15,7 @@ router.use(authenticate);
 // Validation schemas
 const queryActivityLogsSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(20),
+  limit: Joi.number().integer().min(0).default(20),
   search: Joi.string().optional().allow(''),
   userId: Joi.string().optional().allow(''),
   userRole: Joi.string().valid('platform_admin', 'org_admin', 'branch_admin', 'accountant', 'teacher', 'staff').optional(),
@@ -103,7 +103,7 @@ router.get('/', checkPermission('activity_logs', 'read'), validateQuery(queryAct
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: (limit > 0 ? Math.ceil(total / limit) : 1)
       }
     };
 
@@ -112,7 +112,7 @@ router.get('/', checkPermission('activity_logs', 'read'), validateQuery(queryAct
     console.error('Get activity logs error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving activity logs'
+      message: 'Something went wrong while loading activity logs. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -135,7 +135,7 @@ router.get('/:id', checkPermission('activity_logs', 'read'), async (req: Authent
     if (!log) {
       const response: ApiResponse = {
         success: false,
-        message: 'Activity log not found'
+        message: 'Activity log was not found.'
       };
       return res.status(404).json(response);
     }
@@ -151,7 +151,7 @@ router.get('/:id', checkPermission('activity_logs', 'read'), async (req: Authent
     console.error('Get activity log error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving activity log'
+      message: 'Something went wrong while loading activity log. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -230,7 +230,7 @@ router.get('/stats/overview', checkPermission('activity_logs', 'read'), async (r
     console.error('Get activity log stats error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving activity log statistics'
+      message: 'Something went wrong while loading activity log statistics. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -296,7 +296,7 @@ router.get('/user/:userId', checkPermission('activity_logs', 'read'), validateQu
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: (limit > 0 ? Math.ceil(total / limit) : 1)
       }
     };
 
@@ -305,7 +305,7 @@ router.get('/user/:userId', checkPermission('activity_logs', 'read'), validateQu
     console.error('Get user activity logs error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving user activity logs'
+      message: 'Something went wrong while loading user activity logs. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -359,7 +359,7 @@ router.delete('/cleanup', checkPermission('activity_logs', 'delete'), async (req
     console.error('Cleanup activity logs error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error during log cleanup'
+      message: 'Something went wrong during log cleanup. Please try again.'
     };
     res.status(500).json(response);
   }

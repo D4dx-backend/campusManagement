@@ -26,7 +26,7 @@ const createSchema = Joi.object({
 
 const querySchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(50).default(20),
+  limit: Joi.number().integer().min(0).default(20),
   classId: Joi.string().allow(''),
   date: Joi.string().allow(''),
   fromDate: Joi.string().allow(''),
@@ -92,7 +92,7 @@ router.get('/', validateQuery(querySchema), async (req: AuthenticatedRequest, re
     res.json({
       success: true,
       data: items,
-      pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) },
+      pagination: { page: Number(page), limit: Number(limit), total, pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1) },
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -136,14 +136,14 @@ router.get('/student', async (req: AuthenticatedRequest, res) => {
 router.put('/:id', validate(createSchema), async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
-    if (!Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+    if (!Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
 
     const hw = await Homework.findById(id);
     if (!hw) return res.status(404).json({ success: false, message: 'Not found' });
 
     const isAdmin = ['platform_admin', 'org_admin', 'branch_admin'].includes(req.user!.role);
     const isCreator = hw.assignedBy.toString() === req.user!._id.toString();
-    if (!isAdmin && !isCreator) return res.status(403).json({ success: false, message: 'Access denied' });
+    if (!isAdmin && !isCreator) return res.status(403).json({ success: false, message: 'You do not have permission to perform this action.' });
 
     Object.assign(hw, req.body);
     hw.classId = new Types.ObjectId(req.body.classId);
@@ -165,14 +165,14 @@ router.put('/:id', validate(createSchema), async (req: AuthenticatedRequest, res
 router.delete('/:id', async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
-    if (!Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+    if (!Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
 
     const hw = await Homework.findById(id);
     if (!hw) return res.status(404).json({ success: false, message: 'Not found' });
 
     const isAdmin = ['platform_admin', 'org_admin', 'branch_admin'].includes(req.user!.role);
     const isCreator = hw.assignedBy.toString() === req.user!._id.toString();
-    if (!isAdmin && !isCreator) return res.status(403).json({ success: false, message: 'Access denied' });
+    if (!isAdmin && !isCreator) return res.status(403).json({ success: false, message: 'You do not have permission to perform this action.' });
 
     await Homework.findByIdAndDelete(id);
     res.json({ success: true, message: 'Deleted' });

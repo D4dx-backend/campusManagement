@@ -55,15 +55,20 @@ router.post('/', checkPermission('attendance', 'create'), validate(markAttendanc
       });
     }
 
-    // Log activity
-    await ActivityLog.create({
-      action: existing ? 'update' : 'create',
-      module: 'attendance',
-      description: `Attendance ${existing ? 'updated' : 'marked'} for ${attendanceDate.toISOString().split('T')[0]}`,
-      userId: req.user!._id,
-      userName: req.user!.name,
-      ...orgBranch,
-    });
+    // Log activity (non-blocking — don't fail the main operation)
+    try {
+      await ActivityLog.create({
+        action: existing ? 'update' : 'create',
+        module: 'attendance',
+        details: `Attendance ${existing ? 'updated' : 'marked'} for ${attendanceDate.toISOString().split('T')[0]}`,
+        userId: req.user!._id,
+        userName: req.user!.name,
+        userRole: req.user!.role,
+        ...orgBranch,
+      });
+    } catch (logError) {
+      console.error('Activity log error (non-critical):', logError);
+    }
 
     const response: ApiResponse = {
       success: true,

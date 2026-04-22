@@ -30,7 +30,7 @@ const createFeeStructureSchema = Joi.object({
 
 const querySchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(50),
+  limit: Joi.number().integer().min(0).default(50),
   search: Joi.string().allow('').optional(),
   feeTypeId: Joi.string().optional(),
   classId: Joi.string().optional(),
@@ -83,7 +83,7 @@ router.get(
           page: Number(page),
           limit: Number(limit),
           total,
-          pages: Math.ceil(total / Number(limit))
+          pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1)
         }
       });
     } catch (error: any) {
@@ -152,7 +152,7 @@ router.post(
       // Verify feeTypeId exists
       const feeTypeConfig = await FeeTypeConfig.findById(req.body.feeTypeId);
       if (!feeTypeConfig) {
-        return res.status(400).json({ success: false, message: 'Invalid fee type' });
+        return res.status(400).json({ success: false, message: 'The selected fee type is not valid.' });
       }
 
       const feeStructureData = {
@@ -200,7 +200,7 @@ router.put(
       // Verify feeTypeId exists
       const feeTypeConfig = await FeeTypeConfig.findById(req.body.feeTypeId);
       if (!feeTypeConfig) {
-        return res.status(400).json({ success: false, message: 'Invalid fee type' });
+        return res.status(400).json({ success: false, message: 'The selected fee type is not valid.' });
       }
 
       const updateData = {
@@ -218,7 +218,7 @@ router.put(
       });
 
       if (!feeStructure) {
-        return res.status(404).json({ success: false, message: 'Fee structure not found' });
+        return res.status(404).json({ success: false, message: 'Fee structure was not found.' });
       }
 
       await ActivityLog.create({
@@ -254,7 +254,7 @@ router.delete(
       const feeStructure = await FeeStructure.findOneAndDelete(query);
 
       if (!feeStructure) {
-        return res.status(404).json({ success: false, message: 'Fee structure not found' });
+        return res.status(404).json({ success: false, message: 'Fee structure was not found.' });
       }
 
       await ActivityLog.create({

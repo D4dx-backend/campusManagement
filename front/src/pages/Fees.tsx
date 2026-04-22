@@ -461,7 +461,7 @@ const Fees = () => {
   useEffect(() => { setQDivisionName('all'); }, [qClassId]);
 
   const { data: qStudentsResponse, isLoading: qStudentsLoading } = useStudents({
-    limit: 200,
+    limit: 0,
     search: qStudentSearch.trim() || undefined,
     branchId: effectiveBranchId,
     classId: qSelectedClassId || undefined,
@@ -692,7 +692,7 @@ const Fees = () => {
   useEffect(() => { setBDivisionName('all'); }, [bClassId]);
 
   const { data: bStudentsResponse, isLoading: bStudentsLoading } = useStudents({
-    limit: 200,
+    limit: 0,
     search: bStudentSearch.trim() || undefined,
     branchId: effectiveBranchId,
     classId: bSelectedClassId || undefined,
@@ -884,13 +884,13 @@ const Fees = () => {
 
       const response = await receiptService.getReceiptData(paymentId);
       if (!response.success) {
-        toast({ title: 'Error', description: 'Failed to get receipt data', variant: 'destructive' });
+        toast({ title: 'Error', description: 'Something went wrong while loading the receipt data. Please try again.', variant: 'destructive' });
         return;
       }
       await downloadReceipt(response.data);
       toast({ title: 'Success', description: 'Receipt downloaded successfully' });
     } catch (err: any) {
-      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to download receipt', variant: 'destructive' });
+      toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong while downloading. Please try again receipt', variant: 'destructive' });
     }
   };
 

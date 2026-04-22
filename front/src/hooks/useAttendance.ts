@@ -72,7 +72,7 @@ export const useMarkAttendance = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to save attendance',
+        description: error.response?.data?.message || 'Something went wrong while saving attendance. Please try again.',
         variant: 'destructive',
       });
     },
@@ -113,7 +113,7 @@ export const useCreateLeaveRequest = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to submit leave request',
+        description: error.response?.data?.message || 'Something went wrong while submitting the leave request. Please try again.',
         variant: 'destructive',
       });
     },
@@ -137,7 +137,7 @@ export const useReviewLeaveRequest = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to review leave request',
+        description: error.response?.data?.message || 'Something went wrong while reviewing the leave request. Please try again.',
         variant: 'destructive',
       });
     },
@@ -157,7 +157,7 @@ export const useDeleteLeaveRequest = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to delete leave request',
+        description: error.response?.data?.message || 'Something went wrong while deleting the leave request. Please try again.',
         variant: 'destructive',
       });
     },

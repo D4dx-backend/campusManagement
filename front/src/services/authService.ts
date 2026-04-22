@@ -74,7 +74,7 @@ export const authService = {
       return response.data.data.user;
     }
     
-    throw new Error(response.data.message || 'Failed to get profile');
+    throw new Error(response.data.message || 'Something went wrong while loading your profile.');
   },
 
   // Change PIN
@@ -85,7 +85,7 @@ export const authService = {
     });
     
     if (!response.data.success) {
-      throw new Error(response.data.message || 'Failed to change PIN');
+      throw new Error(response.data.message || 'Something went wrong while changing your PIN. Please try again.');
     }
   },
 

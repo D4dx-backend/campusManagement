@@ -17,7 +17,7 @@ const dateRangeSchema = Joi.object({
   startDate: Joi.date().optional(),
   endDate: Joi.date().optional(),
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(10),
+  limit: Joi.number().integer().min(0).default(10),
   transactionType: Joi.string().valid('all', 'income', 'expense').optional(),
   search: Joi.string().allow('').optional(),
 });
@@ -27,7 +27,7 @@ const ledgerQuerySchema = Joi.object({
   startDate: Joi.date().optional(),
   endDate: Joi.date().optional(),
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(10),
+  limit: Joi.number().integer().min(0).default(10),
 });
 
 const balanceSheetSchema = Joi.object({
@@ -170,7 +170,7 @@ router.get(
           transactions: paginatedTransactions,
           pagination: {
             currentPage: Number(page),
-            totalPages: Math.ceil(total / Number(limit)),
+            totalPages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1),
             totalItems: total,
             itemsPerPage: Number(limit),
           },
@@ -337,7 +337,7 @@ router.get(
           accounts: paginatedAccounts,
           pagination: {
             currentPage: Number(page),
-            totalPages: Math.ceil(total / Number(limit)),
+            totalPages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1),
             totalItems: total,
             itemsPerPage: Number(limit),
           },
@@ -478,7 +478,7 @@ router.get(
           })),
           pagination: {
             currentPage: Number(page),
-            totalPages: Math.ceil(total / Number(limit)),
+            totalPages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1),
             totalItems: total,
             itemsPerPage: Number(limit),
           },

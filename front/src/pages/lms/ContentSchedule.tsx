@@ -111,7 +111,7 @@ const ContentSchedule = () => {
       const res = await contentAssignmentApi.getAll(params);
       setAssignments(res.data || []);
     } catch {
-      toast({ title: 'Error', description: 'Failed to load assignments', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading. Please try again assignments', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -120,10 +120,10 @@ const ContentSchedule = () => {
   const loadAvailableContent = async () => {
     try {
       if (form.contentType === 'assessment') {
-        const res = await assessmentApi.getAll({ limit: 200, status: 'published' });
+        const res = await assessmentApi.getAll({ limit: 0, status: 'published' });
         setAvailableContent(res.data || []);
       } else {
-        const res = await contentApi.getAll({ limit: 200, status: 'published' });
+        const res = await contentApi.getAll({ limit: 0, status: 'published' });
         setAvailableContent(res.data || []);
       }
     } catch { /* ignore */ }
@@ -232,7 +232,7 @@ const ContentSchedule = () => {
       toast({ title: 'Deleted' });
       loadAssignments();
     } catch {
-      toast({ title: 'Error', description: 'Failed to delete', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while deleting. Please try again.', variant: 'destructive' });
     }
   };
 

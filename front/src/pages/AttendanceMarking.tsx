@@ -52,9 +52,10 @@ const AttendanceMarking = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   // Load attendance if previously marked
+  const cleanSection = selectedSection && selectedSection !== '__all__' ? selectedSection : '';
   const { data: existingAttendance } = useAttendance(
     selectedClassId && selectedDate
-      ? { classId: selectedClassId, section: selectedSection, date: selectedDate }
+      ? { classId: selectedClassId, section: cleanSection, date: selectedDate }
       : undefined
   );
 
@@ -103,9 +104,9 @@ const AttendanceMarking = () => {
     try {
       const res = await studentService.getStudents({
         classId: selectedClassId,
-        section: selectedSection || undefined,
+        section: selectedSection && selectedSection !== '__all__' ? selectedSection : undefined,
         status: 'active',
-        limit: 200,
+        limit: 0,
         sortBy: 'name',
         sortOrder: 'asc',
       } as any);
@@ -130,7 +131,7 @@ const AttendanceMarking = () => {
       );
       setLoaded(true);
     } catch (error: any) {
-      const message = error?.response?.data?.message || error?.message || 'Failed to load students';
+      const message = error?.response?.data?.message || error?.message || 'Something went wrong while loading. Please try again students';
       setLoadError(message);
       setRecords([]);
       setLoaded(true);
@@ -158,10 +159,11 @@ const AttendanceMarking = () => {
 
   // Save attendance
   const handleSave = () => {
+    const sectionValue = selectedSection && selectedSection !== '__all__' ? selectedSection : '';
     const data = {
       date: selectedDate,
       classId: selectedClassId,
-      section: selectedSection || '',
+      section: sectionValue,
       academicYear: selectedYear,
       records: records.map((r) => ({
         studentId: r.studentId,

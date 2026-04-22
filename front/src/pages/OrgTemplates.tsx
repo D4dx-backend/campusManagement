@@ -103,7 +103,7 @@ const OrgTemplates = () => {
         setMasterItems((res as any).data || []);
       }
     } catch {
-      toast({ title: 'Failed to load data', variant: 'destructive' });
+      toast({ title: 'Something went wrong while loading data. Please try again.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -121,13 +121,13 @@ const OrgTemplates = () => {
       if (editingClass) { await orgTemplateApi.updateClass(editingClass._id, data); toast({ title: 'Class updated' }); }
       else { await orgTemplateApi.createClass(data); toast({ title: 'Class created' }); }
       setClassDialog(false); loadData();
-    } catch (err: any) { toast({ title: err?.response?.data?.message || 'Failed to save', variant: 'destructive' }); }
+    } catch (err: any) { toast({ title: err?.response?.data?.message || 'Something went wrong while saving. Please try again', variant: 'destructive' }); }
     finally { setSaving(false); }
   };
   const deleteClass = async (c: OrgTemplateClass) => {
     if (!confirm(`Delete class "${c.name}"?`)) return;
     try { await orgTemplateApi.deleteClass(c._id); toast({ title: 'Deleted' }); loadData(); }
-    catch { toast({ title: 'Failed to delete', variant: 'destructive' }); }
+    catch { toast({ title: 'Something went wrong while deleting. Please try again.', variant: 'destructive' }); }
   };
 
   // ── SUBJECT HANDLERS
@@ -141,13 +141,13 @@ const OrgTemplates = () => {
       if (editingSubject) { await orgTemplateApi.updateSubject(editingSubject._id, data); toast({ title: 'Subject updated' }); }
       else { await orgTemplateApi.createSubject(data); toast({ title: 'Subject created' }); }
       setSubjectDialog(false); loadData();
-    } catch (err: any) { toast({ title: err?.response?.data?.message || 'Failed to save', variant: 'destructive' }); }
+    } catch (err: any) { toast({ title: err?.response?.data?.message || 'Something went wrong while saving. Please try again', variant: 'destructive' }); }
     finally { setSaving(false); }
   };
   const deleteSubject = async (s: OrgTemplateSubject) => {
     if (!confirm(`Delete subject "${s.name}" (${s.code})?`)) return;
     try { await orgTemplateApi.deleteSubject(s._id); toast({ title: 'Deleted' }); loadData(); }
-    catch { toast({ title: 'Failed to delete', variant: 'destructive' }); }
+    catch { toast({ title: 'Something went wrong while deleting. Please try again.', variant: 'destructive' }); }
   };
   const toggleClassForSubject = (classId: string) => {
     setSubjectClassIds(prev => prev.includes(classId) ? prev.filter(id => id !== classId) : [...prev, classId]);
@@ -164,13 +164,13 @@ const OrgTemplates = () => {
       if (editingAY) { await orgTemplateApi.updateAcademicYear(editingAY._id, data); toast({ title: 'Academic year updated' }); }
       else { await orgTemplateApi.createAcademicYear(data); toast({ title: 'Academic year created' }); }
       setAyDialog(false); loadData();
-    } catch (err: any) { toast({ title: err?.response?.data?.message || 'Failed to save', variant: 'destructive' }); }
+    } catch (err: any) { toast({ title: err?.response?.data?.message || 'Something went wrong while saving. Please try again', variant: 'destructive' }); }
     finally { setSaving(false); }
   };
   const deleteAY = async (ay: OrgTemplateAcademicYear) => {
     if (!confirm(`Delete academic year "${ay.name}"?`)) return;
     try { await orgTemplateApi.deleteAcademicYear(ay._id); toast({ title: 'Deleted' }); loadData(); }
-    catch { toast({ title: 'Failed to delete', variant: 'destructive' }); }
+    catch { toast({ title: 'Something went wrong while deleting. Please try again.', variant: 'destructive' }); }
   };
 
   // ── MASTER DATA HANDLERS
@@ -189,13 +189,13 @@ const OrgTemplates = () => {
       if (editingMaster) { await orgTemplateApi.updateMasterData(masterType, editingMaster._id, data); toast({ title: 'Updated' }); }
       else { await orgTemplateApi.createMasterData(masterType, data); toast({ title: 'Created' }); }
       setMasterDialog(false); loadData();
-    } catch (err: any) { toast({ title: err?.response?.data?.message || 'Failed to save', variant: 'destructive' }); }
+    } catch (err: any) { toast({ title: err?.response?.data?.message || 'Something went wrong while saving. Please try again', variant: 'destructive' }); }
     finally { setSaving(false); }
   };
   const deleteMaster = async (item: OrgTemplateMasterItem) => {
     if (!confirm(`Delete "${item.name}"?`)) return;
     try { await orgTemplateApi.deleteMasterData(masterType, item._id); toast({ title: 'Deleted' }); loadData(); }
-    catch { toast({ title: 'Failed to delete', variant: 'destructive' }); }
+    catch { toast({ title: 'Something went wrong while deleting. Please try again.', variant: 'destructive' }); }
   };
 
   // Filters

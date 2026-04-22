@@ -35,7 +35,7 @@ const updateDepartmentSchema = Joi.object({
 
 const queryDepartmentsSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(10),
+  limit: Joi.number().integer().min(0).default(10),
   search: Joi.string().optional().allow(''),
   status: Joi.string().valid('active', 'inactive').optional(),
   sortBy: Joi.string().valid('name', 'code', 'createdAt').default('name'),
@@ -110,7 +110,7 @@ router.get('/', checkPermission('departments', 'read'), validateQuery(queryDepar
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: (limit > 0 ? Math.ceil(total / limit) : 1)
       }
     };
 
@@ -119,7 +119,7 @@ router.get('/', checkPermission('departments', 'read'), validateQuery(queryDepar
     console.error('Get departments error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving departments'
+      message: 'Something went wrong while loading departments. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -140,7 +140,7 @@ router.get('/:id', checkPermission('departments', 'read'), async (req: Authentic
     if (!department) {
       const response: ApiResponse = {
         success: false,
-        message: 'Department not found'
+        message: 'Department was not found.'
       };
       return res.status(404).json(response);
     }
@@ -173,7 +173,7 @@ router.get('/:id', checkPermission('departments', 'read'), async (req: Authentic
     console.error('Get department error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving department'
+      message: 'Something went wrong while loading department. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -207,7 +207,7 @@ router.post('/', checkPermission('departments', 'create'), validate(createDepart
     if (existingDepartment) {
       const response: ApiResponse = {
         success: false,
-        message: 'Department with this code already exists'
+        message: 'A department with this code already exists. Please use a different code.'
       };
       return res.status(400).json(response);
     }
@@ -221,7 +221,7 @@ router.post('/', checkPermission('departments', 'create'), validate(createDepart
     if (existingName) {
       const response: ApiResponse = {
         success: false,
-        message: 'Department with this name already exists'
+        message: 'A department with this name already exists. Please use a different name.'
       };
       return res.status(400).json(response);
     }
@@ -262,7 +262,7 @@ router.post('/', checkPermission('departments', 'create'), validate(createDepart
     console.error('Create department error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error creating department'
+      message: 'Something went wrong while creating the department. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -282,7 +282,7 @@ router.put('/:id', checkPermission('departments', 'update'), validate(updateDepa
     if (!existingDepartment) {
       const response: ApiResponse = {
         success: false,
-        message: 'Department not found'
+        message: 'Department was not found.'
       };
       return res.status(404).json(response);
     }
@@ -298,7 +298,7 @@ router.put('/:id', checkPermission('departments', 'update'), validate(updateDepa
       if (duplicateCode) {
         const response: ApiResponse = {
           success: false,
-          message: 'Another department with this code already exists'
+          message: 'Another department with this code already exists. Please use a different code.'
         };
         return res.status(400).json(response);
       }
@@ -315,7 +315,7 @@ router.put('/:id', checkPermission('departments', 'update'), validate(updateDepa
       if (duplicateName) {
         const response: ApiResponse = {
           success: false,
-          message: 'Another department with this name already exists'
+          message: 'Another department with this name already exists. Please use a different name.'
         };
         return res.status(400).json(response);
       }
@@ -374,7 +374,7 @@ router.put('/:id', checkPermission('departments', 'update'), validate(updateDepa
     console.error('Update department error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error updating department'
+      message: 'Something went wrong while updating the department. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -394,7 +394,7 @@ router.delete('/:id', checkPermission('departments', 'delete'), async (req: Auth
     if (!department) {
       const response: ApiResponse = {
         success: false,
-        message: 'Department not found'
+        message: 'Department was not found.'
       };
       return res.status(404).json(response);
     }
@@ -437,7 +437,7 @@ router.delete('/:id', checkPermission('departments', 'delete'), async (req: Auth
     console.error('Delete department error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error deleting department'
+      message: 'Something went wrong while deleting the department. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -519,7 +519,7 @@ router.get('/stats/overview', checkPermission('departments', 'read'), async (req
     console.error('Get department stats error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving department statistics'
+      message: 'Something went wrong while loading department statistics. Please try again.'
     };
     res.status(500).json(response);
   }

@@ -45,7 +45,7 @@ export const useCreateDivision = () => {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || 'Failed to create division';
+      const errorMessage = error.response?.data?.message || 'Something went wrong while creating the division. Please try again.';
       const errorDetails = error.response?.data?.error;
       const fullMessage = errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage;
       
@@ -73,7 +73,7 @@ export const useUpdateDivision = () => {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || 'Failed to update division';
+      const errorMessage = error.response?.data?.message || 'Something went wrong while updating the division. Please try again.';
       const errorDetails = error.response?.data?.error;
       const fullMessage = errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage;
       
@@ -100,7 +100,7 @@ export const useDeleteDivision = () => {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || 'Failed to delete division';
+      const errorMessage = error.response?.data?.message || 'Something went wrong while deleting the division. Please try again.';
       const errorDetails = error.response?.data?.error;
       const fullMessage = errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage;
       

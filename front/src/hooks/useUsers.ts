@@ -8,6 +8,7 @@ export interface UserFilters {
   branchId?: string;
   role?: string;
   status?: string;
+  approvalStatus?: string;
 }
 
 export const useUsers = (filters: UserFilters = {}) => {
@@ -17,11 +18,12 @@ export const useUsers = (filters: UserFilters = {}) => {
       const params = new URLSearchParams();
       
       if (filters.page) params.append('page', filters.page.toString());
-      if (filters.limit) params.append('limit', filters.limit.toString());
+      if (filters.limit != null) params.append('limit', filters.limit.toString());
       if (filters.search) params.append('search', filters.search);
       if (filters.branchId) params.append('branchId', filters.branchId);
       if (filters.role) params.append('role', filters.role);
       if (filters.status) params.append('status', filters.status);
+      if (filters.approvalStatus) params.append('approvalStatus', filters.approvalStatus);
 
       const response = await api.get(`/users?${params.toString()}`);
       return response.data;
@@ -77,6 +79,34 @@ export const useResetPin = () => {
   return useMutation({
     mutationFn: async (id: string) => {
       const response = await api.post(`/users/${id}/reset-pin`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+};
+
+export const useApproveUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const response = await api.post(`/users/${id}/approve`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+};
+
+export const useRejectUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const response = await api.post(`/users/${id}/reject`);
       return response.data;
     },
     onSuccess: () => {

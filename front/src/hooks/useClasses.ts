@@ -47,7 +47,7 @@ export const useCreateClass = () => {
       console.error('Full error:', error);
       toast({
         title: 'Error',
-        description: error.response?.data?.message || error.response?.data?.error || 'Failed to create class',
+        description: error.response?.data?.message || error.response?.data?.error || 'Something went wrong while creating the class. Please try again.',
         variant: 'destructive',
       });
     },
@@ -71,7 +71,7 @@ export const useUpdateClass = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to update class',
+        description: error.response?.data?.message || 'Something went wrong while updating the class. Please try again.',
         variant: 'destructive',
       });
     },
@@ -94,7 +94,7 @@ export const useDeleteClass = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to delete class',
+        description: error.response?.data?.message || 'Something went wrong while deleting the class. Please try again.',
         variant: 'destructive',
       });
     },

@@ -33,7 +33,7 @@ const updateSchema = Joi.object({
 
 const querySchema = Joi.object({
   page: Joi.alternatives().try(Joi.number().integer().min(1), Joi.string().pattern(/^\d+$/).custom(v => parseInt(v, 10))).default(1),
-  limit: Joi.alternatives().try(Joi.number().integer().min(1).max(100), Joi.string().pattern(/^\d+$/).custom(v => Math.min(parseInt(v, 10), 100))).default(20),
+  limit: Joi.number().integer().min(0).default(20),
   search: Joi.string().optional().allow(''),
   academicYear: Joi.string().optional().allow(''),
   examType: Joi.string().valid('term', 'quarterly', 'half_yearly', 'annual', 'class_test', 'other').optional(),
@@ -65,14 +65,14 @@ router.get('/', checkPermission('classes', 'read'), validateQuery(querySchema), 
     success: true,
     message: 'Exams fetched',
     data,
-    pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) }
+    pagination: { page: Number(page), limit: Number(limit), total, pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1) }
   };
   res.json(response);
 });
 
 // GET /api/exams/:id
 router.get('/:id', checkPermission('classes', 'read'), async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const filter: any = { _id: req.params.id };
   Object.assign(filter, getOrgBranchFilter(req));
   const exam = await Exam.findOne(filter);
@@ -100,7 +100,7 @@ router.post('/', checkPermission('classes', 'create'), validate(createSchema), a
 
 // PUT /api/exams/:id
 router.put('/:id', checkPermission('classes', 'update'), validate(updateSchema), async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const filter: any = { _id: req.params.id };
   Object.assign(filter, getOrgBranchFilter(req));
   const exam = await Exam.findOneAndUpdate(filter, req.body, { new: true, runValidators: true });
@@ -110,7 +110,7 @@ router.put('/:id', checkPermission('classes', 'update'), validate(updateSchema),
 
 // DELETE /api/exams/:id
 router.delete('/:id', checkPermission('classes', 'delete'), async (req: AuthenticatedRequest, res) => {
-  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
   const filter: any = { _id: req.params.id };
   Object.assign(filter, getOrgBranchFilter(req));
   const exam = await Exam.findOneAndDelete(filter);

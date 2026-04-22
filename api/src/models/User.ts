@@ -64,6 +64,15 @@ const UserSchema = new Schema<IUser>({
     enum: ['active', 'inactive'],
     default: 'active'
   },
+  approvalStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'approved'
+  },
+  staffId: {
+    type: Schema.Types.ObjectId as any,
+    ref: 'Staff'
+  },
   lastLogin: {
     type: Date
   }

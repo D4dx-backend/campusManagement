@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,8 +19,10 @@ import {
 import { Loader2, Plus, CheckCircle, XCircle, Clock, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useBranchContext } from '@/contexts/BranchContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import staffLeaveService, { StaffLeaveRequest, CreateStaffLeaveData, ReviewStaffLeaveData } from '@/services/staffLeaveService';
+import { staffService } from '@/services/staffService';
 
 const statusBadge = (status: string) => {
   switch (status) {
@@ -45,18 +47,23 @@ const leaveTypeLabel: Record<string, string> = {
 const StaffLeaveRequests = () => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { branches, selectedBranchId: contextBranchId } = useBranchContext();
   const queryClient = useQueryClient();
   const isAdmin = ['platform_admin', 'org_admin', 'branch_admin'].includes(user?.role || '');
+  const needsBranchSelect = isAdmin && !contextBranchId && branches.length > 0;
 
   // Filter state
   const [filterStatus, setFilterStatus] = useState<string>('');
 
   // Create dialog state
   const [createOpen, setCreateOpen] = useState(false);
+  const [selectedStaffId, setSelectedStaffId] = useState('');
+  const [selectedBranchForLeave, setSelectedBranchForLeave] = useState('');
   const [leaveType, setLeaveType] = useState('casual');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [reason, setReason] = useState('');
+  const [staffList, setStaffList] = useState<any[]>([]);
 
   // Review dialog state
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -67,7 +74,7 @@ const StaffLeaveRequests = () => {
   // Fetch leave requests
   const { data, isLoading } = useQuery({
     queryKey: ['staff-leave-requests', filterStatus],
-    queryFn: () => staffLeaveService.getAll({ status: filterStatus || undefined, limit: 50 }),
+    queryFn: () => staffLeaveService.getAll({ status: filterStatus && filterStatus !== 'all' ? filterStatus : undefined, limit: 50 }),
   });
 
   const requests: StaffLeaveRequest[] = data?.data || [];
@@ -105,7 +112,18 @@ const StaffLeaveRequests = () => {
     onError: (e: any) => toast({ title: 'Error', description: e?.response?.data?.message || 'Failed', variant: 'destructive' }),
   });
 
+  // Load staff list for admin dropdown
+  useEffect(() => {
+    if (isAdmin) {
+      staffService.getStaff({ limit: 0, status: 'active' }).then((r: any) => {
+        setStaffList(r?.data || []);
+      }).catch(() => {});
+    }
+  }, [isAdmin]);
+
   const resetCreateForm = () => {
+    setSelectedStaffId('');
+    setSelectedBranchForLeave('');
     setLeaveType('casual');
     setFromDate('');
     setToDate('');
@@ -117,7 +135,27 @@ const StaffLeaveRequests = () => {
       toast({ title: 'Please fill all fields', variant: 'destructive' });
       return;
     }
-    createMutation.mutate({ leaveType, fromDate, toDate, reason: reason.trim() });
+    if (isAdmin && !selectedStaffId) {
+      toast({ title: 'Please select a staff member', variant: 'destructive' });
+      return;
+    }
+    if (needsBranchSelect && !selectedBranchForLeave) {
+      toast({ title: 'Please select a branch', variant: 'destructive' });
+      return;
+    }
+    const data: CreateStaffLeaveData = {
+      leaveType,
+      fromDate,
+      toDate,
+      reason: reason.trim(),
+    };
+    if (isAdmin && selectedStaffId) {
+      data.staffId = selectedStaffId;
+    }
+    if (needsBranchSelect && selectedBranchForLeave) {
+      data.branchId = selectedBranchForLeave;
+    }
+    createMutation.mutate(data);
   };
 
   const handleReview = () => {
@@ -141,11 +179,9 @@ const StaffLeaveRequests = () => {
               {isAdmin ? 'Manage staff and teacher leave requests' : 'Submit and track your leave requests'}
             </p>
           </div>
-          {!isAdmin && (
-            <Button onClick={() => setCreateOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />Apply for Leave
-            </Button>
-          )}
+          <Button onClick={() => { resetCreateForm(); setCreateOpen(true); }}>
+            <Plus className="w-4 h-4 mr-2" />{isAdmin ? 'Create Leave Request' : 'Apply for Leave'}
+          </Button>
         </div>
 
         {/* Filters */}
@@ -214,7 +250,7 @@ const StaffLeaveRequests = () => {
                               Review
                             </Button>
                           )}
-                          {!isAdmin && req.status === 'pending' && (
+                          {((!isAdmin && req.status === 'pending') || (isAdmin)) && (
                             <Button
                               size="sm"
                               variant="ghost"
@@ -243,9 +279,39 @@ const StaffLeaveRequests = () => {
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Apply for Leave</DialogTitle>
+              <DialogTitle>{isAdmin ? 'Create Leave Request for Staff' : 'Apply for Leave'}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
+              {needsBranchSelect && (
+                <div>
+                  <Label>Branch *</Label>
+                  <Select value={selectedBranchForLeave} onValueChange={setSelectedBranchForLeave}>
+                    <SelectTrigger><SelectValue placeholder="Select branch" /></SelectTrigger>
+                    <SelectContent>
+                      {branches.map((b: any) => (
+                        <SelectItem key={b._id || b.id} value={b._id || b.id}>
+                          {b.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {isAdmin && (
+                <div>
+                  <Label>Staff Member *</Label>
+                  <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
+                    <SelectTrigger><SelectValue placeholder="Select staff member" /></SelectTrigger>
+                    <SelectContent>
+                      {staffList.map((s: any) => (
+                        <SelectItem key={s._id} value={s._id}>
+                          {s.name} — {s.designation}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div>
                 <Label>Leave Type</Label>
                 <Select value={leaveType} onValueChange={setLeaveType}>

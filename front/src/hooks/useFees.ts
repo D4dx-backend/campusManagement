@@ -54,7 +54,7 @@ export const useCreateFeePayment = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to record fee payment',
+        description: error.response?.data?.message || 'Something went wrong while recording the fee payment. Please try again.',
         variant: 'destructive',
       });
     },
@@ -78,7 +78,7 @@ export const useCreateBulkFeePayment = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to record fee payments',
+        description: error.response?.data?.message || 'Something went wrong while recording fee payments. Please try again.',
         variant: 'destructive',
       });
     },
@@ -101,7 +101,7 @@ export const useUpdateFeePayment = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to update fee payment',
+        description: error.response?.data?.message || 'Something went wrong while updating the fee payment. Please try again.',
         variant: 'destructive',
       });
     },
@@ -124,7 +124,7 @@ export const useCancelFeePayment = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to cancel fee payment',
+        description: error.response?.data?.message || 'Something went wrong while cancelling the fee payment. Please try again.',
         variant: 'destructive',
       });
     },

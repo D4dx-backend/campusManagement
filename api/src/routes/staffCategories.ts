@@ -31,7 +31,7 @@ const updateStaffCategorySchema = Joi.object({
 
 const queryStaffCategoriesSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(10),
+  limit: Joi.number().integer().min(0).default(10),
   search: Joi.string().optional().allow(''),
   status: Joi.string().valid('active', 'inactive').optional(),
   sortBy: Joi.string().valid('name', 'createdAt').default('name'),
@@ -84,7 +84,7 @@ router.get('/', checkPermission('staff', 'read'), validateQuery(queryStaffCatego
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: (limit > 0 ? Math.ceil(total / limit) : 1)
       }
     };
 
@@ -93,7 +93,7 @@ router.get('/', checkPermission('staff', 'read'), validateQuery(queryStaffCatego
     console.error('Get staff categories error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving staff categories'
+      message: 'Something went wrong while loading staff categories. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -123,7 +123,7 @@ router.post('/', checkPermission('staff', 'create'), validate(createStaffCategor
     if (existing) {
       const response: ApiResponse = {
         success: false,
-        message: 'Staff category with this name already exists'
+        message: 'A staff category with this name already exists. Please use a different name.'
       };
       return res.status(400).json(response);
     }
@@ -139,11 +139,11 @@ router.post('/', checkPermission('staff', 'create'), validate(createStaffCategor
 
     await ActivityLog.create({
       userId: req.user!._id,
+      userName: req.user!.name,
+      userRole: req.user!.role,
       action: 'create',
       module: 'staff',
-      description: `Created staff category: ${newCategory.name}`,
-      targetId: newCategory._id,
-      targetModel: 'StaffCategory',
+      details: `Created staff category: ${newCategory.name}`,
       organizationId: req.user!.organizationId,
       branchId
     });
@@ -160,13 +160,13 @@ router.post('/', checkPermission('staff', 'create'), validate(createStaffCategor
     if (error.code === 11000) {
       const response: ApiResponse = {
         success: false,
-        message: 'Staff category with this name already exists'
+        message: 'A staff category with this name already exists. Please use a different name.'
       };
       return res.status(400).json(response);
     }
     const response: ApiResponse = {
       success: false,
-      message: 'Server error creating staff category'
+      message: 'Something went wrong while creating the staff category. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -185,7 +185,7 @@ router.put('/:id', checkPermission('staff', 'update'), validate(updateStaffCateg
     if (!category) {
       const response: ApiResponse = {
         success: false,
-        message: 'Staff category not found'
+        message: 'Staff category was not found.'
       };
       return res.status(404).json(response);
     }
@@ -205,11 +205,11 @@ router.put('/:id', checkPermission('staff', 'update'), validate(updateStaffCateg
 
     await ActivityLog.create({
       userId: req.user!._id,
+      userName: req.user!.name,
+      userRole: req.user!.role,
       action: 'update',
       module: 'staff',
-      description: `Updated staff category: ${category.name}`,
-      targetId: category._id,
-      targetModel: 'StaffCategory',
+      details: `Updated staff category: ${category.name}`,
       organizationId: req.user!.organizationId,
       branchId: req.user!.branchId
     });
@@ -226,13 +226,13 @@ router.put('/:id', checkPermission('staff', 'update'), validate(updateStaffCateg
     if (error.code === 11000) {
       const response: ApiResponse = {
         success: false,
-        message: 'Staff category with this name already exists'
+        message: 'A staff category with this name already exists. Please use a different name.'
       };
       return res.status(400).json(response);
     }
     const response: ApiResponse = {
       success: false,
-      message: 'Server error updating staff category'
+      message: 'Something went wrong while updating the staff category. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -251,7 +251,7 @@ router.delete('/:id', checkPermission('staff', 'delete'), async (req: Authentica
     if (!category) {
       const response: ApiResponse = {
         success: false,
-        message: 'Staff category not found'
+        message: 'Staff category was not found.'
       };
       return res.status(404).json(response);
     }
@@ -274,11 +274,11 @@ router.delete('/:id', checkPermission('staff', 'delete'), async (req: Authentica
 
     await ActivityLog.create({
       userId: req.user!._id,
+      userName: req.user!.name,
+      userRole: req.user!.role,
       action: 'delete',
       module: 'staff',
-      description: `Deleted staff category: ${category.name}`,
-      targetId: category._id,
-      targetModel: 'StaffCategory',
+      details: `Deleted staff category: ${category.name}`,
       organizationId: req.user!.organizationId,
       branchId: req.user!.branchId
     });
@@ -293,7 +293,7 @@ router.delete('/:id', checkPermission('staff', 'delete'), async (req: Authentica
     console.error('Delete staff category error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error deleting staff category'
+      message: 'Something went wrong while deleting the staff category. Please try again.'
     };
     res.status(500).json(response);
   }

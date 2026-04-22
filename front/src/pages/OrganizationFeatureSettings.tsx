@@ -42,7 +42,7 @@ const OrganizationFeatureSettings = () => {
         setEnabledFeatures(new Set(data.enabledFeatures));
       }
     }).catch(() => {
-      toast({ title: 'Error', description: 'Failed to load organization features', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading. Please try again organization features', variant: 'destructive' });
     }).finally(() => setLoading(false));
   }, [selectedOrgId]);
 
@@ -71,7 +71,7 @@ const OrganizationFeatureSettings = () => {
     } catch (err: any) {
       toast({
         title: 'Error',
-        description: err.response?.data?.message || 'Failed to update features',
+        description: err.response?.data?.message || 'Something went wrong while updating. Please try again features',
         variant: 'destructive',
       });
     } finally {

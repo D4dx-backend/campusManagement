@@ -56,7 +56,7 @@ export const useCreateStaff = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to create staff member',
+        description: error.response?.data?.message || 'Something went wrong while creating the staff member. Please try again.',
         variant: 'destructive',
       });
     },
@@ -82,7 +82,7 @@ export const useUpdateStaff = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to update staff member',
+        description: error.response?.data?.message || 'Something went wrong while updating the staff member. Please try again.',
         variant: 'destructive',
       });
     },
@@ -106,7 +106,7 @@ export const useDeleteStaff = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to delete staff member',
+        description: error.response?.data?.message || 'Something went wrong while deleting the staff member. Please try again.',
         variant: 'destructive',
       });
     },
@@ -132,7 +132,7 @@ export const useSalaryIncrement = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to record salary increment',
+        description: error.response?.data?.message || 'Something went wrong while recording the salary increment. Please try again.',
         variant: 'destructive',
       });
     },
@@ -166,7 +166,7 @@ export const useStaffSeparation = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to record separation',
+        description: error.response?.data?.message || 'Something went wrong while recording the separation. Please try again.',
         variant: 'destructive',
       });
     },

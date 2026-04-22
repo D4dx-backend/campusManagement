@@ -131,14 +131,14 @@ router.get('/platform-dashboard', authorize('platform_admin'), async (req: Authe
     });
   } catch (error) {
     console.error('Get platform dashboard error:', error);
-    res.status(500).json({ success: false, message: 'Server error retrieving platform dashboard' });
+    res.status(500).json({ success: false, message: 'Something went wrong while loading platform dashboard. Please try again.' });
   }
 });
 
 // @desc    Get dashboard overview report
 // @route   GET /api/reports/dashboard
 // @access  Private
-router.get('/dashboard', checkPermission('reports', 'read'), async (req: AuthenticatedRequest, res) => {
+router.get('/dashboard', async (req: AuthenticatedRequest, res) => {
   try {
     const filter: any = {};
 
@@ -281,7 +281,7 @@ router.get('/dashboard', checkPermission('reports', 'read'), async (req: Authent
     console.error('Get dashboard report error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving dashboard report'
+      message: 'Something went wrong while loading dashboard report. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -409,7 +409,7 @@ router.get('/financial', checkPermission('reports', 'read'), validateQuery(finan
     console.error('Get financial report error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving financial report'
+      message: 'Something went wrong while loading financial report. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -538,7 +538,7 @@ router.get('/students', checkPermission('reports', 'read'), async (req: Authenti
     console.error('Get student report error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving student report'
+      message: 'Something went wrong while loading student report. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -660,7 +660,7 @@ router.get('/staff', checkPermission('reports', 'read'), async (req: Authenticat
     console.error('Get staff report error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving staff report'
+      message: 'Something went wrong while loading staff report. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -776,7 +776,7 @@ router.get('/fees', checkPermission('reports', 'read'), validateQuery(dateRangeS
     console.error('Get fee collection report error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving fee collection report'
+      message: 'Something went wrong while loading fee collection report. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -788,7 +788,7 @@ router.get('/fees', checkPermission('reports', 'read'), validateQuery(dateRangeS
 router.get('/fee-dues', checkPermission('reports', 'read'), async (req: AuthenticatedRequest, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
+    const limit = req.query.limit != null ? parseInt(req.query.limit as string) : 20;
     
     const filter: any = { status: 'pending' };
 
@@ -936,7 +936,7 @@ router.get('/fee-dues', checkPermission('reports', 'read'), async (req: Authenti
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: (limit > 0 ? Math.ceil(total / limit) : 1)
       }
     };
     res.json(response);
@@ -944,7 +944,7 @@ router.get('/fee-dues', checkPermission('reports', 'read'), async (req: Authenti
     console.error('Get fee dues report error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving fee dues report'
+      message: 'Something went wrong while loading fee dues report. Please try again.'
     };
     res.status(500).json(response);
   }
@@ -956,7 +956,7 @@ router.get('/fee-dues', checkPermission('reports', 'read'), async (req: Authenti
 router.get('/transport', checkPermission('reports', 'read'), async (req: AuthenticatedRequest, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 50;
+    const limit = req.query.limit != null ? parseInt(req.query.limit as string) : 50;
     const transportType = req.query.transportType as string; // 'school', 'own', 'none'
     
     const filter: any = { status: 'active' };
@@ -1070,7 +1070,7 @@ router.get('/transport', checkPermission('reports', 'read'), async (req: Authent
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: (limit > 0 ? Math.ceil(total / limit) : 1)
       }
     };
     res.json(response);
@@ -1078,7 +1078,7 @@ router.get('/transport', checkPermission('reports', 'read'), async (req: Authent
     console.error('Get transport report error:', error);
     const response: ApiResponse = {
       success: false,
-      message: 'Server error retrieving transport report'
+      message: 'Something went wrong while loading transport report. Please try again.'
     };
     res.status(500).json(response);
   }

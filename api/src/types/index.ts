@@ -31,6 +31,8 @@ export interface IUser {
   permissions: IPermission[];
   studentId?: string;
   status: 'active' | 'inactive';
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
+  staffId?: string;
   createdAt: Date;
   lastLogin?: Date;
   comparePin(pin: string): Promise<boolean>;

@@ -4,7 +4,7 @@ import { ApiResponse } from '../types';
 export const notFound = (req: Request, res: Response): void => {
   const response: ApiResponse = {
     success: false,
-    message: `Route ${req.originalUrl} not found`
+    message: `The requested page or endpoint (${req.originalUrl}) was not found.`
   };
 
   res.status(404).json(response);

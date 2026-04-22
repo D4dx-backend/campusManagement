@@ -87,7 +87,7 @@ const FeeStructures = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to create fee structure',
+        description: error.response?.data?.message || 'Something went wrong while creating. Please try again fee structure',
         variant: 'destructive'
       });
     }
@@ -105,7 +105,7 @@ const FeeStructures = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to create fee structures',
+        description: error.response?.data?.message || 'Something went wrong while creating. Please try again fee structures',
         variant: 'destructive'
       });
     }
@@ -120,7 +120,7 @@ const FeeStructures = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to delete fee structure',
+        description: error.response?.data?.message || 'Something went wrong while deleting. Please try again fee structure',
         variant: 'destructive'
       });
     }
@@ -325,7 +325,7 @@ const FeeStructures = () => {
       } catch (err: any) {
         toast({
           title: 'Error',
-          description: err.response?.data?.message || 'Failed to update fee structures',
+          description: err.response?.data?.message || 'Something went wrong while updating. Please try again fee structures',
           variant: 'destructive'
         });
       }

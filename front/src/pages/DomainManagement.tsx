@@ -65,7 +65,7 @@ const DomainManagement = () => {
     },
     onError: (err: any) => {
       toast({
-        title: 'Failed to add domain',
+        title: 'Something went wrong while adding the domain. Please try again.',
         description: err?.response?.data?.message || err.message,
         variant: 'destructive',
       });
@@ -80,7 +80,7 @@ const DomainManagement = () => {
       toast({ title: 'Domain removed' });
     },
     onError: (err: any) => {
-      toast({ title: 'Failed to delete', description: err?.response?.data?.message || err.message, variant: 'destructive' });
+      toast({ title: 'Something went wrong while deleting. Please try again.', description: err?.response?.data?.message || err.message, variant: 'destructive' });
     },
   });
 

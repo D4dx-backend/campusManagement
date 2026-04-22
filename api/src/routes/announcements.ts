@@ -32,7 +32,7 @@ const createSchema = Joi.object({
 
 const querySchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(50).default(20),
+  limit: Joi.number().integer().min(0).default(20),
   type: Joi.string().valid('general', 'academic', 'event', 'emergency').allow(''),
   sortBy: Joi.string().default('createdAt'),
   sortOrder: Joi.string().valid('asc', 'desc').default('desc'),
@@ -164,7 +164,7 @@ router.get('/', validateQuery(querySchema), async (req: AuthenticatedRequest, re
       readBy: undefined,
     }));
 
-    res.json({ success: true, data, pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) } });
+    res.json({ success: true, data, pagination: { page: Number(page), limit: Number(limit), total, pages: (Number(limit) > 0 ? Math.ceil(total / Number(limit)) : 1) } });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -197,7 +197,7 @@ router.get('/unread-count', async (req: AuthenticatedRequest, res) => {
 router.put('/:id/read', async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
-    if (!Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+    if (!Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
     await Announcement.findByIdAndUpdate(id, { $addToSet: { readBy: new Types.ObjectId(req.user!._id) } });
     res.json({ success: true, message: 'Marked as read' });
   } catch (error: any) {
@@ -223,13 +223,13 @@ router.put('/read-all', async (req: AuthenticatedRequest, res) => {
 router.put('/:id', validate(createSchema), async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
-    if (!Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+    if (!Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
     const ann = await Announcement.findById(id);
     if (!ann) return res.status(404).json({ success: false, message: 'Not found' });
 
     const isAdmin = ['platform_admin', 'org_admin', 'branch_admin'].includes(req.user!.role);
     const isCreator = ann.createdBy.toString() === req.user!._id.toString();
-    if (!isAdmin && !isCreator) return res.status(403).json({ success: false, message: 'Access denied' });
+    if (!isAdmin && !isCreator) return res.status(403).json({ success: false, message: 'You do not have permission to perform this action.' });
 
     ann.title = req.body.title;
     ann.message = req.body.message;
@@ -257,13 +257,13 @@ router.put('/:id', validate(createSchema), async (req: AuthenticatedRequest, res
 router.delete('/:id', async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
-    if (!Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+    if (!Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: 'The provided ID is not valid.' });
     const ann = await Announcement.findById(id);
     if (!ann) return res.status(404).json({ success: false, message: 'Not found' });
 
     const isAdmin = ['platform_admin', 'org_admin', 'branch_admin'].includes(req.user!.role);
     const isCreator = ann.createdBy.toString() === req.user!._id.toString();
-    if (!isAdmin && !isCreator) return res.status(403).json({ success: false, message: 'Access denied' });
+    if (!isAdmin && !isCreator) return res.status(403).json({ success: false, message: 'You do not have permission to perform this action.' });
 
     await Announcement.findByIdAndDelete(id);
     res.json({ success: true, message: 'Deleted' });

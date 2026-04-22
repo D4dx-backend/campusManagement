@@ -214,7 +214,7 @@ const Students = () => {
       console.error('Divisions error:', divisionsError);
       toast({
         title: 'Error',
-        description: 'Failed to load divisions for the selected class',
+        description: 'Something went wrong while loading divisions for the selected class. Please try again.',
         variant: 'destructive',
       });
     }
@@ -291,6 +291,17 @@ const Students = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!editingStudent && !formData.admissionNo) {
+      toast({
+        title: 'Missing Admission No',
+        description: divisions.length > 0 && !formData.section
+          ? 'Please select a division/section first to auto-generate the admission number.'
+          : 'Admission number could not be generated. Please select a class first.',
+        variant: 'destructive',
+      });
+      return;
+    }
     
     try {
       if (editingStudent) {
@@ -410,7 +421,7 @@ const Students = () => {
       setSuspendForm({ suspensionReason: '', suspensionDate: new Date().toISOString().split('T')[0], suspensionEndDate: '' });
       window.location.reload();
     } catch (error: any) {
-      toast({ title: 'Error', description: error.response?.data?.message || 'Failed to suspend student', variant: 'destructive' });
+      toast({ title: 'Error', description: error.response?.data?.message || 'Something went wrong while suspending the student. Please try again.', variant: 'destructive' });
     }
   };
 
@@ -427,7 +438,7 @@ const Students = () => {
           toast({ title: 'Success', description: `Suspension revoked for ${student.name}` });
           window.location.reload();
         } catch (error: any) {
-          toast({ title: 'Error', description: error.response?.data?.message || 'Failed to revoke suspension', variant: 'destructive' });
+          toast({ title: 'Error', description: error.response?.data?.message || 'Something went wrong while revoking the suspension. Please try again.', variant: 'destructive' });
         }
       }
     );

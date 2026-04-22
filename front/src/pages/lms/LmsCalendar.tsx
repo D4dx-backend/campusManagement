@@ -49,7 +49,7 @@ const LmsCalendar = () => {
       const res = await contentAssignmentApi.getCalendar(params);
       setAssignments(res.data || []);
     } catch {
-      toast({ title: 'Error', description: 'Failed to load calendar', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Something went wrong while loading. Please try again calendar', variant: 'destructive' });
     } finally {
       setLoading(false);
     }

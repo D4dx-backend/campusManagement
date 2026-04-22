@@ -45,7 +45,7 @@ const AttemptQuiz = () => {
         setTimeLeft(res.data.duration * 60); // convert to seconds
       }
     } catch (err: any) {
-      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to load', variant: 'destructive' });
+      toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong while loading. Please try again', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -118,7 +118,7 @@ const AttemptQuiz = () => {
       if (timerRef.current) clearInterval(timerRef.current);
       toast({ title: autoSubmit ? 'Time\'s up!' : 'Submitted', description: res.message });
     } catch (err: any) {
-      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to submit', variant: 'destructive' });
+      toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong while submitting. Please try again', variant: 'destructive' });
     } finally {
       setSubmitting(false);
     }

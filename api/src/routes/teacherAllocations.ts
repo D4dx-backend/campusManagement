@@ -47,12 +47,12 @@ router.get('/', validateQuery(querySchema), async (req: AuthenticatedRequest, re
     // Teacher can only see their own allocations
     if (req.user!.role === 'teacher') {
       filter.teacherId = new Types.ObjectId(req.user!._id);
-    } else if (teacherId) {
+    } else if (teacherId && Types.ObjectId.isValid(teacherId)) {
       filter.teacherId = new Types.ObjectId(teacherId);
     }
 
-    if (classId) filter.classId = new Types.ObjectId(classId);
-    if (academicYear) filter.academicYear = academicYear;
+    if (classId && Types.ObjectId.isValid(classId)) filter.classId = new Types.ObjectId(classId);
+    if (academicYear && academicYear !== 'all') filter.academicYear = academicYear;
 
     const skip = (Number(page) - 1) * Number(limit);
     const [items, total] = await Promise.all([

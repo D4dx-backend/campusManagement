@@ -61,6 +61,7 @@ router.get('/', authorize('platform_admin', 'org_admin', 'branch_admin'), async 
     const branchId = req.query.branchId as string || '';
     const role = req.query.role as string;
     const status = req.query.status as string;
+    const approvalStatus = req.query.approvalStatus as string;
 
     // Build filter
     const filter: any = {};
@@ -102,6 +103,10 @@ router.get('/', authorize('platform_admin', 'org_admin', 'branch_admin'), async 
 
     if (status) {
       filter.status = status;
+    }
+
+    if (approvalStatus) {
+      filter.approvalStatus = approvalStatus;
     }
 
     // Calculate pagination
@@ -455,6 +460,83 @@ router.post('/:id/reset-pin', authorize('platform_admin', 'org_admin', 'branch_a
   } catch (error) {
     console.error('Reset PIN error:', error);
     res.status(500).json({ success: false, message: 'Something went wrong while resetting PIN. Please try again.' });
+  }
+});
+
+// @desc    Approve user access
+// @route   POST /api/users/:id/approve
+// @access  Private (Platform Admin, Org Admin)
+router.post('/:id/approve', authorize('platform_admin', 'org_admin'), async (req: AuthenticatedRequest, res) => {
+  try {
+    const userToApprove = await User.findById(req.params.id);
+    if (!userToApprove) {
+      return res.status(404).json({ success: false, message: 'User was not found.' } as ApiResponse);
+    }
+
+    // Org isolation
+    if (req.user!.role === 'org_admin' && userToApprove.organizationId?.toString() !== req.user!.organizationId?.toString()) {
+      return res.status(403).json({ success: false, message: 'Access denied for this user' } as ApiResponse);
+    }
+
+    if (userToApprove.approvalStatus === 'approved') {
+      return res.status(400).json({ success: false, message: 'User is already approved.' } as ApiResponse);
+    }
+
+    // Generate a new login PIN
+    const loginPin = Math.floor(1000 + Math.random() * 9000).toString();
+    userToApprove.pin = loginPin;
+    userToApprove.approvalStatus = 'approved';
+    userToApprove.status = 'active';
+    await userToApprove.save();
+
+    const response: ApiResponse = {
+      success: true,
+      message: 'User approved successfully',
+      data: {
+        user: userToApprove.toJSON(),
+        pin: loginPin
+      }
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('Approve user error:', error);
+    res.status(500).json({ success: false, message: 'Something went wrong while approving the user. Please try again.' } as ApiResponse);
+  }
+});
+
+// @desc    Reject user access
+// @route   POST /api/users/:id/reject
+// @access  Private (Platform Admin, Org Admin)
+router.post('/:id/reject', authorize('platform_admin', 'org_admin'), async (req: AuthenticatedRequest, res) => {
+  try {
+    const userToReject = await User.findById(req.params.id);
+    if (!userToReject) {
+      return res.status(404).json({ success: false, message: 'User was not found.' } as ApiResponse);
+    }
+
+    // Org isolation
+    if (req.user!.role === 'org_admin' && userToReject.organizationId?.toString() !== req.user!.organizationId?.toString()) {
+      return res.status(403).json({ success: false, message: 'Access denied for this user' } as ApiResponse);
+    }
+
+    if (userToReject.approvalStatus === 'rejected') {
+      return res.status(400).json({ success: false, message: 'User is already rejected.' } as ApiResponse);
+    }
+
+    userToReject.approvalStatus = 'rejected';
+    userToReject.status = 'inactive';
+    await userToReject.save();
+
+    const response: ApiResponse = {
+      success: true,
+      message: 'User access rejected'
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('Reject user error:', error);
+    res.status(500).json({ success: false, message: 'Something went wrong while rejecting the user. Please try again.' } as ApiResponse);
   }
 });
 

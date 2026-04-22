@@ -44,15 +44,20 @@ router.post('/', validate(createLeaveRequestSchema), async (req: AuthenticatedRe
       ...orgBranch,
     });
 
-    await ActivityLog.create({
-      action: 'create',
-      module: 'leave_requests',
-      details: `Leave request created for ${student.name} (${new Date(fromDate).toISOString().split('T')[0]} to ${new Date(toDate).toISOString().split('T')[0]})`,
-      userId: req.user!._id,
-      userName: req.user!.name,
-      userRole: req.user!.role,
-      ...orgBranch,
-    });
+    // Log activity (non-blocking)
+    try {
+      await ActivityLog.create({
+        action: 'create',
+        module: 'leave_requests',
+        details: `Leave request created for ${student.name} (${new Date(fromDate).toISOString().split('T')[0]} to ${new Date(toDate).toISOString().split('T')[0]})`,
+        userId: req.user!._id,
+        userName: req.user!.name,
+        userRole: req.user!.role,
+        ...orgBranch,
+      });
+    } catch (logError) {
+      console.error('Activity log error (non-critical):', logError);
+    }
 
     const response: ApiResponse = {
       success: true,
@@ -80,9 +85,9 @@ router.get('/', checkPermission('attendance', 'read'), validateQuery(queryLeaveR
     const filter: any = {};
     Object.assign(filter, getOrgBranchFilter(req));
 
-    if (classId) filter.classId = new Types.ObjectId(classId);
-    if (studentId) filter.studentId = new Types.ObjectId(studentId);
-    if (status) filter.status = status;
+    if (classId && Types.ObjectId.isValid(classId)) filter.classId = new Types.ObjectId(classId);
+    if (studentId && Types.ObjectId.isValid(studentId)) filter.studentId = new Types.ObjectId(studentId);
+    if (status && status !== 'all' && status !== '__all__') filter.status = status;
 
     const skip = (Number(page) - 1) * Number(limit);
     const sortOptions: any = {};
@@ -168,16 +173,21 @@ router.put('/:id/review', checkPermission('attendance', 'update'), validate(revi
 
     await leaveRequest.save();
 
-    const orgBranch = getOrgBranchForCreate(req);
-    await ActivityLog.create({
-      action: 'update',
-      module: 'leave_requests',
-      details: `Leave request ${status} for ${leaveRequest.studentName}`,
-      userId: req.user!._id,
-      userName: req.user!.name,
-      userRole: req.user!.role,
-      ...orgBranch,
-    });
+    // Log activity (non-blocking)
+    try {
+      const orgBranch = getOrgBranchForCreate(req);
+      await ActivityLog.create({
+        action: 'update',
+        module: 'leave_requests',
+        details: `Leave request ${status} for ${leaveRequest.studentName}`,
+        userId: req.user!._id,
+        userName: req.user!.name,
+        userRole: req.user!.role,
+        ...orgBranch,
+      });
+    } catch (logError) {
+      console.error('Activity log error (non-critical):', logError);
+    }
 
     const response: ApiResponse = {
       success: true,

@@ -1,5 +1,6 @@
 import express from 'express';
 import { Staff } from '../models/Staff';
+import { User } from '../models/User';
 import { Department } from '../models/Department';
 import { Branch } from '../models/Branch';
 import { Organization } from '../models/Organization';
@@ -251,6 +252,35 @@ router.post('/', checkPermission('staff', 'create'), validate(createStaffSchema)
 
     const staff = new Staff(staffData);
     await staff.save();
+
+    // Auto-create a User record with 'pending' approval status
+    // The staff member will appear in User Access list for approval
+    let userAccessRecord = null;
+    if (staff.phone) {
+      // Normalize mobile: strip country code prefix to get last 10 digits
+      const normalizedMobile = staff.phone.replace(/^\+\d{1,4}/, '').slice(-10);
+      // Check if a user with this mobile already exists
+      const existingUser = await User.findOne({ mobile: normalizedMobile });
+      if (!existingUser) {
+        // Generate a temporary PIN (will be regenerated on approval)
+        const tempPin = Math.floor(1000 + Math.random() * 9000).toString();
+        const userRecord = new User({
+          email: staff.email || `staff_${staff.employeeId}@placeholder.local`,
+          mobile: normalizedMobile,
+          pin: tempPin,
+          name: staff.name,
+          role: 'staff',
+          organizationId: orgBranch.organizationId,
+          branchId: orgBranch.branchId,
+          staffId: staff._id,
+          permissions: [],
+          status: 'inactive',
+          approvalStatus: 'pending'
+        });
+        await userRecord.save();
+        userAccessRecord = userRecord.toJSON();
+      }
+    }
 
     // Log activity
     await ActivityLog.create({

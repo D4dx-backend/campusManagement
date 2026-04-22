@@ -98,7 +98,7 @@ router.get('/', checkPermission('divisions', 'read'), validateQuery(queryDivisio
         },
         {
           $lookup: {
-            from: 'staff',
+            from: 'staffs',
             localField: 'classTeacherId',
             foreignField: '_id',
             as: 'teacherInfo'
@@ -178,7 +178,7 @@ router.get('/:id', checkPermission('divisions', 'read'), async (req: Authenticat
       },
       {
         $lookup: {
-          from: 'staff',
+          from: 'staffs',
           localField: 'classTeacherId',
           foreignField: '_id',
           as: 'teacherInfo'

@@ -16,8 +16,12 @@ router.post('/login', validate(loginSchema), async (req, res) => {
   try {
     const { mobile, pin } = req.body;
 
-    // Find user by mobile
-    const user = await User.findOne({ mobile }).select('+pin');
+    // Find user by mobile (try exact match first, then with country code prefix for legacy data)
+    let user = await User.findOne({ mobile }).select('+pin');
+    if (!user) {
+      // Fallback: search for mobile stored with country code (e.g., +919876543210)
+      user = await User.findOne({ mobile: { $regex: new RegExp(mobile + '$') } }).select('+pin');
+    }
     if (!user) {
       const response: ApiResponse = {
         success: false,
@@ -31,6 +35,17 @@ router.post('/login', validate(loginSchema), async (req, res) => {
       const response: ApiResponse = {
         success: false,
         message: 'Account is inactive. Please contact administrator.'
+      };
+      return res.status(401).json(response);
+    }
+
+    // Check if user is approved
+    if (user.approvalStatus && user.approvalStatus !== 'approved') {
+      const response: ApiResponse = {
+        success: false,
+        message: user.approvalStatus === 'pending'
+          ? 'Your account is pending approval. Please contact the organization admin.'
+          : 'Your account access has been rejected. Please contact the organization admin.'
       };
       return res.status(401).json(response);
     }

@@ -188,7 +188,7 @@ router.post('/', authorize('platform_admin', 'org_admin'), async (req: Authentic
 // @desc    Get single branch
 // @route   GET /api/branches/:id
 // @access  Private (Super Admin only)
-router.get('/:id', authorize('platform_admin', 'org_admin'), async (req: AuthenticatedRequest, res) => {
+router.get('/:id', authorize('platform_admin', 'org_admin', 'branch_admin', 'teacher', 'accountant', 'staff'), async (req: AuthenticatedRequest, res) => {
   try {
     const branch = await Branch.findById(req.params.id)
       .populate('createdBy', 'name email')
@@ -202,8 +202,17 @@ router.get('/:id', authorize('platform_admin', 'org_admin'), async (req: Authent
       return res.status(404).json(response);
     }
 
-    // Org isolation: org_admin can only see own org's branches
-    if (req.user!.role === 'org_admin' && branch.organizationId?.toString() !== req.user!.organizationId?.toString()) {
+    // Org isolation: non-platform users can only see own org's branches
+    if (req.user!.role !== 'platform_admin' && branch.organizationId?.toString() !== req.user!.organizationId?.toString()) {
+      const response: ApiResponse = {
+        success: false,
+        message: 'You do not have access to this branch.'
+      };
+      return res.status(403).json(response);
+    }
+
+    // Branch-level users can only view their own branch
+    if (!['platform_admin', 'org_admin'].includes(req.user!.role) && req.user!.branchId?.toString() !== req.params.id) {
       const response: ApiResponse = {
         success: false,
         message: 'You do not have access to this branch.'

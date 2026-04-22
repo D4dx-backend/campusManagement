@@ -66,13 +66,13 @@ const queryTextbookIndentsSchema = Joi.object({
   sortOrder: Joi.string().valid('asc', 'desc').default('desc')
 }).options({ allowUnknown: true });
 
-// Generate unique indent number
-const generateIndentNo = async (branchId: string): Promise<string> => {
+// Generate unique indent number (global across all branches)
+const generateIndentNo = async (): Promise<string> => {
   const currentYear = new Date().getFullYear();
   const prefix = `TBI${currentYear}`;
   
   const lastIndent = await TextbookIndent.findOne(
-    { branchId, indentNo: { $regex: `^${prefix}` } },
+    { indentNo: { $regex: `^${prefix}` } },
     {},
     { sort: { indentNo: -1 } }
   );
@@ -80,7 +80,9 @@ const generateIndentNo = async (branchId: string): Promise<string> => {
   let nextNumber = 1;
   if (lastIndent) {
     const lastNumber = parseInt(lastIndent.indentNo.replace(prefix, ''));
-    nextNumber = lastNumber + 1;
+    if (!isNaN(lastNumber)) {
+      nextNumber = lastNumber + 1;
+    }
   }
 
   return `${prefix}${nextNumber.toString().padStart(4, '0')}`;
@@ -435,44 +437,56 @@ router.post('/', checkPermission('textbooks', 'create'), validate(createTextbook
       });
     }
 
-    // Generate indent number
-    const indentBranchId = createFilter.branchId?.toString() || 'GLOBAL';
-    const indentNo = await generateIndentNo(indentBranchId);
-
-    // Calculate balance amount
-    const balanceAmount = totalAmount - paidAmount;
-    const paymentStatus = balanceAmount === 0 ? 'paid' : (paidAmount > 0 ? 'partial' : 'pending');
-
-    // Create indent
-    const indentData = {
-      indentNo,
-      studentId: student._id.toString(),
-      studentName: student.name,
-      admissionNo: student.admissionNo,
-      class: student.class,
-      division: student.section,
-      academicYear: new Date().getFullYear().toString(),
-      items: indentItems,
-      totalAmount,
-      paymentMethod,
-      paymentStatus,
-      paidAmount,
-      balanceAmount,
-      issueDate: new Date(),
-      expectedReturnDate: expectedReturnDate ? new Date(expectedReturnDate) : undefined,
-      status: 'pending',
-      issuedBy: req.user!._id.toString(),
-      issuedByName: req.user!.name,
-      remarks,
-      receiptGenerated: false,
-      organizationId: createFilter.organizationId,
-      branchId: createFilter.branchId
-    };
-
+    // Generate indent number with retry for race conditions
+    let indentNo: string = '';
+    let indent: any = null;
+    const maxRetries = 3;
     
-    const indent = new TextbookIndent(indentData);
-    
-    await indent.save();
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        indentNo = await generateIndentNo();
+
+        // Calculate balance amount
+        const balanceAmount = totalAmount - paidAmount;
+        const paymentStatus = balanceAmount === 0 ? 'paid' : (paidAmount > 0 ? 'partial' : 'pending');
+
+        // Create indent
+        const indentData = {
+          indentNo,
+          studentId: student._id.toString(),
+          studentName: student.name,
+          admissionNo: student.admissionNo,
+          class: student.class,
+          division: student.section,
+          academicYear: new Date().getFullYear().toString(),
+          items: indentItems,
+          totalAmount,
+          paymentMethod,
+          paymentStatus,
+          paidAmount,
+          balanceAmount,
+          issueDate: new Date(),
+          expectedReturnDate: expectedReturnDate ? new Date(expectedReturnDate) : undefined,
+          status: 'pending',
+          issuedBy: req.user!._id.toString(),
+          issuedByName: req.user!.name,
+          remarks,
+          receiptGenerated: false,
+          organizationId: createFilter.organizationId,
+          branchId: createFilter.branchId
+        };
+
+        indent = new TextbookIndent(indentData);
+        await indent.save();
+        break; // Success, exit retry loop
+      } catch (retryError: any) {
+        if (retryError.code === 11000 && attempt < maxRetries - 1) {
+          // Duplicate key — retry with next number
+          continue;
+        }
+        throw retryError; // Re-throw on last attempt or non-duplicate error
+      }
+    }
 
     // Log activity
     await ActivityLog.create({

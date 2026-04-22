@@ -2,6 +2,7 @@ import express from 'express';
 import { Types } from 'mongoose';
 import Joi from 'joi';
 import { StaffLeaveRequest } from '../models/StaffLeaveRequest';
+import { Staff } from '../models/Staff';
 import { authenticate, authorize } from '../middleware/auth';
 import { validate, validateQuery } from '../middleware/validation';
 import { AuthenticatedRequest, ApiResponse } from '../types';
@@ -11,6 +12,8 @@ const router = express.Router();
 router.use(authenticate);
 
 const createSchema = Joi.object({
+  staffId: Joi.string().optional().allow('', null),
+  branchId: Joi.string().optional().allow('', null),
   leaveType: Joi.string().valid('casual', 'sick', 'earned', 'other').default('casual'),
   fromDate: Joi.date().iso().required(),
   toDate: Joi.date().iso().min(Joi.ref('fromDate')).required(),
@@ -40,13 +43,34 @@ router.post('/', validate(createSchema), async (req: AuthenticatedRequest, res) 
       return res.status(403).json({ success: false, message: 'Students cannot request staff leave' });
     }
 
-    const { leaveType, fromDate, toDate, reason } = req.body;
+    const { staffId, leaveType, fromDate, toDate, reason } = req.body;
     const orgBranch = getOrgBranchForCreate(req);
+    const isAdmin = ['platform_admin', 'org_admin', 'branch_admin'].includes(req.user!.role);
+
+    let userId: Types.ObjectId;
+    let userName: string;
+    let role: string;
+
+    if (staffId && isAdmin) {
+      // Admin creating on behalf of a staff member
+      const staff = await Staff.findById(staffId);
+      if (!staff) {
+        return res.status(404).json({ success: false, message: 'Staff member not found' });
+      }
+      userId = staff._id as any;
+      userName = staff.name;
+      role = staff.designation || 'staff';
+    } else {
+      // Self-apply
+      userId = new Types.ObjectId(req.user!._id);
+      userName = req.user!.name;
+      role = req.user!.role;
+    }
 
     const leaveRequest = await StaffLeaveRequest.create({
-      userId: new Types.ObjectId(req.user!._id),
-      userName: req.user!.name,
-      role: req.user!.role,
+      userId,
+      userName,
+      role,
       leaveType,
       fromDate: new Date(fromDate),
       toDate: new Date(toDate),

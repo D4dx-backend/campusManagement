@@ -138,7 +138,7 @@ router.get('/platform-dashboard', authorize('platform_admin'), async (req: Authe
 // @desc    Get dashboard overview report
 // @route   GET /api/reports/dashboard
 // @access  Private
-router.get('/dashboard', checkPermission('reports', 'read'), async (req: AuthenticatedRequest, res) => {
+router.get('/dashboard', async (req: AuthenticatedRequest, res) => {
   try {
     const filter: any = {};
 

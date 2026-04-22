@@ -29,7 +29,9 @@ export interface User {
   branchId?: string;
   permissions: Permission[];
   studentId?: string;
+  staffId?: string;
   status: 'active' | 'inactive';
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
   createdAt: string;
   lastLogin?: string;
 }

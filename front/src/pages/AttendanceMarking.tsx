@@ -52,9 +52,10 @@ const AttendanceMarking = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   // Load attendance if previously marked
+  const cleanSection = selectedSection && selectedSection !== '__all__' ? selectedSection : '';
   const { data: existingAttendance } = useAttendance(
     selectedClassId && selectedDate
-      ? { classId: selectedClassId, section: selectedSection, date: selectedDate }
+      ? { classId: selectedClassId, section: cleanSection, date: selectedDate }
       : undefined
   );
 
@@ -103,7 +104,7 @@ const AttendanceMarking = () => {
     try {
       const res = await studentService.getStudents({
         classId: selectedClassId,
-        section: selectedSection || undefined,
+        section: selectedSection && selectedSection !== '__all__' ? selectedSection : undefined,
         status: 'active',
         limit: 0,
         sortBy: 'name',
@@ -158,10 +159,11 @@ const AttendanceMarking = () => {
 
   // Save attendance
   const handleSave = () => {
+    const sectionValue = selectedSection && selectedSection !== '__all__' ? selectedSection : '';
     const data = {
       date: selectedDate,
       classId: selectedClassId,
-      section: selectedSection || '',
+      section: sectionValue,
       academicYear: selectedYear,
       records: records.map((r) => ({
         studentId: r.studentId,

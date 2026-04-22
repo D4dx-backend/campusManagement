@@ -59,6 +59,7 @@ import staffLeaveRoutes from './routes/staffLeaveRequests';
 import announcementRoutes from './routes/announcements';
 import homeworkRoutes from './routes/homework';
 import teacherAllocationRoutes from './routes/teacherAllocations';
+import featureRoutes from './routes/features';
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -181,6 +182,7 @@ app.use('/api/staff-leave-requests', staffLeaveRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/homework', homeworkRoutes);
 app.use('/api/teacher-allocations', teacherAllocationRoutes);
+app.use('/api/features', featureRoutes);
 
 // Error handling middleware
 app.use(notFound);

@@ -241,21 +241,22 @@ router.get('/:id', checkPermission('expenses', 'read'), async (req: Authenticate
 router.post('/', checkPermission('expenses', 'create'), validate(createExpenseSchema), async (req: AuthenticatedRequest, res) => {
   try {
 
-    // Check if user has branchId
-    if (!req.user!.branchId && !req.body.branchId) {
+    // Resolve org + branch context (supports user.branchId, body.branchId, and query.branchId)
+    const orgBranch = getOrgBranchForCreate(req);
+
+    if (!orgBranch.branchId) {
       const response: ApiResponse = {
         success: false,
-        message: 'Branch ID is required to create expense'
+        message: 'Branch ID is required to create expense. Please select a branch.'
       };
       return res.status(400).json(response);
     }
 
     // Validate category exists in expense categories (optional check)
-    const branchId = req.user!.branchId || req.body.branchId;
     const categoryExists = await ExpenseCategory.findOne({
       name: req.body.category,
-      organizationId: req.user!.organizationId,
-      branchId: branchId,
+      organizationId: orgBranch.organizationId,
+      branchId: orgBranch.branchId,
       status: 'active'
     });
 
@@ -270,8 +271,8 @@ router.post('/', checkPermission('expenses', 'create'), validate(createExpenseSc
     const expenseData = {
       ...req.body,
       voucherNo,
-      organizationId: req.user!.organizationId,
-      branchId: req.user!.branchId || req.body.branchId
+      organizationId: orgBranch.organizationId,
+      branchId: orgBranch.branchId
     };
 
 

@@ -134,7 +134,7 @@ const Assessments = () => {
             <h1 className="text-2xl font-bold">Assessments</h1>
             <p className="text-muted-foreground text-sm mt-1">Create quizzes, assignments, and online exams</p>
           </div>
-          <Button onClick={() => navigate('/lms/assessments/new')}>
+          <Button onClick={() => navigate('/lms/assessments/builder')}>
             <Plus className="w-4 h-4 mr-2" />
             Create Assessment
           </Button>
@@ -222,7 +222,7 @@ const Assessments = () => {
               <ClipboardList className="w-12 h-12 mx-auto text-muted-foreground/40 mb-4" />
               <h3 className="text-lg font-medium mb-2">No assessments found</h3>
               <p className="text-muted-foreground text-sm mb-4">Create your first quiz, assignment or online exam</p>
-              <Button onClick={() => navigate('/lms/assessments/new')} variant="outline">
+              <Button onClick={() => navigate('/lms/assessments/builder')} variant="outline">
                 <Plus className="w-4 h-4 mr-2" />
                 Create Assessment
               </Button>
@@ -290,7 +290,7 @@ const Assessments = () => {
                             Results
                           </Button>
                         )}
-                        <Button size="icon" variant="ghost" onClick={() => navigate(`/lms/assessments/${a._id}`)}>
+                        <Button size="icon" variant="ghost" onClick={() => navigate(`/lms/assessments/builder/${a._id}`)}>
                           <Pencil className="w-4 h-4" />
                         </Button>
                         <Button size="icon" variant="ghost" onClick={() => handleDuplicate(a)} title="Duplicate">

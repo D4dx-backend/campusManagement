@@ -712,8 +712,8 @@ export default function TimetableManager() {
                   typeof tt.divisionId === 'object'
                     ? (tt.divisionId as any).name
                     : '';
-                const teacherEntries = tt.entries.filter(
-                  (e) => e.staffId === selectedStaffId
+                const teacherEntries = (tt.entries || []).filter(
+                  (e) => String(e.staffId) === selectedStaffId
                 );
                 if (teacherEntries.length === 0) return null;
                 return (

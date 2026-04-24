@@ -330,20 +330,7 @@ router.get('/staff/:staffId', checkPermission('timetable', 'read'), async (req: 
       .populate('configId')
       .lean();
 
-    // Flatten to just the entries for this staff member, enriched with class/division info
-    const schedule = timetables.flatMap((tt) =>
-      tt.entries
-        .filter((e: any) => e.staffId.toString() === req.params.staffId)
-        .map((e: any) => ({
-          ...e,
-          className: (tt.classId as any)?.name,
-          divisionName: (tt.divisionId as any)?.name,
-          academicYear: (tt.academicYearId as any)?.name,
-          config: tt.configId,
-        }))
-    );
-
-    res.json({ success: true, message: 'Staff schedule retrieved successfully', data: schedule });
+    res.json({ success: true, message: 'Staff schedule retrieved successfully', data: timetables });
   } catch (error) {
     console.error('Get staff schedule error:', error);
     res.status(500).json({ success: false, message: 'Something went wrong while loading staff schedule. Please try again.' });

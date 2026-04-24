@@ -46,20 +46,25 @@ const Submissions = () => {
   const [detailSub, setDetailSub] = useState<StudentSubmission | null>(null);
 
   useEffect(() => {
-    if (assessmentId) {
-      loadData();
-    }
+    loadData();
   }, [assessmentId]);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [aRes, sRes] = await Promise.all([
-        assessmentApi.getById(assessmentId),
-        submissionApi.getAll({ assessmentId, limit: 0 })
-      ]);
-      setAssessment(aRes.data);
-      setSubmissions(sRes.data);
+      if (assessmentId) {
+        const [aRes, sRes] = await Promise.all([
+          assessmentApi.getById(assessmentId),
+          submissionApi.getAll({ assessmentId, limit: 0 })
+        ]);
+        setAssessment(aRes.data);
+        setSubmissions(sRes.data);
+      } else {
+        // No assessmentId: load all recent submissions
+        const sRes = await submissionApi.getAll({ limit: 100 });
+        setSubmissions(sRes.data || []);
+        setAssessment(null);
+      }
     } catch (err: any) {
       toast({ title: 'Error', description: err.response?.data?.message || 'Something went wrong while loading. Please try again', variant: 'destructive' });
     } finally {
@@ -186,6 +191,7 @@ const Submissions = () => {
                 <TableRow>
                   <TableHead>Student</TableHead>
                   <TableHead>Adm No</TableHead>
+                  {!assessmentId && <TableHead>Assessment</TableHead>}
                   <TableHead>Attempt</TableHead>
                   <TableHead>Score</TableHead>
                   <TableHead>%</TableHead>
@@ -195,12 +201,16 @@ const Submissions = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map(sub => (
+                {filtered.map(sub => {
+                  const assessmentData = (sub.assessmentId as any);
+                  const totalMarks = assessment?.totalMarks ?? assessmentData?.totalMarks;
+                  return (
                   <TableRow key={sub._id}>
                     <TableCell className="font-medium">{getStudentName(sub)}</TableCell>
                     <TableCell>{getAdmNo(sub)}</TableCell>
+                    {!assessmentId && <TableCell className="text-sm">{assessmentData?.title || '-'}</TableCell>}
                     <TableCell>{sub.attemptNumber}</TableCell>
-                    <TableCell>{sub.totalMarksAwarded !== undefined ? `${sub.totalMarksAwarded}/${assessment?.totalMarks}` : '-'}</TableCell>
+                    <TableCell>{sub.totalMarksAwarded !== undefined ? `${sub.totalMarksAwarded}/${totalMarks ?? '?'}` : '-'}</TableCell>
                     <TableCell>{sub.percentage !== undefined ? `${sub.percentage}%` : '-'}</TableCell>
                     <TableCell><Badge className={statusColors[sub.status] || ''}>{sub.status.replace('_', ' ')}</Badge></TableCell>
                     <TableCell className="text-sm">{sub.submittedAt ? new Date(sub.submittedAt).toLocaleDateString() : '-'}</TableCell>
@@ -222,7 +232,8 @@ const Submissions = () => {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </Card>

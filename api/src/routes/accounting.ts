@@ -77,30 +77,22 @@ router.get(
           paymentDate: dateFilter,
           status: 'paid',
         })
-          .populate('studentId', 'name rollNumber')
+          .populate('studentId', 'name admissionNo')
           .populate('classId', 'name')
           .populate('branchId', 'name')
           .sort({ paymentDate: -1 })
           .lean();
 
         feePayments.forEach((payment: any) => {
-          const totalAmount =
-            (payment.tuitionFee || 0) +
-            (payment.transportFee || 0) +
-            (payment.cocurricularFee || 0) +
-            (payment.maintenanceFee || 0) +
-            (payment.examFee || 0) +
-            (payment.textbookFee || 0);
-
           transactions.push({
             _id: payment._id,
             date: payment.paymentDate,
             type: 'income',
             category: 'Fee Payment',
-            description: `Fee payment from ${payment.studentId?.name || 'Unknown'} - Receipt #${payment.receiptNumber}`,
-            amount: totalAmount,
+            description: `Fee payment from ${payment.studentId?.name || 'Unknown'} - Receipt #${payment.receiptNo}`,
+            amount: payment.totalAmount || 0,
             paymentMethod: payment.paymentMethod,
-            referenceNumber: payment.receiptNumber,
+            referenceNumber: payment.receiptNo,
             studentName: payment.studentId?.name,
             className: payment.classId?.name,
             branchName: payment.branchId?.name,
@@ -112,26 +104,23 @@ router.get(
       if (transactionType === 'all' || transactionType === 'expense') {
         const expenses = await Expense.find({
           ...branchFilter,
-          expenseDate: dateFilter,
-          status: { $in: ['pending', 'approved'] },
+          date: dateFilter,
         })
-          .populate('categoryId', 'name')
           .populate('branchId', 'name')
-          .sort({ expenseDate: -1 })
+          .sort({ date: -1 })
           .lean();
 
         expenses.forEach((expense: any) => {
           transactions.push({
             _id: expense._id,
-            date: expense.expenseDate,
+            date: expense.date,
             type: 'expense',
-            category: expense.categoryId?.name || 'Uncategorized',
+            category: expense.category || 'Uncategorized',
             description: expense.description,
             amount: expense.amount,
             paymentMethod: expense.paymentMethod,
-            referenceNumber: expense.voucherNumber,
+            referenceNumber: expense.voucherNo,
             branchName: expense.branchId?.name,
-            status: expense.status,
           });
         });
       }
@@ -229,18 +218,7 @@ router.get(
           {
             $group: {
               _id: null,
-              totalAmount: {
-                $sum: {
-                  $add: [
-                    { $ifNull: ['$tuitionFee', 0] },
-                    { $ifNull: ['$transportFee', 0] },
-                    { $ifNull: ['$cocurricularFee', 0] },
-                    { $ifNull: ['$maintenanceFee', 0] },
-                    { $ifNull: ['$examFee', 0] },
-                    { $ifNull: ['$textbookFee', 0] },
-                  ],
-                },
-              },
+              totalAmount: { $sum: '$totalAmount' },
               transactionCount: { $sum: 1 },
             },
           },
@@ -256,26 +234,17 @@ router.get(
 
       // Expense Accounts by Category
       if (accountType === 'all' || accountType === 'expenses') {
-        const expenseQuery: any = { ...branchFilter, status: { $in: ['pending', 'approved'] } };
+        const expenseQuery: any = { ...branchFilter };
         if (Object.keys(dateFilter).length > 0) {
-          expenseQuery.expenseDate = dateFilter;
+          expenseQuery.date = dateFilter;
         }
 
         const expenseStats = await Expense.aggregate([
           { $match: expenseQuery },
           {
-            $lookup: {
-              from: 'expensecategories',
-              localField: 'categoryId',
-              foreignField: '_id',
-              as: 'category',
-            },
-          },
-          { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
-          {
             $group: {
-              _id: '$categoryId',
-              categoryName: { $first: '$category.name' },
+              _id: '$category',
+              categoryName: { $first: '$category' },
               totalAmount: { $sum: '$amount' },
               transactionCount: { $sum: 1 },
             },
@@ -386,7 +355,7 @@ router.get(
       const searchFilter: any = {};
       if (search) {
         searchFilter.$or = [
-          { receiptNumber: { $regex: search, $options: 'i' } },
+          { receiptNo: { $regex: search, $options: 'i' } },
           { transactionId: { $regex: search, $options: 'i' } },
         ];
       }
@@ -523,18 +492,7 @@ router.get(
         {
           $group: {
             _id: null,
-            total: {
-              $sum: {
-                $add: [
-                  { $ifNull: ['$tuitionFee', 0] },
-                  { $ifNull: ['$transportFee', 0] },
-                  { $ifNull: ['$cocurricularFee', 0] },
-                  { $ifNull: ['$maintenanceFee', 0] },
-                  { $ifNull: ['$examFee', 0] },
-                  { $ifNull: ['$textbookFee', 0] },
-                ],
-              },
-            },
+            total: { $sum: '$totalAmount' },
           },
         },
       ]);
@@ -544,8 +502,7 @@ router.get(
         {
           $match: {
             ...branchFilter,
-            expenseDate: { $lte: endDate },
-            status: { $in: ['pending', 'approved'] },
+            date: { $lte: endDate },
           },
         },
         {
@@ -578,36 +535,25 @@ router.get(
         {
           $match: {
             ...branchFilter,
-            dueDate: { $lte: endDate },
+            paymentDate: { $lte: endDate },
             status: { $in: ['pending', 'partial'] },
           },
         },
         {
           $group: {
             _id: null,
-            total: {
-              $sum: {
-                $add: [
-                  { $ifNull: ['$tuitionFee', 0] },
-                  { $ifNull: ['$transportFee', 0] },
-                  { $ifNull: ['$cocurricularFee', 0] },
-                  { $ifNull: ['$maintenanceFee', 0] },
-                  { $ifNull: ['$examFee', 0] },
-                  { $ifNull: ['$textbookFee', 0] },
-                ],
-              },
-            },
+            total: { $sum: '$totalAmount' },
           },
         },
       ]);
 
       // Calculate pending expenses (accounts payable - liability)
+      // Note: Expense model has no status field, so we skip status filter
       const pendingExpenses = await Expense.aggregate([
         {
           $match: {
             ...branchFilter,
-            expenseDate: { $lte: endDate },
-            status: 'pending',
+            date: { $lte: endDate },
           },
         },
         {
@@ -699,18 +645,7 @@ router.get(
               year: { $year: '$paymentDate' },
               month: { $month: '$paymentDate' },
             },
-            totalAmount: {
-              $sum: {
-                $add: [
-                  { $ifNull: ['$tuitionFee', 0] },
-                  { $ifNull: ['$transportFee', 0] },
-                  { $ifNull: ['$cocurricularFee', 0] },
-                  { $ifNull: ['$maintenanceFee', 0] },
-                  { $ifNull: ['$examFee', 0] },
-                  { $ifNull: ['$textbookFee', 0] },
-                ],
-              },
-            },
+            totalAmount: { $sum: '$totalAmount' },
             transactionCount: { $sum: 1 },
           },
         },
@@ -722,15 +657,14 @@ router.get(
         {
           $match: {
             ...branchFilter,
-            expenseDate: { $gte: startDate, $lte: endDate },
-            status: { $in: ['pending', 'approved'] },
+            date: { $gte: startDate, $lte: endDate },
           },
         },
         {
           $group: {
             _id: {
-              year: { $year: '$expenseDate' },
-              month: { $month: '$expenseDate' },
+              year: { $year: '$date' },
+              month: { $month: '$date' },
             },
             totalAmount: { $sum: '$amount' },
             transactionCount: { $sum: 1 },
@@ -766,23 +700,13 @@ router.get(
         {
           $match: {
             ...branchFilter,
-            expenseDate: { $gte: startDate, $lte: endDate },
-            status: { $in: ['pending', 'approved'] },
+            date: { $gte: startDate, $lte: endDate },
           },
         },
-        {
-          $lookup: {
-            from: 'expensecategories',
-            localField: 'categoryId',
-            foreignField: '_id',
-            as: 'category',
-          },
-        },
-        { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
         {
           $group: {
-            _id: '$categoryId',
-            categoryName: { $first: '$category.name' },
+            _id: '$category',
+            categoryName: { $first: '$category' },
             totalAmount: { $sum: '$amount' },
             transactionCount: { $sum: 1 },
           },
